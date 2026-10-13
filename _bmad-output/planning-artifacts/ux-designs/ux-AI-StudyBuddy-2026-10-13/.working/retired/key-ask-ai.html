@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Study Buddy · Ask AI</title>
+<style>
+/*
+  KEY SCREEN: Ask AI tab (grounded chat + scope control + running-low notice)
+  Governing spine sections (verify against these):
+    DESIGN.md     Color tokens (indigo accent only; amber appears solely on the tab count),
+                  Typography, Shape, spacious density for reading-heavy screens
+    EXPERIENCE.md IA: Project tabs; Flow UJ-3 steps 5-9 (ask, grounded answer, follow-up, saved chat);
+                  Ask AI scope: all materials by default, narrowed to one file, narrowing persists (FR-16);
+                  Daily limits quiet by default, small notice near the limit (50/day);
+                  History: most recent chat + "View all"; Voice: warm, calm
+                  Account menu top right: avatar (initials fallback) + 'Welcome, [first name]', closed (memlog #41)
+    Source: memlog 2026-10-13; PRD UJ-3, FR-16, §5.1 Content Integrity
+*/
+:root{
+  --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
+  --accent:#6C7CFF; --green:#4ADE80; --amber:#F5A524; --red:#EF5B5B;
+  --line:rgba(230,232,238,.08); --line-2:rgba(230,232,238,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.55;padding:32px 0}
+.caption{width:1280px;margin:0 auto 12px;color:var(--muted);font-size:13px}
+.caption b{color:var(--text);font-weight:600}
+.browser{width:1280px;margin:0 auto 48px;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:var(--bg)}
+.chrome{height:38px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#0B0D11;border-bottom:1px solid var(--line)}
+.chrome i{width:11px;height:11px;border-radius:50%;background:#2A2F3A;display:block}
+.chrome .tabtitle{margin-left:14px;font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;padding:6px 14px;align-self:flex-end}
+.app{display:flex;min-height:820px}
+.side{width:248px;flex:none;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:22px 14px 18px}
+.wordmark{font-weight:650;font-size:17px;letter-spacing:-.01em;padding:0 10px 26px}
+.side h6{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px 8px}
+.proj{display:block;padding:8px 10px;border-radius:8px;color:var(--muted);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj.on{background:rgba(108,124,255,.12);color:var(--text)}
+.side .grow{flex:1}
+.newproj{display:block;padding:9px 10px;border:1px dashed var(--line-2);border-radius:8px;color:var(--text);font-size:13.5px;margin-bottom:18px}
+.credit{font-size:11px;line-height:1.5;color:var(--muted);opacity:.8;padding:0 10px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.phead{padding:26px 48px 0}
+.phead h1{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line)}
+.tab{padding:10px 14px;color:var(--muted);font-size:13.5px;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.count{font-size:11.5px;font-weight:600;color:var(--amber);background:rgba(245,165,36,.12);border-radius:999px;padding:1px 7px;line-height:1.5}
+.link{color:var(--accent);font-size:13px}
+
+/* Chat */
+.chat{flex:1;display:flex;flex-direction:column;max-width:820px;width:100%;margin:0 auto;padding:22px 48px 28px}
+.chatbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.scope{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;padding:3px;gap:2px}
+.seg span{padding:5px 12px;border-radius:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.seg span.on{background:rgba(108,124,255,.14);color:var(--text)}
+.seg .caret{color:var(--muted);margin-left:6px;font-size:10px}
+.recent{font-size:12.5px;color:var(--muted);display:flex;gap:14px;align-items:center}
+.thread{flex:1}
+.me{display:flex;justify-content:flex-end;margin:0 0 22px}
+.me p{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 16px;max-width:70%;font-size:14.5px}
+.ai{margin:0 0 30px;max-width:92%}
+.ai .who{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.ai p{font-size:15px;line-height:1.75;margin-bottom:12px}
+.ai ul{margin:0 0 12px 20px;font-size:15px;line-height:1.75}
+.ai li{margin-bottom:4px}
+.ai b{font-weight:600}
+.cites{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.cite{font-size:12.5px;color:var(--muted);border:1px solid var(--line-2);border-radius:999px;padding:3px 11px}
+.cite b{color:var(--text);font-weight:500}
+.composer{border:1px solid var(--line-2);border-radius:12px;background:var(--surface);padding:12px 12px 12px 16px;display:flex;align-items:center;gap:12px;margin-top:8px}
+.composer .ph{flex:1;color:var(--muted);font-size:14.5px}
+.send{background:var(--accent);color:#0F1115;font-weight:600;font-size:13.5px;border-radius:8px;padding:8px 14px}
+.below{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--muted)}
+.low{color:var(--text)}
+.low::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:7px;vertical-align:1px}
+/* Account menu (memlog: account menu top right on every page) */
+.ptop{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.acct{position:relative;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);padding:4px 10px 4px 4px;border:1px solid transparent;border-radius:999px;white-space:nowrap}
+.acct.open{border-color:var(--line-2);background:var(--surface)}
+.avatar{width:30px;height:30px;flex:none;border-radius:50%;background:rgba(230,232,238,.08);border:1px solid var(--line-2);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.acct .chev{font-size:9px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ============ STATE 1: ALL MATERIALS, GROUNDED ANSWER + FOLLOW-UP ============ -->
+<p class="caption"><b>Ask AI, answering from all materials.</b> Emma asks how mitosis and meiosis differ, gets an answer drawn from her own files with source citations, then asks a follow-up. The daily limit stays out of sight.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="phead">
+        <div class="ptop"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+        <nav class="tabs">
+          <span class="tab">Overview</span>
+          <span class="tab">Quiz</span>
+          <span class="tab">Flashcards</span>
+          <span class="tab">Summarize</span>
+          <span class="tab on">Ask AI</span>
+          <span class="tab">Mistake Review <span class="count">3</span></span>
+        </nav>
+      </div>
+
+      <section class="chat">
+        <div class="chatbar">
+          <div class="scope">Answer from
+            <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span>
+          </div>
+          <div class="recent">Most recent chat · <a class="link">View all chats</a></div>
+        </div>
+
+        <div class="thread">
+          <div class="me"><p>What is the difference between mitosis and meiosis?</p></div>
+
+          <div class="ai">
+            <div class="who">Study Buddy</div>
+            <p>Good question, they look alike at first. Based on your lecture and notes, the key differences are:</p>
+            <ul>
+              <li><b>Purpose.</b> Mitosis makes new body cells for growth and repair. Meiosis makes gametes (sperm and egg cells).</li>
+              <li><b>Number of divisions.</b> Mitosis divides once. Meiosis divides twice, meiosis I and meiosis II.</li>
+              <li><b>Result.</b> Mitosis gives two diploid cells identical to the parent. Meiosis gives four haploid cells, each genetically different.</li>
+              <li><b>Homologous chromosomes.</b> They pair up and swap segments (crossing over) only in meiosis I.</li>
+            </ul>
+            <div class="cites">
+              <span class="cite"><b>lecture-04-cell-division.pptx</b> · slides 12–18</span>
+              <span class="cite"><b>handwritten-notes-p1.jpg</b></span>
+            </div>
+          </div>
+
+          <div class="me"><p>So is crossing over the reason the four cells end up different?</p></div>
+
+          <div class="ai">
+            <div class="who">Study Buddy</div>
+            <p>It's one of two reasons your slides give. <b>Crossing over</b> in prophase I swaps segments between homologous chromosomes, so each chromatid becomes a new mix of maternal and paternal genes.</p>
+            <p>The other is <b>independent assortment</b> in metaphase I: each homologous pair lines up in a random orientation, so which chromosome goes to which pole is down to chance. Together they're why no two gametes are quite alike.</p>
+            <div class="cites">
+              <span class="cite"><b>lecture-04-cell-division.pptx</b> · slides 19–21</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="composer"><span class="ph">Ask anything about your material…</span><span class="send">Send</span></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============ STATE 2: NARROWED TO ONE FILE + RUNNING-LOW NOTICE ============ -->
+<p class="caption"><b>Ask AI, narrowed to one file, running low.</b> Scope is set to lecture-04-cell-division.pptx and stays that way until Emma broadens it. A small notice under the input says "8 messages left today."</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:560px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="phead">
+        <div class="ptop"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+        <nav class="tabs">
+          <span class="tab">Overview</span>
+          <span class="tab">Quiz</span>
+          <span class="tab">Flashcards</span>
+          <span class="tab">Summarize</span>
+          <span class="tab on">Ask AI</span>
+          <span class="tab">Mistake Review <span class="count">3</span></span>
+        </nav>
+      </div>
+
+      <section class="chat">
+        <div class="chatbar">
+          <div class="scope">Answer from
+            <span class="seg"><span>All materials</span><span class="on">lecture-04-cell-division.pptx<span class="caret">▾</span></span></span>
+          </div>
+          <div class="recent">Most recent chat · <a class="link">View all chats</a></div>
+        </div>
+
+        <div class="thread">
+          <div class="me"><p>What happens to the nuclear envelope during prophase?</p></div>
+          <div class="ai">
+            <div class="who">Study Buddy</div>
+            <p>In your lecture, prophase is when the nuclear envelope starts to break down, so the spindle fibres can reach the chromosomes. It re-forms around each new set of chromosomes in telophase.</p>
+            <div class="cites"><span class="cite"><b>lecture-04-cell-division.pptx</b> · slide 8</span></div>
+          </div>
+        </div>
+
+        <div class="composer"><span class="ph">Ask anything about lecture-04-cell-division.pptx…</span><span class="send">Send</span></div>
+        <div class="below"><span>Answers come only from this file.</span><span class="low">8 messages left today</span></div>
+      </section>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>

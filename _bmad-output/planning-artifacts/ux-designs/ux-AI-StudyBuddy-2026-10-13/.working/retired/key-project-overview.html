@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Study Buddy · Project Overview</title>
+<style>
+/*
+  KEY SCREEN: Project Overview tab
+  Governing spine sections (verify against these):
+    DESIGN.md     Color tokens (bg, surface, text, muted, accent, amber, error red), Typography (Inter),
+                  Shape (8-12px radius, thin borders, no heavy shadows), Wordmark + footer credit
+    EXPERIENCE.md IA: sidebar Projects + "+ New project"; Project tabs (Overview first);
+                  Overview contents (Study Material n of 10, upload area, per-file status);
+                  State Patterns: file Ready / Ready-partly-unreadable / Rejected (FR-6, FR-7, §5.1);
+                  Topic editing (rename, delete, add); Mistake indicator (FR-9, shown only when > 0);
+                  Limits quiet by default (no image-limit notice shown here);
+                  File limit counts accepted files only, rejected never count ("2 of 10");
+                  Upload from phone entry in upload area (opens QR dialog, see key-phone-upload.html);
+                  Account menu dropdown open state: Settings, Language (English / Norsk), divider, Log out
+                  Account menu top right: avatar (initials fallback) + 'Welcome, [first name]', closed (memlog #41)
+    Source: memlog 2026-10-13; PRD UJ-1, UJ-2, FR-4..FR-9
+*/
+:root{
+  --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
+  --accent:#6C7CFF; --green:#4ADE80; --amber:#F5A524; --red:#EF5B5B;
+  --line:rgba(230,232,238,.08); --line-2:rgba(230,232,238,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.55;padding:32px 0}
+.caption{width:1280px;margin:0 auto 12px;color:var(--muted);font-size:13px}
+.caption b{color:var(--text);font-weight:600}
+.browser{width:1280px;margin:0 auto 48px;border:1px solid var(--line-2);border-radius:12px;overflow:hidden;background:var(--bg)}
+.chrome{height:38px;display:flex;align-items:center;gap:8px;padding:0 14px;background:#0B0D11;border-bottom:1px solid var(--line)}
+.chrome i{width:11px;height:11px;border-radius:50%;background:#2A2F3A;display:block}
+.chrome .tabtitle{margin-left:14px;font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;padding:6px 14px;align-self:flex-end}
+.app{display:flex;min-height:800px}
+/* Sidebar */
+.side{width:248px;flex:none;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:22px 14px 18px}
+.wordmark{font-weight:650;font-size:17px;letter-spacing:-.01em;padding:0 10px 26px}
+.side h6{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 10px 8px}
+.proj{display:block;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.proj.on{background:rgba(108,124,255,.12);color:var(--text)}
+.side .grow{flex:1}
+.newproj{display:block;padding:9px 10px;border:1px dashed var(--line-2);border-radius:8px;color:var(--text);text-decoration:none;font-size:13.5px;margin-bottom:18px}
+.credit{font-size:11px;line-height:1.5;color:var(--muted);opacity:.8;padding:0 10px}
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.phead{padding:26px 48px 0}
+.phead h1{font-size:22px;font-weight:600;letter-spacing:-.015em}
+.tabs{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line)}
+.tab{padding:10px 14px;color:var(--muted);font-size:13.5px;border-bottom:2px solid transparent;margin-bottom:-1px;display:flex;align-items:center;gap:8px}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.count{font-size:11.5px;font-weight:600;color:var(--amber);background:rgba(245,165,36,.12);border-radius:999px;padding:1px 7px;line-height:1.5}
+.content{padding:32px 48px 56px;max-width:900px}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13.5px;font-weight:600;border-radius:8px;padding:8px 14px;border:1px solid transparent;cursor:pointer}
+.btn.primary{background:var(--accent);color:#0F1115}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line-2)}
+.link{color:var(--accent);text-decoration:none;font-size:13px}
+/* Overview */
+.mistakes{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:10px;padding:16px 20px;margin-bottom:36px}
+.mistakes strong{color:var(--amber);font-weight:600;font-size:15px}
+.mistakes p{color:var(--muted);font-size:13px;margin-top:2px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
+.sechead h2{font-size:15px;font-weight:600}
+.sechead span{color:var(--muted);font-size:13px}
+.drop{border:1px dashed var(--line-2);border-radius:12px;padding:26px;text-align:center;margin-bottom:18px}
+.drop p{font-size:14px}
+.drop p a{color:var(--accent);text-decoration:none}
+.drop small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px}
+.file{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:10px}
+.frow{display:flex;align-items:center;gap:14px}
+.ftype{width:38px;height:38px;flex:none;border-radius:8px;border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.03em}
+.fname{font-weight:500}
+.fmeta{color:var(--muted);font-size:12.5px}
+.fbody{flex:1;min-width:0}
+.status{font-size:12.5px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+.st-ready{color:var(--text)} .st-ready .dot{background:var(--green)}
+.st-warn{color:var(--muted)} .st-warn .dot{background:transparent;border:1.5px solid var(--muted)}
+.st-err{color:var(--red)} .st-err .dot{background:var(--red)}
+.more{color:var(--muted);font-size:16px;padding:0 4px;letter-spacing:1px}
+.note{margin:12px 0 0 52px;font-size:12.5px;color:var(--muted)}
+.note.err{color:var(--red)}
+.topics{margin:12px 0 0 52px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.topics .lbl{color:var(--muted);font-size:12px;margin-right:2px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;border:1px solid var(--line-2);border-radius:999px;padding:3px 6px 3px 11px}
+.chip .x{color:var(--muted);font-size:13px;line-height:1;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.chip.editing{border-color:var(--accent);padding:3px 11px;background:rgba(108,124,255,.08)}
+.chip.editing .caret{display:inline-block;width:1px;height:13px;background:var(--accent);margin-left:1px;vertical-align:-2px}
+.chip.add{border-style:dashed;color:var(--muted);padding:3px 11px}
+.hint{font-size:11.5px;color:var(--muted);margin-left:4px}
+.kbd{font-size:10.5px;font-weight:600;color:var(--muted);border:1px solid var(--line-2);border-radius:5px;padding:0 5px;line-height:16px}
+/* Account menu (memlog: account menu top right on every page) */
+.ptop{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.acct{position:relative;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);padding:4px 10px 4px 4px;border:1px solid transparent;border-radius:999px;white-space:nowrap}
+.acct.open{border-color:var(--line-2);background:var(--surface)}
+.avatar{width:30px;height:30px;flex:none;border-radius:50%;background:rgba(230,232,238,.08);border:1px solid var(--line-2);color:var(--text);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.acct .chev{font-size:9px;color:var(--muted)}
+/* Upload from phone entry (memlog: upload from phone, scope change) */
+.drop .phone{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:16px}
+.drop .or{color:var(--muted);font-size:12.5px}
+/* Account dropdown, open state (memlog: Settings, Language, divider, Log out last) */
+.menu{position:absolute;top:calc(100% + 8px);right:0;width:240px;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:6px;z-index:5;white-space:normal}
+.mi{display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:8px;font-size:13.5px;color:var(--text)}
+.mi.hover{background:rgba(230,232,238,.05)}
+.mi .lang{display:inline-flex;border:1px solid var(--line-2);border-radius:7px;padding:2px;gap:2px}
+.mi .lang span{padding:2px 9px;border-radius:5px;font-size:12px;color:var(--muted)}
+.mi .lang span.on{background:rgba(108,124,255,.14);color:var(--text)}
+.mdiv{height:1px;background:var(--line);margin:6px 4px}
+</style>
+</head>
+<body>
+
+<p class="caption"><b>Overview tab, returning visit.</b> Study material in all three states, editable topics, and the mistake indicator ("3 mistakes to review"). The count reads "2 of 10": the rejected file never counts. Account menu closed, top right.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+
+    <main class="main">
+      <div class="phead">
+        <div class="ptop"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+        <nav class="tabs">
+          <span class="tab on">Overview</span>
+          <span class="tab">Quiz</span>
+          <span class="tab">Flashcards</span>
+          <span class="tab">Summarize</span>
+          <span class="tab">Ask AI</span>
+          <span class="tab">Mistake Review <span class="count">3</span></span>
+        </nav>
+      </div>
+
+      <section class="content">
+        <div class="mistakes">
+          <div>
+            <strong>3 mistakes to review</strong>
+            <p>Two from your last quiz, one flashcard you weren't sure about. Review them whenever you're ready.</p>
+          </div>
+          <span class="btn ghost">Open Mistake Review</span>
+        </div>
+
+        <div class="sechead">
+          <h2>Study material</h2>
+          <span>2 of 10</span>
+        </div>
+
+        <div class="drop">
+          <p>Drop files here or <a>browse</a></p>
+          <small>PDF, Word, PowerPoint, text, Markdown or images (JPG, PNG, HEIC) · up to 50 MB each</small>
+          <div class="phone"><span class="or">or</span><span class="btn ghost">Upload from phone</span></div>
+        </div>
+
+        <!-- Ready -->
+        <div class="file">
+          <div class="frow">
+            <div class="ftype">PPTX</div>
+            <div class="fbody">
+              <div class="fname">lecture-04-cell-division.pptx</div>
+              <div class="fmeta">32 slides · added Oct 9</div>
+            </div>
+            <span class="status st-ready"><span class="dot"></span>Ready</span>
+            <span class="more">···</span>
+          </div>
+          <div class="topics">
+            <span class="lbl">Topics</span>
+            <span class="chip">Cell cycle <span class="x">×</span></span>
+            <span class="chip">Mitosis <span class="x">×</span></span>
+            <span class="chip">Meiosis <span class="x">×</span></span>
+            <span class="chip editing">Cytokinesis<span class="caret"></span></span>
+            <span class="chip add">+ Add topic</span>
+            <span class="hint">Click a topic to rename it</span>
+          </div>
+        </div>
+
+        <!-- Ready, partly unreadable -->
+        <div class="file">
+          <div class="frow">
+            <div class="ftype">JPG</div>
+            <div class="fbody">
+              <div class="fname">handwritten-notes-p1.jpg</div>
+              <div class="fmeta">Image · added Oct 9</div>
+            </div>
+            <span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span>
+            <span class="more">···</span>
+          </div>
+          <p class="note">We couldn't read all of this page, so a few notes near the bottom may be missing. Everything we could read is ready to study.</p>
+          <div class="topics">
+            <span class="lbl">Topics</span>
+            <span class="chip">Meiosis <span class="x">×</span></span>
+            <span class="chip">Crossing over <span class="x">×</span></span>
+            <span class="chip add">+ Add topic</span>
+          </div>
+        </div>
+
+        <!-- Rejected -->
+        <div class="file">
+          <div class="frow">
+            <div class="ftype">JPG</div>
+            <div class="fbody">
+              <div class="fname">whiteboard-photo.jpg</div>
+              <div class="fmeta">Image · added Oct 9</div>
+            </div>
+            <span class="status st-err"><span class="dot"></span>Rejected: unreadable</span>
+            <span class="btn ghost" style="padding:5px 12px;font-size:12.5px">Remove</span>
+          </div>
+          <p class="note err">This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick. It doesn't count toward your 10 files.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- ============ STATE 2: ACCOUNT MENU OPEN ============ -->
+<p class="caption"><b>Account menu open.</b> Clicking the avatar or "Welcome, Emma" opens Settings, Language (English / Norsk, English selected), a thin divider, and Log out last. Language is switched only here and in Settings.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:420px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+
+    <main class="main">
+      <div class="phead">
+        <div class="ptop"><h1>Biology — Cell Division</h1>
+          <div class="acct open"><span class="avatar">E</span>Welcome, Emma<span class="chev">▴</span>
+            <div class="menu">
+              <div class="mi hover">Settings</div>
+              <div class="mi">Language <span class="lang"><span class="on">English</span><span>Norsk</span></span></div>
+              <div class="mdiv"></div>
+              <div class="mi">Log out</div>
+            </div>
+          </div>
+        </div>
+        <nav class="tabs">
+          <span class="tab on">Overview</span>
+          <span class="tab">Quiz</span>
+          <span class="tab">Flashcards</span>
+          <span class="tab">Summarize</span>
+          <span class="tab">Ask AI</span>
+          <span class="tab">Mistake Review <span class="count">3</span></span>
+        </nav>
+      </div>
+
+      <section class="content">
+        <div class="mistakes">
+          <div>
+            <strong>3 mistakes to review</strong>
+            <p>Two from your last quiz, one flashcard you weren't sure about. Review them whenever you're ready.</p>
+          </div>
+          <span class="btn ghost">Open Mistake Review</span>
+        </div>
+        <div class="sechead">
+          <h2>Study material</h2>
+          <span>2 of 10</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
