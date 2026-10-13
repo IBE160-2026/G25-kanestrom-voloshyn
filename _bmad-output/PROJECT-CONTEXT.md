@@ -143,5 +143,6 @@ If you continue planning work here, these patterns were used throughout and shou
 ## 8. How to resume in a new chat
 
 Point your Claude session at this file first (`_bmad-output/PROJECT-CONTEXT.md`), then at the brief
-and PRD above if you need exact wording. From there, treat the brief and PRD as settled — don't
-reopen decisions already marked `final` without flagging it to the team first.
+and PRD above if you need exact wording. From there, treat the brief and PRD as approved — to
+change a final requirement, explain the conflict, propose the change, and wait for explicit
+approval from Cristoffer or Ihor.
