@@ -25,7 +25,11 @@
                   Source label 'filename · slide N' (#40); Keyboard shortcuts with on-screen key hints
                   (1-4 answer, arrows to move) (#33); Voice warm and calm; spacious reading density;
                   Account menu top right (#41)
-    Source: memlog 2026-10-13; PRD FR-10, FR-11, FR-12
+    UPDATED (consistency check 2026-10-14): M8 too-little note uses the EXPERIENCE string "There's only enough
+                  material for {n} questions." + "Make {n} instead" (exact count, no "about"); main button held back
+                  while the note shows is still a mock-only proposal. M9 score screen button '← Back to chat' (arrow).
+                  Norwegian: Chat = 'samtale' ('Tilbake til samtalen', 'tilbake til samtalen') per memlog 2026-10-14.
+    Source: memlog 2026-10-13; memlog 2026-10-14; PRD FR-10, FR-11, FR-12
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -182,10 +186,10 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Lag en quiz" <i>(proposed)</i> · "Spørsmålene kommer bare fra filene dine, hvert med kilde." <i>(proposed)</i> · "Hvor mange spørsmål?" <i>(proposed)</i> · "Emner" <i>(proposed)</i> · "Alle emner" <i>(proposed)</i> · "Lag 10 spørsmål" <i>(proposed)</i> · "← Tilbake til chatten" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Lag en quiz" <i>(proposed)</i> · "Spørsmålene kommer bare fra filene dine, hvert med kilde." <i>(proposed)</i> · "Hvor mange spørsmål?" <i>(proposed)</i> · "Emner" <i>(proposed)</i> · "Alle emner" <i>(proposed)</i> · "Lag 10 spørsmål" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
 
 <!-- ============ STATE 0b: TOO LITTLE MATERIAL FOR THE CHOSEN COUNT ============ -->
-<p class="caption"><b>Not enough material for 20.</b> Emma picked 20 questions on Cytokinesis only. Her files hold enough for about 8, so a short note under the picker offers the largest count that works. It's a neutral note, not amber and not red: nothing is wrong. "Make 8 questions" takes the offer; picking more topics or a smaller count clears the note. The main button is held back until the count fits.</p>
+<p class="caption"><b>Not enough material for 20.</b> Emma picked 20 questions on Cytokinesis only. Her files hold enough for exactly 8, so a short note under the picker offers that largest count. It's a neutral note, not amber and not red: nothing is wrong. "Make 8 instead" takes the offer; picking more topics or a smaller count clears the note. The main button is held back (disabled) until the count fits; that detail is proposed and not yet stated in the spine.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Quiz · Biology — Cell Division · Study Buddy</span></div>
   <div class="app" style="min-height:640px">
@@ -209,8 +213,8 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="lbl">How many questions?</div>
           <div class="counts"><span>5</span><span>10</span><span class="on">20</span></div>
           <div class="thin" role="status">
-            <span>There's enough material for about 8 questions. Make 8?</span>
-            <span class="btn primary focus">Make 8 questions</span>
+            <span>There's only enough material for 8 questions.</span>
+            <span class="btn primary focus">Make 8 instead</span>
           </div>
           <p class="thin-sub">Or add more topics below.</p>
         </div>
@@ -223,7 +227,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Det er nok stoff til omtrent 8 spørsmål. Lage 8?" <i>(proposed)</i> · "Lag 8 spørsmål" <i>(proposed)</i> · "Eller legg til flere emner nedenfor." <i>(proposed)</i> · "Lag 20 spørsmål" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Det er bare nok stoff til 8 spørsmål." <i>(proposed)</i> · "Lag 8 i stedet" <i>(proposed)</i> · "Eller legg til flere emner nedenfor." <i>(proposed)</i> · "Lag 20 spørsmål" <i>(proposed)</i></p>
 
 <!-- ============ STATE 0c: GENERATING ============ -->
 <p class="caption"><b>Making the quiz.</b> After "Make 10 questions": calm progress steps, Reading your material ✓, Writing questions (now), Checking answers. Up to a minute. Cancel goes back to the setup with Emma's choices kept. She can also go back to the chat; the quiz keeps going, and when it's done a quiet message appears there, "Your quiz on Mitosis and Meiosis is ready · Open", and it's saved to History.</p>
@@ -257,10 +261,10 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Lager quizen din" <i>(proposed)</i> · "Leser stoffet ditt" <i>(proposed)</i> · "Skriver spørsmål" <i>(proposed)</i> · "Sjekker svarene" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Du kan gå tilbake til chatten. Vi sier fra der når den er klar." <i>(proposed)</i> · "Quizen din om {emne} er klar · Åpne" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Lager quizen din" <i>(proposed)</i> · "Leser stoffet ditt" <i>(proposed)</i> · "Skriver spørsmål" <i>(proposed)</i> · "Sjekker svarene" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Du kan gå tilbake til samtalen. Vi sier fra der når den er klar." <i>(proposed)</i> · "Quizen din om {emne} er klar · Åpne" <i>(proposed)</i></p>
 
 <!-- ============ STATE 1: MID-QUIZ, IMMEDIATE FEEDBACK ============ -->
-<p class="caption"><b>Quiz, question 7 of 20, just answered.</b> Emma opened the quiz from the Quiz button in the chat; "Back to chat" stays at the top. She picked Anaphase II: her pick shows in amber, the correct answer in green. The feedback says "Not quite", then in amber "It stays in your review.", then a calm explanation grounded in her slides. Key hints sit on the options and next to the buttons.</p>
+<p class="caption"><b>Quiz, question 7 of 20, just answered.</b> Emma opened the quiz from the Quiz button in the chat; "← Back to chat" stays at the top. She picked Anaphase II: her pick shows in amber, the correct answer in green. The feedback says "Not quite", then in amber "It stays in your review.", then a calm explanation grounded in her slides. Key hints sit on the options and next to the buttons.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Quiz · Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -306,7 +310,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 </div>
 
 <!-- ============ STATE 2: END OF QUIZ, SCORE ============ -->
-<p class="caption"><b>Quiz finished.</b> Score 17 of 20, the three missed questions with Emma's answer and the right one, and a calm note that they wait in her review (the card at the top of the chat now reads "3 mistakes to review"). "Back to chat" is the main way out; "New quiz" sits beside it.</p>
+<p class="caption"><b>Quiz finished.</b> Score 17 of 20, the three missed questions with Emma's answer and the right one, and a calm note that they wait in her review (the card at the top of the chat now reads "3 mistakes to review"). "← Back to chat" is the main way out; "New quiz" sits beside it.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Quiz · Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -347,7 +351,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
         <div class="added">These 3 stay in your review. <span>You'll find them at the top of the chat whenever you want to practice.</span></div>
 
         <div class="foot">
-          <span class="btn primary">Back to chat</span>
+          <span class="btn primary">← Back to chat</span>
           <span class="btn ghost">New quiz</span>
         </div>
       </section>

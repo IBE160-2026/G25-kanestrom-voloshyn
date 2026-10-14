@@ -20,7 +20,9 @@
                   'Back to chat' (#73); Keyboard (#80): Space flips, Right arrow = Got it, Left arrow = Not yet;
                   hints desktop-only; all shortcuts off while focus is in a text field;
                   Source label 'filename · slide N' (#40)
-    Source: memlog 2026-10-13; PRD FR-13, FR-14 (amended by #74)
+    UPDATED (consistency check 2026-10-14, M9): end-screen button reads '← Back to chat' (arrow), as in the
+                  spine. Norwegian term for Flashcards is 'Treningskort' (memlog 2026-10-14); no NO captions here.
+    Source: memlog 2026-10-13; memlog 2026-10-14; PRD FR-13, FR-14 (amended by #74)
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -215,7 +217,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 </div>
 
 <!-- ============ STATE 4: END SCREEN ============ -->
-<p class="caption"><b>Set finished.</b> "10 cards done. 3 needed a second try." No score, no streak, no next-review date. Emma can make more cards or go back to the chat.</p>
+<p class="caption"><b>Set finished.</b> "10 cards done. 3 needed a second try." No score, no streak, no next-review date. Emma can make more cards or go "← Back to chat".</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Flashcards · Biology — Cell Division · Study Buddy</span></div>
   <div class="app" style="min-height:520px">
@@ -238,7 +240,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <p>Nice and steady. Make a fresh set whenever you like.</p>
           <div class="pair">
             <span class="btn ghost">Make more cards</span>
-            <span class="btn primary focus">Back to chat</span>
+            <span class="btn primary focus">← Back to chat</span>
           </div>
         </div>
       </section>

@@ -142,7 +142,7 @@ spacing:
   '6': 32px
   '7': 48px
   sidebar-width: 248px
-  sidebar-collapsed-width: 56px   # collapsed Sidebar strip, "about 56px" [ASSUMPTION: logged as assumption]
+  sidebar-collapsed-width: 56px   # Sidebar strip and Files strip, "about 56px" [ASSUMPTION: one width for both strips, matching the mocks]
   files-panel-width: 340px
   chat-width: 760px
   reading-width: 860px
@@ -175,7 +175,7 @@ components:
     radius: '{rounded.md}'
     typography: '{typography.button}'
   button-danger:
-    # Red exception: final Delete or Remove button only; Color-role rule 3 (memlog)
+    # Red exception: final irreversible button only (Delete forever, delete-account confirm, Remove file); Color-role rule 3 (memlog)
     background: '{colors.error}'
     foreground: '{colors.on-primary}'
     radius: '{rounded.md}'
@@ -268,6 +268,13 @@ components:
     label: '{typography.ui}'
     label-foreground: '{colors.text-muted}'
     item-foreground: '{colors.text-muted}'
+  deleted-projects-group:
+    # Mirrors the Archived group [ASSUMPTION: visual treatment not confirmed]
+    label: '{typography.ui}'
+    label-foreground: '{colors.text-muted}'
+    item-foreground: '{colors.text-muted}'
+    days-left: '{typography.caption}'
+    days-left-foreground: '{colors.text-muted}'
   top-bar:
     border-bottom: '1px solid {colors.border}'
     title: '{typography.title}'
@@ -277,6 +284,14 @@ components:
     radius: '{rounded.lg}'
     foreground: '{colors.text-muted}'
     action: '{components.button-primary}'
+  deleted-banner:
+    # Mirrors the Archived banner [ASSUMPTION: banner not confirmed; read-only like archived (memlog)]
+    background: '{colors.surface}'
+    border: '1px solid {colors.border}'
+    radius: '{rounded.lg}'
+    foreground: '{colors.text-muted}'
+    restore: '{components.button-primary}'
+    delete-forever: '{components.button-ghost}'
   account-menu:
     background: '{colors.surface}'
     border: '1px solid {colors.border-strong}'
@@ -308,6 +323,11 @@ components:
   history-link:
     foreground: '{colors.primary}'
     typography: '{typography.caption}'
+  new-chat-button:
+    # Text action beside the History link [ASSUMPTION: placement and style]
+    foreground: '{colors.primary}'
+    typography: '{typography.caption}'
+    min-size: '{spacing.touch-target-min}'
   chat-message:
     student-background: '{colors.surface}'
     student-border: '1px solid {colors.border}'
@@ -334,9 +354,9 @@ components:
     width: '{spacing.files-panel-width}'
     border-left: '1px solid {colors.border}'
   files-strip:
-    # Collapsed Files panel. Width is the 48px scale step [ASSUMPTION: "thin strip" confirmed, width not; the mock uses 56px]
+    # Collapsed Files panel, same width as the Sidebar strip [ASSUMPTION: "thin strip" confirmed, width not; the mock uses 56px]
     background: '{colors.surface}'
-    width: '{spacing.7}'
+    width: '{spacing.sidebar-collapsed-width}'
     border-left: '1px solid {colors.border}'
     count: '{typography.caption}'
     count-foreground: '{colors.text-muted}'
@@ -367,6 +387,20 @@ components:
     editing-background: '{colors.primary-wash}'
     selected-border: '1px solid {colors.primary}'
     selected-background: '{colors.primary-subtle}'
+  topic-list:
+    # Grouping, scrolling, and count confirmed (memlog); styling [ASSUMPTION: from mock; the spine's Merge interaction is canonical]
+    group-label: '{typography.caption}'
+    group-label-foreground: '{colors.text-muted}'
+    group-hover: '{colors.hover}'
+    group-min-size: '{spacing.touch-target-min}'
+    chip: '{components.topic-chip}'
+    merge: '{components.button-ghost}'
+  topic-count:
+    foreground: '{colors.text-muted}'
+    typography: '{typography.caption}'
+  grouped-topics-note:
+    foreground: '{colors.text-muted}'
+    typography: '{typography.caption}'
   remove-file-dialog:
     dialog: '{components.modal-dialog}'
     checkbox: '{components.checkbox-and-radio}'
@@ -380,6 +414,7 @@ components:
     back-radius: '{rounded.md}'
   topic-scope-picker:
     chip: '{components.topic-chip}'
+    groups: '{components.topic-list}'
   count-picker:
     # Shared by Quiz and Flashcards setup: 5 / 10 / 20
     border: '1px solid {colors.border-control}'
@@ -443,6 +478,12 @@ components:
     headline-foreground: '{colors.primary}'
     action-primary: '{components.button-primary}'
     action-secondary: '{components.button-ghost}'
+  round-done-panel:
+    # Mirrors the Flashcard end screen; neutral text, not indigo (not finished), not amber [ASSUMPTION: not mocked]
+    headline: '{typography.title-lg}'
+    headline-foreground: '{colors.text}'
+    action-primary: '{components.button-primary}'
+    action-secondary: '{components.button-ghost}'
   history-filter:
     border: '1px solid {colors.border-strong}'
     selected: '{colors.primary-subtle}'
@@ -481,6 +522,7 @@ components:
   error-line:
     foreground: '{colors.error}'
     dot: '{colors.error}'
+    guidance-foreground: '{colors.text}'   # Google-linking guidance, not an error: no dot [ASSUMPTION: Color-role rule 3]
   create-account-screen:
     panel: '{components.auth-panel}'
     input: '{components.text-input}'
@@ -491,7 +533,14 @@ components:
     background: '{colors.surface}'
     border: '1px solid {colors.border}'
     radius: '{rounded.xl}'
+    verify-email-first-foreground: '{colors.text-muted}'   # [ASSUMPTION: muted, not an error]
+    resend-verification: '{colors.primary}'   # text action, like "Forgot password?" [ASSUMPTION: style]
   confirm-dialog-delete-project:
+    # Soft delete, reversible for 30 days: Button (primary), not red [ASSUMPTION: soft delete no longer irreversible]
+    dialog: '{components.modal-dialog}'
+    cancel: '{components.button-ghost}'
+    confirm: '{components.button-primary}'
+  confirm-dialog-delete-forever:
     dialog: '{components.modal-dialog}'
     losses-background: '{colors.background}'
     cancel: '{components.button-ghost}'
@@ -541,7 +590,7 @@ Visual identity for Study Buddy. Behavior lives in [EXPERIENCE.md](EXPERIENCE.md
 
 Study Buddy is a quiet place to study from your own material: "upload once, study many ways, review what you got wrong" (brief). The look is minimal, sleek, calm, and focused. Content comes first, whitespace is generous, and nothing competes with the question on screen.
 
-- **Dark theme only in V1.** Every color is a token, so a light theme (stretch goal) can follow. A user-selectable theme color is deferred to V2.
+- **Dark theme only in V1.** A light theme is out of V1 scope (PRD §7.2); every color is a token, so one can follow later. A user-selectable theme color is deferred to V2.
 - **No gamification and no playful illustration.** No badges, streaks, points, confetti, or mascots. Warmth comes from the words (EXPERIENCE.md Voice and Tone), not from decoration.
 - **Wordmark:** the text "Study Buddy" in `{typography.wordmark}` (sidebar, phone page) or `{typography.wordmark-lg}` (login, create account, password reset). No logo. In-app text always says "Study Buddy"; "AI Study Buddy" stays in planning documents.
 - **Footer credit, verbatim:** `© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.` "Sherlock and Watson" is the course-group label and does not affect the look. Small (11px) `{colors.text-muted}` text at the bottom of the sidebar and the bottom center of the login screen [ASSUMPTION: placement and size from mock], and at the bottom of the phone upload page (confirmed), below the countdown [ASSUMPTION: position from mock].
@@ -556,8 +605,8 @@ One accent. Every other chromatic color has exactly one job.
 | `background` | `#0F1115` | App canvas, file rows inside the Files panel, text inputs |
 | `surface` | `#171A21` | Sidebar, Files panel, cards, dialogs, menus, composer, banners |
 | `text` | `#E6E8EE` | Primary text, QR tile |
-| `text-muted` | `#9AA3B2` | Secondary text, metadata, key hints, the partly-unreadable warning, the expired phone link, archived projects and the archived banner label |
-| `primary` | `#6C7CFF` | The single accent: primary buttons, focus ring, active and selected states, links and text actions ("Undo", "History"), progress, **Ready** and **Reading…** dots, "All cleared! Nice work." |
+| `text-muted` | `#9AA3B2` | Secondary text, metadata, key hints, the partly-unreadable warning, the expired phone link, archived and deleted projects and their banner labels, topic counts and the grouped-topics note |
+| `primary` | `#6C7CFF` | The single accent: primary buttons, focus ring, active and selected states, links and text actions ("Undo", "History", "New chat"), progress, **Ready** and **Reading…** dots, "All cleared! Nice work." |
 | `on-primary` | `#0F1115` | Label on `primary` and `error` fills |
 | `correct` | `#4ADE80` | Correct answers: answer option, "Answer" in the score list, "Cleared" line |
 | `mistake` | `#F5A524` | Quiz mistakes: picked-wrong answer, "It stays in your review.", mistakes card, Mistake Review |
@@ -568,14 +617,14 @@ One accent. Every other chromatic color has exactly one job.
 
 1. **One accent.** `{colors.primary}` is the only accent color. Never use it for decoration, mistakes, or errors.
 2. **Amber means "review this", not "you failed".** Reserved for Quiz mistakes, so a wrong answer never looks like an error. Never use it for warnings, errors, or limits.
-3. **Red is for system errors only.** Never use it for wrong answers, warnings, running-low notices, or menu items such as "Remove", "Archive", or "Delete project". There are exactly two documented exceptions:
+3. **Red is for system errors only.** Never use it for wrong answers, warnings, running-low notices, or menu items such as "Remove", "Archive", "Delete project", or "Delete forever". There are exactly two documented exceptions:
    - **Log out** turns `{colors.error}` on desktop hover in the account menu. Touch devices have no hover, so it stays normal text.
-   - **The final irreversible Delete or Remove button** in a delete dialog (delete project, delete account, remove file) is filled `{colors.error}` with a dark `{colors.on-primary}` label (Button (danger)). The menu items that open these dialogs stay normal text.
+   - **The final irreversible button** in a confirm dialog ("Delete forever", the delete-account confirm, and "Remove" for a file) is filled `{colors.error}` with a dark `{colors.on-primary}` label (Button (danger)). The menu items and buttons that open these dialogs stay normal text or ghost. "Delete project" is a soft delete that can be restored for 30 days, so its confirm button is Button (primary), not red. [ASSUMPTION: soft delete no longer irreversible, so not red]
 4. **The partly-unreadable warning is muted gray** (`{colors.text-muted}` text with a hollow dot), not amber and not red.
 5. **Green is for correct answers only**, never generic success. File status Ready uses an indigo dot.
 6. **Flashcards use no green and no amber.** "Got it" is primary and "Not yet" is neutral; flashcards are not a right-or-wrong moment.
 7. **Finishing Mistake Review is indigo.** "All cleared! Nice work." uses `{colors.primary}`, not amber and not green.
-8. **Archived is muted.** Archived projects and the archived banner label use `{colors.text-muted}`; only the banner's "Restore" button takes `{colors.primary}`. Archiving is reversible, so it never takes red or amber.
+8. **Archived and deleted are muted.** Archived and deleted projects, their days-left line, and the Archived and Deleted banner labels use `{colors.text-muted}`; only the banners' "Restore" button takes `{colors.primary}`. Archiving and deleting a project are reversible, so neither takes red or amber; only the final "Delete forever" button in its dialog is red (rule 3).
 9. **Controls meet 3:1 non-text contrast (WCAG 2.2 SC 1.4.11).** A boundary that is a control's only visual cue uses `{colors.border-control}`. Decorative lines (dividers, card edges, hairlines) use `{colors.border}` and `{colors.border-strong}`.
 
 **Borders and tints** are base colors at low opacity (values in the frontmatter). The memlog confirms only "thin subtle borders"; the exact values come from the mocks [ASSUMPTION: from mock]. `border-control` is confirmed (text at 40% over `surface`).
@@ -605,7 +654,7 @@ Inter for every role, falling back to the system sans-serif stack (`system-ui, -
 | Wordmark, large | `wordmark-lg` | 30 / 650 | Login, create account, and password reset screens |
 | Display | `display` | 44 / 600 | Quiz score number |
 | Card term | `card-term` | 32 / 600 | Flashcard front |
-| Large title | `title-lg` | 24 / 600 | Flashcard end screen, All cleared panel, phone "sent" screen |
+| Large title | `title-lg` | 24 / 600 | Flashcard end screen, All cleared panel, Round done panel, phone "sent" screen |
 | Title | `title` | 22 / 600 | Project name and "Settings" in the top bar |
 | Question | `question` | 20 / 500, line height 1.45 | Quiz and Mistake Review questions, setup headings |
 | Small title | `title-sm` | 18 / 600 | Dialog titles, empty-state headings |
@@ -628,8 +677,8 @@ The generous line height of `body-reading` expresses the "spacious and calm" dec
 Spacious and calm: whitespace favors focus over density. There is **no tab row**.
 
 - **Desktop shell:** fixed left sidebar (`{spacing.sidebar-width}`) on `{colors.surface}`, main column on `{colors.background}` [ASSUMPTION: from mock]. Collapsed, the sidebar becomes the Sidebar strip (`{spacing.sidebar-collapsed-width}`) and the main column takes the freed width.
-- **Sidebar, top to bottom:** wordmark, "PROJECTS" overline, active project list; at the bottom, the collapsed "Archived (n)" group, "+ New project", and the footer credit.
-- **Project home:** chat column centered at `{spacing.chat-width}` maximum; collapsible Files panel on the right at `{spacing.files-panel-width}`. Collapsed, the panel becomes the Files strip and the chat column takes the freed width. Chat column, top to bottom: archived banner (archived project only), mistakes card (when present), chat bar, thread, tool buttons row, composer. [ASSUMPTION: widths and order from mock; archived banner position from `mockups/key-delete-project.html`]
+- **Sidebar, top to bottom:** wordmark, "PROJECTS" overline, active project list; at the bottom, the collapsed "Archived (n)" group, the collapsed "Deleted projects (n)" group below it, "+ New project", and the footer credit. [ASSUMPTION: Deleted projects sits above "+ New project"]
+- **Project home:** chat column centered at `{spacing.chat-width}` maximum; collapsible Files panel on the right at `{spacing.files-panel-width}`. Collapsed, the panel becomes the Files strip and the chat column takes the freed width. Chat column, top to bottom: archived or deleted banner (archived or deleted project only), mistakes card (when present), chat bar, thread, tool buttons row, composer. [ASSUMPTION: widths and order from mock; archived banner position from `mockups/key-delete-project.html`]
 - **Activities** (Quiz, Flashcards, Summarize, Mistake Review) and **History:** the activity header sits under the top bar. Activity content centers at `{spacing.reading-width}` with `{spacing.content-x}` side padding; setup screens center at `{spacing.setup-width}`. History replaces the chat: filter row on top, list below at `{spacing.chat-width}` maximum. [ASSUMPTION: from mock]
 - **Narrow desktop window** (below 1024px): the sidebar and the Files panel start collapsed to their strips, the account menu trigger shows the avatar only, and content columns shrink to the available width. Behavior: EXPERIENCE.md Component Patterns › Sidebar strip, Files strip. There is no separate mobile layout.
 - **Login, create account, and password reset:** one centered column: wordmark, tagline, `{spacing.auth-panel-width}` Auth panel, privacy line, footer credit at the bottom; EN | NO toggle top right.
@@ -654,7 +703,7 @@ No heavy shadows. Depth comes from tone and hairlines only:
 | Token | Value | Use |
 |---|---|---|
 | `rounded.md` | 8px | Buttons, inputs, sidebar items, segmented controls, photo thumbnails |
-| `rounded.lg` | 10px | File rows, history rows, answer options, feedback panels, mistakes card, archived banner, undo message, inline error, menus, count options, QR tile |
+| `rounded.lg` | 10px | File rows, history rows, answer options, feedback panels, mistakes card, archived and deleted banners, undo message, inline error, menus, count options, QR tile |
 | `rounded.xl` | 12px | Dialogs, flashcard, Settings sections, auth panel, drop zone, composer, phone buttons |
 | `rounded.full` | 9999px | Pills: topic chips, source labels, avatar, account-menu trigger outline |
 | `rounded.xs` | 5px | Keyboard key hints, skeleton blocks |
@@ -672,7 +721,7 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Focus ring** | `{spacing.focus-ring-width}` `{colors.primary}` outline at `{spacing.focus-ring-offset}` offset. The offset keeps it visible on indigo buttons. |
 | **Button (primary)** *(visual only)* | `{colors.primary}` fill, `{colors.on-primary}` label. Disabled: opacity 0.38, never red; all disabled buttons and controls use this. [ASSUMPTION: opacity value from mock] |
 | **Button (ghost)** *(visual only)* | Transparent, `{colors.text}` label, 1px `{colors.border-strong}`. For secondary actions: "Start", "Stop for now", "Upload", "Upload from phone", "Not yet", "Cancel", "Close", "Try again". |
-| **Button (danger)** *(visual only)* | `{colors.error}` fill, dark `{colors.on-primary}` label. Only for the final Delete or Remove button in the Confirm dialog (delete project), Confirm dialog (delete account), and Remove file dialog (Color-role rule 3). |
+| **Button (danger)** *(visual only)* | `{colors.error}` fill, dark `{colors.on-primary}` label. Only for the final irreversible button in the Confirm dialog (delete forever), Confirm dialog (delete account), and Remove file dialog (Color-role rule 3). Never in the Confirm dialog (delete project). |
 | **Overflow menu** | Trigger: "···" in `{colors.text-muted}`, `{spacing.touch-target-min}` square hit area. Menu: a `{colors.surface}` panel; items in `{colors.text}`, each at least `{spacing.touch-target-min}` tall, hover `{colors.hover}`. |
 | **Key hint** | Small outlined key cap in `{colors.text-muted}`. On a primary button it takes `{colors.on-primary}`; on a revealed answer it takes that answer's color. |
 | **Source label** | Muted pill with the file name in `{colors.text}`: "filename · slide N". |
@@ -680,7 +729,7 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Progress steps** | Vertical list of three steps: done steps carry a check, the current step is `{colors.text}` with a `{colors.primary}` marker, pending steps are muted. Ghost Cancel below, then a muted line saying the student can go back to the chat. |
 | **Skeleton** | Static `{colors.border}` blocks shaped like the content they stand for. No shimmer. [ASSUMPTION: fill and shape from the History loading mock] |
 | **Inline error** | Surface box with a `{colors.error-edge}` border. Message in `{colors.error}` `{typography.body}`, a muted reassurance line below ("Nothing you've made is lost."), and a small ghost "Try again" on the right. |
-| **Undo message** | Surface box with a hairline border and "Undo" as a `{colors.primary}` text action. No color fill. |
+| **Undo message** | Surface box with a hairline border and "Undo" as a `{colors.primary}` text action. No color fill. The one-time Google takeover notice uses the same box with no action. |
 | **Empty state** | Centered `{typography.title-sm}` heading, muted body, one action. No illustration. |
 | **Modal dialog** | Surface panel on `{colors.scrim}`, `{typography.title-sm}` title, footer actions right-aligned. |
 | **Checkbox and radio** | `{colors.border-control}` boundary on `{colors.background}`; checked or selected fill `{colors.primary}` with an `{colors.on-primary}` mark. Label beside it in `{typography.body}` `{colors.text}`. |
@@ -692,8 +741,10 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Sidebar** | Project items in muted `{typography.ui}`, truncated with an ellipsis, each with an Overflow menu; active item `{colors.primary-subtle}` fill with `{colors.text}`. "+ New project" in a dashed box. [ASSUMPTION: from mock] Collapse button: `{spacing.touch-target-min}` hit area. [ASSUMPTION: button position not confirmed] Order: Layout & Spacing › Sidebar. |
 | **Sidebar strip** | Same treatment as the Files strip, on the left edge, `{spacing.sidebar-collapsed-width}` wide. Top to bottom: expand button, "+ New project" icon button. Each is an outlined square with a muted icon and a caption-size tooltip on a surface panel. [ASSUMPTION: button order and tooltip styling not confirmed] |
 | **Archived group** | Row "Archived (n)" in muted `{typography.ui}` with an expand chevron; archived projects listed in muted text. An open archived project takes the active-item fill, with its label still muted. |
+| **Deleted projects group** | Same treatment as the Archived group, directly below it: row "Deleted projects (n)" with an expand chevron; each deleted project in muted text with a muted caption line "Deleted · {n} days left". [ASSUMPTION: visual treatment mirrors the Archived group] |
 | **Top bar** | Project or page name in `{typography.title}` left, account menu right, hairline below. |
 | **Archived banner** | Full-width surface row: "Archived" in `{colors.text-muted}` and a small Button (primary) "Restore" on the right. |
+| **Deleted banner** | Same row as the Archived banner: "Deleted · {n} days left" in `{colors.text-muted}`, then a small Button (primary) "Restore" and a small ghost "Delete forever" on the right. [ASSUMPTION: banner mirrors the Archived banner] |
 | **Account menu** | Trigger: `{spacing.avatar-sm}` avatar, "Welcome, [first name]", chevron; open, it takes `{colors.surface}` and a `{colors.border-strong}` pill outline. Dropdown items: Settings, Language (Language switch), hairline divider, Log out; hover `{colors.hover}`. Log out color: Color-role rule 3. |
 | **Avatar** | Circle, `{spacing.avatar-sm}` in the account menu and `{spacing.avatar-lg}` in Settings. Google profile photo, or initials on `{colors.border}` with a `{colors.border-strong}` ring for email accounts. |
 | **Language switch** | Two-segment control, "English" and "Norsk"; selected segment `{colors.primary-subtle}` with `{colors.text}`, other segment muted. |
@@ -703,10 +754,11 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | Component | Visual spec |
 |---|---|
 | **Mistakes card** | Surface card with a `{colors.mistake}` left edge. "{n} mistakes to review" in `{colors.mistake}` semibold, muted supporting line, ghost "Start" on the right. |
-| **Chat bar** | Muted caption-size row: "Answer from" and the Scope control on the left, History link on the right. [ASSUMPTION: row layout from mock] |
+| **Chat bar** | Muted caption-size row: "Answer from" and the Scope control on the left; New chat button and History link on the right. [ASSUMPTION: row layout from mock; New chat placement] |
 | **Scope control** | Segmented control: "All materials" and "One file ▾"; selected segment `{colors.primary-subtle}`. |
+| **New chat button** | The words "New chat" in `{colors.primary}`, caption size, left of the History link, with a `{spacing.touch-target-min}` hit area. Disabled: Button (primary) disabled treatment. [ASSUMPTION: placement and style mirror the History link] |
 | **History link** | The word "History" in `{colors.primary}`, caption size. |
-| **Chat message** | Student: right-aligned surface bubble with a hairline border. Study Buddy: no bubble, muted "Study Buddy" label, `{typography.body-reading}`, source labels below. [ASSUMPTION: from mock] Pending: muted "Study Buddy is thinking…" with three soft muted dots in the answer's place. Finished-generation message: `{typography.body}`, "Open" as a `{colors.primary}` link; no badge, no color fill. |
+| **Chat message** | Student: right-aligned surface bubble with a hairline border. Study Buddy: no bubble, muted "Study Buddy" label, `{typography.body-reading}`, source labels below. [ASSUMPTION: from mock] Pending: muted "Study Buddy is thinking…" with three soft muted dots in the answer's place, until the first words appear. Streaming: the answer text replaces the pending line and grows in the normal answer style; no caret or extra indicator. [ASSUMPTION: no streaming caret] Finished-generation message: `{typography.body}`, "Open" as a `{colors.primary}` link; no badge, no color fill. |
 | **Tool buttons row** | Muted lead label ("Study this material" [ASSUMPTION: copy from mock]), then three ghost buttons: Quiz, Flashcards, Summarize. |
 | **Composer** | Surface box with muted placeholder and a primary Send inside. |
 | **Limit notice** | Caption text: small muted dot, `{colors.text}` label ("{n} messages left today"). At zero: `{colors.error}`. |
@@ -717,53 +769,58 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | Component | Visual spec |
 |---|---|
 | **Files panel** | Header: "Files" in `{typography.heading}`, muted " · n of 10", collapse button (28px outlined square). Below: Upload buttons, a muted supported-types hint, file rows. Empty: dashed box "No files yet. Your notes will show up here." [ASSUMPTION: layout and empty copy from mock] |
-| **Files strip** | `{spacing.7}` wide [ASSUMPTION: width not confirmed; the mock uses 56px]. Top to bottom: expand button (same outlined square as the collapse button), files icon, muted caption count "n of 10" (number on one line, "of 10" below). Warning icon under the count: `{colors.text-muted}` for a partly unreadable file, `{colors.error}` when any file is rejected. |
+| **Files strip** | `{spacing.sidebar-collapsed-width}` wide, the same as the Sidebar strip [ASSUMPTION: width not confirmed; matches the mock]. Top to bottom: expand button (same outlined square as the collapse button), files icon, muted caption count "n of 10" (number on one line, "of 10" below). Warning icon under the count: `{colors.text-muted}` for a partly unreadable file, `{colors.error}` when any file is rejected. |
 | **Upload buttons** | "Upload" and "Upload from phone" as equal-width small ghost buttons side by side in the Files panel. In the Upload drop zone, "Upload from phone" appears alone. |
-| **File row** | `{colors.background}` card. File-type tile (32px outlined square with type label), name (ellipsis), muted metadata, File status line, Overflow menu on the right. Notes and topics indent under the name in caption text. Rejected rows show a small ghost "Remove" instead of the Overflow menu. [ASSUMPTION: ghost style from mock] |
+| **File row** | `{colors.background}` card. File-type tile (32px outlined square with type label), name (ellipsis), muted metadata with the Topic count, File status line, Overflow menu on the right. Notes and the Topic list indent under the name in caption text. Rejected rows show a small ghost "Remove" instead of the Overflow menu. [ASSUMPTION: ghost style from mock] |
 | **File status** | Dot plus label. **Reading…**: pulsing `{colors.primary}` dot, muted label. **Ready**: `{colors.primary}` dot, `{colors.text}` label. **Ready, partly unreadable**: hollow muted dot, muted label and note. **Rejected**: `{colors.error}` dot, label, and note. |
-| **Topic chip** | Caption-size pill with × to delete. Editing: `{colors.primary}` border on `{colors.primary-wash}` with caret. "+ Add topic": dashed border, muted text. Selected (setup screens): `{colors.primary}` border on `{colors.primary-subtle}`. [ASSUMPTION: from mock] |
-| **Remove file dialog** | Modal dialog. Title names the file; body in `{typography.body}`; one unchecked Checkbox and radio checkbox with its label; ghost Cancel and Button (danger) "Remove". Short variant (file still Reading…): one sentence and the two buttons. |
+| **Topic chip** | Caption-size pill with × to delete; a file's last remaining topic shows no ×. Editing: `{colors.primary}` border on `{colors.primary-wash}` with caret. "+ Add topic": dashed border, muted text. Selected (setup screens, and chips selected for Merge in the Files panel): `{colors.primary}` border on `{colors.primary-subtle}`. [ASSUMPTION: from mock; Merge selection reuses the selected style] |
+| **Topic list** | The file's Topic chips as a wrapping row. When the file has chapters or sections, chips sit under muted caption group rows (chapter name, topic count, expand chevron; each row at least `{spacing.touch-target-min}` tall, hover `{colors.hover}`). The list scrolls inside the file row. With two or more chips selected, a small ghost "Merge" appears at the end of the list. In a narrow window the chips keep wrapping at the panel width. [ASSUMPTION: scroll height, Merge placement, and narrow-window layout; grouping is mocked in `mockups/key-project-home.html`] |
+| **Topic count** | Muted caption in the file metadata: "{n} topics". |
+| **Grouped-topics note** | Muted caption under the Topic list, shown only at the 100-topic ceiling: "Large file, some topics are grouped." Not a warning; no icon, never amber or red. |
+| **Remove file dialog** | Modal dialog. Title names the file; body in `{typography.body}`; one unchecked Checkbox and radio checkbox with its label; ghost Cancel and Button (danger) "Remove". Short variant (file still Reading…): one sentence and the two buttons. Labels (EXPERIENCE.md Strings by surface) are canonical. |
 
 **Activities**
 
 | Component | Visual spec |
 |---|---|
 | **Activity header** | Bar with a hairline below: outlined "← Back to chat", then the activity title in `{typography.heading}` with a muted "· scope". [ASSUMPTION: from mock] |
-| **Topic scope picker** | Muted caption label, then a wrapping row of selectable Topic chips, "All topics" first. |
+| **Topic scope picker** | Muted caption label, then a wrapping row of selectable Topic chips, "All topics" first. With chapter or section groups, it reuses the Topic list's group rows and scrolling. |
 | **Count picker** | Three outlined boxes (5, 10, 20) in one row with `{colors.border-control}` boundaries, muted numerals, each at least `{spacing.touch-target-min}` tall; selected `{colors.primary}` border on `{colors.primary-subtle}` with `{colors.text}`. The row stays on one line in a narrow window. [ASSUMPTION: narrow-window layout not mocked] |
 | **Too-little-material note** | Under the Count picker: a muted caption sentence with the offered count as a `{colors.primary}` action. |
-| **Summarize setup** | Heading "Make a summary" in `{typography.question}`, muted lead line. "Which file?" label, then file options: each a `{colors.background}` row with a radio (Checkbox and radio), file-type tile, name, and muted metadata; selected row `{colors.primary}` border on `{colors.primary-subtle}`. "Narrow to one topic (optional)" label, then a row of selectable Topic chips, "Whole file" first. Button (primary) "Make summary" below. |
+| **Summarize setup** | Heading "Make a summary" in `{typography.question}`, muted lead line. "Which file?" label, then file options: each a `{colors.background}` row with a radio (Checkbox and radio), file-type tile, name, and muted metadata; selected row `{colors.primary}` border on `{colors.primary-subtle}`. "Narrow to one topic (optional)" label, then a row of selectable Topic chips, "Whole file" first, grouped like the Topic list when the file has chapters. Button (primary) "Make summary" below. |
 | **Answer option** | Surface row, key hint left. Correct: `{colors.correct-wash}` fill, `{colors.correct-edge}` border, "Correct answer" tag in `{colors.correct}`. Picked wrong: `{colors.mistake-wash}` fill, `{colors.mistake-edge}` border, "Your answer" tag in `{colors.mistake}`. Others dim. |
 | **Feedback panel** | Surface panel with a left edge in `{colors.mistake}` after a wrong answer or `{colors.correct}` after a right one. Headline ("Not quite" after a wrong answer) in `{typography.heading}`; after a wrong answer, "It stays in your review." in `{colors.mistake}`; explanation in `{typography.body-reading}`; source label. In Mistake Review, a right answer adds a "Cleared" line with a `{colors.correct}` dot. Below the panel, right-aligned: muted key hints ("1–4 answer", "→ next") and a Button (primary) with a → key hint. Button labels: EXPERIENCE.md Component Patterns › Feedback panel. |
 | **Score summary** | Score in `{typography.display}` with muted "of {total} correct"; muted one-line comment; "Questions you missed" rows on `{colors.surface}` with "You said" in `{colors.mistake}` and "Answer" in `{colors.correct}`; a note card with a `{colors.mistake}` edge; primary "← Back to chat" and ghost "New quiz". [ASSUMPTION: from mock] |
 | **Flashcard** | One centered surface card with generous padding. Front: "TERM" overline, term in `{typography.card-term}`, muted "Click to flip" with a Space key hint. Back: term small and muted, answer in `{typography.card-answer}`, source label. Below the card: ghost "Stop for now" left; ghost "Not yet" (← hint) and primary "Got it" (→ hint) right. [ASSUMPTION: layout from mock; key hints per memlog] |
 | **Flashcard end screen** | Centered headline "{n} cards done. {m} needed a second try" in `{typography.title-lg}` `{colors.text}`; primary "Make more cards" and ghost "← Back to chat". No score. [ASSUMPTION: layout from mock] |
 | **Summary view** | Reading column: muted scope line ("Summary of {file} · whole file" or the chosen topic), summary title, then sections with `{typography.heading}` headings and `{typography.body-reading}` text, each ending with a row of Source labels. At the end: a muted "Saved to History" line and Button (primary) "← Back to chat". |
-| **Mistake Review session** | Progress line ("{n} of {m} cleared · {k} left", cleared count in `{colors.mistake}`), Progress bar, context card with a `{colors.mistake}` edge and a "From your quiz on [date]" label, then question, answer options, Feedback panel, ghost "Stop for now" and primary "Next mistake", with the muted line "Your progress is saved." below. [ASSUMPTION: from mock] |
+| **Mistake Review session** | Progress line ("{n} of {m} cleared · {k} left", cleared count in `{colors.mistake}`), Progress bar, context card with a `{colors.mistake}` edge and a "From your quiz on [date]" label (when the source file was removed, a muted caption "The file this came from was removed." [ASSUMPTION: placement]), then question, answer options, Feedback panel, ghost "Stop for now" and primary "Next mistake", with the muted line "Your progress is saved." below. [ASSUMPTION: from mock] |
 | **All cleared panel** | Same layout as the Flashcard end screen: headline "All cleared! Nice work." in `{typography.title-lg}` `{colors.primary}`; primary "Make a new quiz" and ghost "← Back to chat". |
+| **Round done panel** | Same layout as the Flashcard end screen: headline "Round done. {n} mistakes still to review." in `{typography.title-lg}` `{colors.text}` (not indigo, since review is not finished; not amber); primary "Review mistakes" and ghost "← Back to chat". [ASSUMPTION: not mocked] |
 
 **History**
 
 | Component | Visual spec |
 |---|---|
 | **History filter** | Segmented control like the Scope control: "All", "Chats", "Quizzes", "Flashcards", "Summaries"; selected `{colors.primary-subtle}`. Wraps to a second line in a narrow window. [ASSUMPTION: labels from mock; wrapping not mocked] |
-| **History row** | Full-width surface row, hover `{colors.hover}`. Type label and title in `{typography.ui}` `{colors.text}`, truncated with an ellipsis; muted date and scope in caption text; an unfinished quiz carries a muted "Unfinished · {n} of {total}" label. [ASSUMPTION: row contents from mock] |
+| **History row** | Full-width surface row, hover `{colors.hover}`. Type label and title in `{typography.ui}` `{colors.text}`, truncated with an ellipsis; muted date and scope in caption text; an unfinished quiz carries a muted "Unfinished · {n} of {total}" label. [ASSUMPTION: row contents from mock] Opened results whose source file was removed show "Do it again" with the disabled treatment and the muted caption "The file this came from was removed." beside it. [ASSUMPTION: placement] |
 
 **Sign-in and Settings**
 
 | Component | Visual spec |
 |---|---|
-| **Projects page (empty)** | Empty state: heading, one muted sentence, Button (primary) "Create your first project". The sidebar shows only "+ New project". [ASSUMPTION: not mocked] |
+| **Projects page (empty)** | Empty state: heading, one muted sentence, Button (primary) "Create your first project". The sidebar shows "+ New project", plus the Archived and Deleted projects groups when they hold projects. [ASSUMPTION: not mocked] |
 | **Login screen** | Wordmark in `{typography.wordmark-lg}`, muted tagline, Auth panel, muted privacy line, footer credit. Layout: Layout & Spacing › Login. |
 | **Auth panel** *(visual only)* | Surface panel, `{spacing.auth-panel-width}` wide, holding the Google button, an "or" divider (hairlines on either side), and the email form. Shared by the Login, Create account, and Password reset screens. |
 | **Google button** | Full-width ghost button, `{spacing.auth-button-height}` tall, "Sign in with Google". [ASSUMPTION: from mock] |
 | **Text input** | `{colors.background}` fill, `{colors.border-control}` boundary, `{spacing.input-height}` tall, muted placeholder; muted caption label above; inline link ("Forgot password?") in `{colors.primary}`. [ASSUMPTION: from mock] |
 | **Language toggle (login)** | Small "EN \| NO" text toggle; selected in `{colors.text}` semibold, other muted. |
-| **Error line** | `{colors.error}` text with a small `{colors.error}` dot, above the buttons in the Auth panel: "Sign-in didn't work. Try again." Also carries the duplicate-email and account-linking messages. [ASSUMPTION: the account-linking message uses the error line] |
+| **Error line** | `{colors.error}` text with a small `{colors.error}` dot, above the buttons in the Auth panel: "Sign-in didn't work. Try again." Also carries the duplicate-email message. The Google-linking guidance ("You already have an account with this email…") takes the same place in `{colors.text}` with no dot, because it is guidance, not a system error (Color-role rule 3). [ASSUMPTION: guidance styling] |
 | **Create account screen** | Login screen layout. Auth panel: Google button, "or" divider, Text inputs for first name, email, and password, full-width Button (primary) "Create account", Error line above it when needed. [ASSUMPTION: not mocked; reuses Login screen parts] |
-| **Password reset screens** | Login screen layout, one Auth panel per step. Request: email Text input and Button (primary). Sent: muted confirmation text in place of the form. New password: password Text input and Button (primary). Expired link: "This link has expired" in `{colors.text}`, muted supporting text, Button (primary) "Send a new link". [ASSUMPTION: not mocked; reuses Login screen parts; button style not confirmed] |
-| **Settings section** | Surface card: heading in `{typography.heading}`, muted lead line, rows separated by hairlines. Account row: `{spacing.avatar-lg}` avatar, name (a Text input for email accounts, plain text for Google accounts), muted email and sign-in method, ghost Log out. [ASSUMPTION: layout from mock] The account-linking message "This Google account is already linked to another Study Buddy account." is in `{colors.error}`. |
-| **Confirm dialog (delete project)** | Modal dialog. Title "Delete {project}?", lead line, an inset `{colors.background}` box listing what is lost (its files, its mistakes, generated material) with muted detail beside each, bold "This can't be undone.", ghost Cancel and Button (danger) "Delete project". |
+| **Password reset screens** | Login screen layout, one Auth panel per step. Request: email Text input and Button (primary). Sent: muted confirmation text in place of the form. New password: password Text input and Button (primary). Expired link (also used or replaced links): "This link has expired" in `{colors.text}`, muted supporting text, Button (primary) "Send a new link". [ASSUMPTION: not mocked; reuses Login screen parts; button style not confirmed] |
+| **Settings section** | Surface card: heading in `{typography.heading}`, muted lead line, rows separated by hairlines. Account row: `{spacing.avatar-lg}` avatar, name (a Text input for email accounts, plain text for Google accounts), muted email and sign-in method, ghost Log out. [ASSUMPTION: layout from mock] The account-linking message "This Google account is already linked to another Study Buddy account." is in `{colors.error}`. For an email account whose email is not verified, the "Link Google account" row shows "Verify your email first" in `{colors.text-muted}` in place of the link action, followed by "Resend verification email" as a `{colors.primary}` text action. [ASSUMPTION: muted, not an error; resend style] "Change password" is never shown disabled. |
+| **Confirm dialog (delete project)** | Modal dialog. Title "Delete {project}?", one body paragraph saying the project moves to Deleted projects and is permanently deleted after 30 days, and that it can be restored until then. Ghost Cancel and Button (primary) "Delete project". No losses box and no "This can't be undone.". [ASSUMPTION: soft delete no longer irreversible, so not red] |
+| **Confirm dialog (delete forever)** | Modal dialog. Title "Delete {project} forever?", an inset `{colors.background}` box listing what is lost (its files, its mistakes, generated material) with muted detail beside each, bold "This can't be undone.", ghost Cancel and Button (danger) "Delete forever". [ASSUMPTION: layout reuses the former delete-project dialog in `mockups/key-delete-project.html`] |
 | **Confirm dialog (delete account)** | Modal dialog. Inset `{colors.background}` box listing what is lost, bold "This can't be undone.", Text input "Type DELETE to confirm", ghost Cancel and Button (danger) confirm. |
 
 **Phone upload**
@@ -785,12 +842,14 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 - [`mockups/key-mistake-review.html`](mockups/key-mistake-review.html): Mistake Review session, All cleared panel, chat with no mistakes card.
 - [`mockups/key-flashcards.html`](mockups/key-flashcards.html): setup, flashcard front and back, flashcard end screen.
 - [`mockups/key-summary.html`](mockups/key-summary.html): Summarize setup, progress steps, Summary view, inline error on setup.
-- [`mockups/key-delete-project.html`](mockups/key-delete-project.html): sidebar "···" menu (Rename, Archive, Delete project), inline rename, Archived group, Undo message, archived view with banner, Confirm dialog (delete project).
+- [`mockups/key-delete-project.html`](mockups/key-delete-project.html): sidebar "···" menu (Rename, Archive, Delete project), inline rename, Archived group, Undo message, archived view with banner, Confirm dialog (delete project), Deleted projects group, and Confirm dialog (delete forever) with the red final button.
 - [`mockups/key-login.html`](mockups/key-login.html): login screen and its parts.
 - [`mockups/key-settings.html`](mockups/key-settings.html): Settings sections, Confirm dialog (delete account).
 - [`mockups/key-phone-upload.html`](mockups/key-phone-upload.html): QR dialog, phone page, sent and expired states.
 
-Not mocked: Create account screen, Password reset screens, Projects page (empty), chat pending answer, project cold-load skeleton.
+Also mocked: New chat button, Topic list grouping and Merge, Topic count, and Grouped-topics note in `mockups/key-project-home.html`; the "Verify your email first" state in `mockups/key-settings.html`.
+
+Not mocked: Create account screen, Password reset screens, Projects page (empty), chat pending and streaming answer, project cold-load skeleton, Deleted banner, Round done panel.
 
 ## Do's and Don'ts
 

@@ -36,6 +36,19 @@
                   shows 'Archived · Restore' banner; archived menu = Restore + Delete project.
     UPDATED (memlog 2026-10-14): banner Restore = filled indigo primary (Button primary: #6C7CFF fill,
                   #0F1115 on-primary label, standard size), supersedes the spine's ghost Restore.
+    OVERRIDE (memlog 2026-10-14, soft project deletion): section 2 dialog no longer says "This can't be undone."; it
+                  says the project moves to Deleted projects, is permanently deleted after 30 days and can be restored
+                  until then. Account deletion unchanged (typed DELETE).
+    UPDATED (consistency check 2026-10-14, M1/M2/M10): section 2 dialog = ONE body paragraph (spine string), NO
+                  losses box, no stale hard-delete Norwegian sentence; confirm = standard Button (primary) (indigo
+                  #6C7CFF fill, dark #0F1115 label), not the old neutral tint, never red (DESIGN Color-role rule 3,
+                  Confirm dialog (delete project)). '.btn.neutral' removed. Delete forever (6c) stays red.
+                  Undo message: 6 s, stays while hovered or focused; NO "{prosjekt} er arkivert · Angre". Archived
+                  group collapsed by default. Norwegian: Chat = 'samtale' (memlog 2026-10-14 Norwegian terms).
+                  NEW sections 6a-6c: collapsed 'Deleted projects (1)' group below 'Archived' (above '+ New project');
+                  group expanded: deleted project in muted text + 'Deleted · 30 days left', its '···' menu (Restore,
+                  divider, Delete forever; normal text); 'Delete forever' confirm dialog: irreversible, bold "This
+                  can't be undone.", ghost Cancel (focused) + red danger 'Delete forever'. Deleted = read-only.
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -143,6 +156,12 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .btn.primary{background:var(--primary);color:var(--on-primary)}
 .btn.sm{padding:5px 11px;font-size:12.5px}
 .btn.danger{background:var(--red);color:var(--on-primary)} /* documented exception: final irreversible Delete */
+/* Deleted projects group: below 'Archived', above '+ New project'; entries muted with days left */
+.proj.del{color:var(--muted);opacity:.8;padding-left:28px;padding-bottom:0}
+.dleft{display:block;font-size:11.5px;color:var(--muted);opacity:.8;padding:0 10px 8px 28px}
+.delrow{position:relative;border-radius:8px}
+.delrow.sel{background:rgba(230,232,238,.06)}
+.delrow .pmore{position:absolute;right:4px;top:6px;margin:0}
 .focus{outline:2px solid var(--primary);outline-offset:2px}
 /* Dialog (same pattern as key-settings.html delete-account dialog, minus the typed-word field) */
 .scrim{position:absolute;inset:0;background:rgba(8,9,12,.72);display:flex;align-items:center;justify-content:center;z-index:10}
@@ -160,7 +179,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 <p class="caption sample">Sample data: names, projects, files and counts are placeholders, kept consistent across these mocks. In the real app they come from the account.</p>
 
 <!-- ============ SECTION 1: SIDEBAR PROJECT '···' MENU OPEN ============ -->
-<p class="caption"><b>Project menu open in the sidebar.</b> Emma tabbed to "···" on Biology — Cell Division and pressed Enter. The menu lists "Rename", "Archive", a divider, then "Delete project". All three are normal text; the red is kept for the final button in the delete dialog. Each item is 44px tall. The "···" trigger is a 44×44 target even though the glyph is small, and it shows the focus ring. Esc closes the menu and returns focus to "···".</p>
+<p class="caption"><b>Project menu open in the sidebar.</b> Emma tabbed to "···" on Biology — Cell Division and pressed Enter. The menu lists "Rename", "Archive", a divider, then "Delete project". All three are normal text; red is kept for the irreversible "Delete forever" button (section 6c). Each item is 44px tall. The "···" trigger is a 44×44 target even though the glyph is small, and it shows the focus ring. Esc closes the menu and returns focus to "···".</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -200,7 +219,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 <p class="caption nb"><b>Norwegian:</b> "Gi nytt navn" <i>(proposed)</i> · "Arkiver" <i>(proposed)</i> · "Slett prosjekt" <i>(proposed)</i> · trigger label "Flere valg for {prosjekt}" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 2: DELETE PROJECT, CONFIRM DIALOG ============ -->
-<p class="caption"><b>Delete a project: confirmation.</b> The dialog names the project and lists what goes with it: its 3 files, its 3 mistakes waiting in review, and everything made from them. It says plainly "This can't be undone." There is no "type DELETE" field; that is only for deleting the whole account. Cancel is a ghost button and has focus when the dialog opens, so Enter or Esc is always safe. "Delete project" is the one red button, with a dark label.</p>
+<p class="caption"><b>Delete a project: confirmation.</b> The dialog names the project in its title and has one short paragraph: the project moves to Deleted projects, is permanently deleted after 30 days, and can be restored until then. Deleting is soft, so there is no list of losses and no "This can't be undone." (those belong to "Delete forever", section 6c). There is no "type DELETE" field; that is only for deleting the whole account. Cancel is a ghost button and has focus when the dialog opens, so Enter or Esc is always safe. "Delete project" is NOT red: this step can be reversed, and red is kept for irreversible final buttons such as "Delete forever". It is the standard primary button (indigo fill, dark label), the same as Send and Restore.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app rel">
@@ -224,22 +243,16 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     <div class="scrim">
       <div class="dialog" role="alertdialog" aria-label="Delete Biology — Cell Division">
         <h2>Delete Biology — Cell Division?</h2>
-        <p class="lead">This deletes the project and everything in it:</p>
-        <ul class="lose">
-          <li>Its files <span>3 files</span></li>
-          <li>Its mistakes <span>3 mistakes waiting in your review</span></li>
-          <li>Generated material <span>quizzes, flashcards, summaries and chats</span></li>
-        </ul>
-        <p class="final">This can't be undone.</p>
+        <p class="lead" style="margin-bottom:0">Biology — Cell Division moves to Deleted projects and is permanently deleted after 30 days. You can restore it until then.</p>
         <div class="dfoot">
           <span class="btn ghost focus">Cancel</span>
-          <span class="btn danger">Delete project</span>
+          <span class="btn primary">Delete project</span>
         </div>
       </div>
     </div>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Vil du slette Biology — Cell Division?" <i>(proposed)</i> · "Dette sletter prosjektet og alt i det:" <i>(proposed)</i> · "Filene · 3 filer" <i>(proposed)</i> · "Feilene · 3 feil som venter i repetisjonen din" <i>(proposed)</i> · "Laget materiale · quizer, kort, sammendrag og samtaler" <i>(proposed)</i> · "Dette kan ikke angres." <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Slett prosjekt" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Vil du slette Biology — Cell Division?" <i>(proposed)</i> · "Biology — Cell Division flyttes til Slettede prosjekter og slettes for godt etter 30 dager. Du kan gjenopprette det frem til da." <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Slett prosjekt" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 3: RENAME IN PROGRESS (INLINE, SIDEBAR ROW) ============ -->
 <p class="caption"><b>Rename in progress.</b> Emma chose "Rename" from the menu. The Biology row turns into a text field in place, with the whole name selected so she can type over it, and the focus ring around the field. A small muted hint under it reads "Enter to save · Esc to cancel", the same keys as renaming from the top-bar title. The "···" trigger is hidden while editing. Clicking outside the field saves, like Enter. The top-bar title updates once the name is saved.</p>
@@ -276,7 +289,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 <p class="caption nb"><b>Norwegian:</b> "Prosjektnavn" (field label) <i>(proposed)</i> · "Enter for å lagre · Esc for å avbryte" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 4a: AFTER ARCHIVING GENETICS (COLLAPSED GROUP + MESSAGE) ============ -->
-<p class="caption"><b>Just archived Genetics.</b> Emma chose "Archive" on Genetics — Inheritance Patterns while Biology was open. There is no confirmation: Genetics leaves the main list at once, so Projects now shows two. At the bottom of the sidebar, just above "+ New project", a collapsed row "Archived (1)" appears. A small neutral message at the bottom of the main area says "Genetics — Inheritance Patterns archived" with an "Undo" button; it uses the plain surface, not red, amber or green, and fades after a few seconds. Focus goes back to the Projects list, not to the message, but "Undo" can be reached with Tab while it shows.</p>
+<p class="caption"><b>Just archived Genetics.</b> Emma chose "Archive" on Genetics — Inheritance Patterns while Biology was open. There is no confirmation: Genetics leaves the main list at once, so Projects now shows two. At the bottom of the sidebar, just above "+ New project", a collapsed row "Archived (1)" appears. A small neutral message at the bottom of the main area says "Genetics — Inheritance Patterns archived" with an "Undo" button; it uses the plain surface, not red, amber or green, and disappears after 6 seconds, but stays while it is hovered or focused. Focus goes back to the Projects list, not to the message, but "Undo" can be reached with Tab while it shows.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -305,10 +318,10 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "{prosjekt} arkivert · Angre" <i>(proposed)</i> · "Arkivert ({n})" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "{prosjekt} er arkivert · Angre" <i>(proposed)</i> · "Arkivert ({n})" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 4b: ARCHIVED GROUP EXPANDED ============ -->
-<p class="caption"><b>Archived group expanded.</b> A moment later the message has gone. Emma clicks "Archived (1)" (or presses Enter on it) and the group opens upward from its place above "+ New project". Genetics — Inheritance Patterns is listed in muted text, indented under the group heading. The group stays as she left it (open or closed) next time. Clicking Genetics opens it read-only, shown next.</p>
+<p class="caption"><b>Archived group expanded.</b> A moment later the message has gone. Emma clicks "Archived (1)" (or presses Enter on it) and the group opens upward from its place above "+ New project". Genetics — Inheritance Patterns is listed in muted text, indented under the group heading. The group is collapsed by default; it opens only when she selects it. Clicking Genetics opens it read-only, shown next.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -395,7 +408,124 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Arkivert" <i>(proposed)</i> · "Du kan lese alt her. Gjenopprett prosjektet for å chatte, øve eller laste opp igjen." <i>(proposed)</i> · "Gjenopprett" <i>(proposed)</i> · "Prosjektet er arkivert. Gjenopprett det for å chatte eller øve." <i>(proposed)</i> · "Slett prosjekt" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Arkivert" <i>(proposed)</i> · "Du kan lese alt her. Gjenopprett prosjektet for å fortsette samtalen, øve eller laste opp igjen." <i>(proposed)</i> · "Gjenopprett" <i>(proposed)</i> · "Prosjektet er arkivert. Gjenopprett det for å fortsette samtalen eller øve." <i>(proposed)</i> · "Slett prosjekt" <i>(proposed)</i></p>
+
+<!-- ============ SECTION 6a: DELETED PROJECTS GROUP, COLLAPSED ============ -->
+<p class="caption"><b>After deleting a project: "Deleted projects (1)".</b> Later, Emma deleted Organic Chemistry — Reactions with the dialog above. It left the main list and went to a new collapsed group, "Deleted projects (1)", just below "Archived (1)" and above "+ New project". It looks and works like the Archived group: muted text, a small arrow, Enter or a click opens it.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <div class="grow"></div>
+      <div class="archhead" role="button" aria-expanded="false"><span class="tw">▸</span>Archived (1)</div>
+      <div class="archhead" role="button" aria-expanded="false"><span class="tw">▸</span>Deleted projects (1)</div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="work">
+        <section class="chatcol">
+          <div class="chatin">
+            <div class="mcard"><div><strong>3 mistakes to review</strong><span class="sub">From your recent quizzes. Practice them whenever you're ready.</span></div><span class="btn ghost sm">Start</span></div>
+            <div class="me"><p>What does the kinetochore actually do?</p></div>
+          </div>
+        </section>
+        <aside class="files" aria-label="Files"><div class="fhead"><h2>Files<span>· 3 of 10</span></h2></div></aside>
+      </div>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Slettede prosjekter ({n})" <i>(proposed)</i> · "Arkivert ({n})" <i>(proposed)</i></p>
+
+<!-- ============ SECTION 6b: DELETED PROJECTS EXPANDED + MENU ============ -->
+<p class="caption"><b>Deleted projects expanded, with the project menu open.</b> Organic Chemistry — Reactions is listed in muted text, with "Deleted · 30 days left" under it; the count goes down each day. Its "···" menu has only "Restore" and, after a divider, "Delete forever", both in normal text. "Restore" puts the project back in the main list with everything in it. Until then the project opens read-only, like an archived one.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <div class="grow"></div>
+      <div class="archhead" role="button" aria-expanded="false"><span class="tw">▸</span>Archived (1)</div>
+      <div class="archhead" role="button" aria-expanded="true"><span class="tw">▾</span>Deleted projects (1)</div>
+      <div class="archlist">
+        <div class="delrow sel">
+          <a class="proj del">Organic Chemistry — Reactions</a>
+          <span class="dleft">Deleted · 30 days left</span>
+          <span class="pmore open focus" role="button" aria-haspopup="menu" aria-expanded="true" aria-label="More options for Organic Chemistry — Reactions">···</span>
+          <div class="pmenu" role="menu" style="top:auto;bottom:calc(100% + 4px)">
+            <div class="mi hover" role="menuitem">Restore</div>
+            <div class="msep" role="separator"></div>
+            <div class="mi" role="menuitem">Delete forever</div>
+          </div>
+        </div>
+      </div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="work">
+        <section class="chatcol">
+          <div class="chatin">
+            <div class="mcard"><div><strong>3 mistakes to review</strong><span class="sub">From your recent quizzes. Practice them whenever you're ready.</span></div><span class="btn ghost sm">Start</span></div>
+            <div class="me"><p>What does the kinetochore actually do?</p></div>
+          </div>
+        </section>
+        <aside class="files" aria-label="Files"><div class="fhead"><h2>Files<span>· 3 of 10</span></h2></div></aside>
+      </div>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Slettet · 30 dager igjen" <i>(proposed)</i> · "Gjenopprett" <i>(proposed)</i> · "Slett for godt" <i>(proposed)</i></p>
+
+<!-- ============ SECTION 6c: DELETE FOREVER, CONFIRM DIALOG ============ -->
+<p class="caption"><b>Delete forever: confirmation.</b> Emma chose "Delete forever". This one can't be reversed, so the dialog says so in bold and lists what goes. Cancel is a ghost button with focus when the dialog opens; "Delete forever" is the one red button, with a dark label (the documented red exception for irreversible final buttons). Still no "type DELETE" field; that stays for the account only.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app rel">
+    <aside class="side" style="z-index:auto">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <div class="grow"></div>
+      <div class="archhead"><span class="tw">▸</span>Archived (1)</div>
+      <div class="archhead"><span class="tw">▾</span>Deleted projects (1)</div>
+      <div class="archlist"><a class="proj del">Organic Chemistry — Reactions</a><span class="dleft">Deleted · 30 days left</span></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="work">
+        <section class="chatcol"><div class="chatin"><div class="mcard"><div><strong>3 mistakes to review</strong></div><span class="btn ghost sm">Start</span></div></div></section>
+        <aside class="files" aria-label="Files"><div class="fhead"><h2>Files<span>· 3 of 10</span></h2></div></aside>
+      </div>
+    </main>
+    <div class="scrim">
+      <div class="dialog" role="alertdialog" aria-label="Delete Organic Chemistry — Reactions forever">
+        <h2>Delete Organic Chemistry — Reactions forever?</h2>
+        <p class="lead">This permanently deletes the project and everything in it:</p>
+        <ul class="lose">
+          <li>Its files <span>4 files</span></li>
+          <li>Its mistakes <span>5 mistakes</span></li>
+          <li>Generated material <span>quizzes, flashcards, summaries and chats</span></li>
+        </ul>
+        <p class="final">This can't be undone.</p>
+        <div class="dfoot">
+          <span class="btn ghost focus">Cancel</span>
+          <span class="btn danger">Delete forever</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Vil du slette Organic Chemistry — Reactions for godt?" <i>(proposed)</i> · "Dette sletter prosjektet og alt i det for godt:" <i>(proposed)</i> · "Dette kan ikke angres." <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Slett for godt" <i>(proposed)</i></p>
 
 </body>
 </html>

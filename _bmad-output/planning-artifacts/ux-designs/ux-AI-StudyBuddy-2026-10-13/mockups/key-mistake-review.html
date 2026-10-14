@@ -22,7 +22,13 @@
                   is gone (State 2). Chat bar uses the single 'History' link (#90.1, #92) instead of
                   'Most recent chat · View all chats'.
                   Norwegian captions: confirmed strings (#82, #97) unmarked; all others '(proposed)'
-    Source: memlog 2026-10-13; PRD UJ-2, FR-9, FR-17, FR-18, §5 active-count rules
+    ADDED (memlog 2026-10-14, consistency-check answer 3): State 1c 'Round done': after 20 practice questions
+                  with mistakes left: 'Round done. {n} mistakes still to review.' + 'Review mistakes' (primary,
+                  starts a new round of up to 20) + '← Back to chat'. Neutral surface panel, indigo primary
+                  button; NOT amber and NOT the All cleared panel (EXPERIENCE Strings by surface › Round done panel).
+                  Chat bar: 'New chat' + 'History' as primary-indigo text links, no border (DESIGN New chat button,
+                  History link). Norwegian: Chat = 'samtale' ('Tilbake til samtalen') per memlog 2026-10-14.
+    Source: memlog 2026-10-13; memlog 2026-10-14; PRD UJ-2, FR-9, FR-17, FR-18, §5 active-count rules
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -144,8 +150,17 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .done h2{font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:10px;color:var(--primary)}
 .done p{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:28px}
 .done .pair{display:flex;gap:10px;justify-content:center}
-.histlink{display:inline-flex;align-items:center;gap:6px;color:var(--text);font-size:13px;padding:5px 11px;border:1px solid var(--line-2);border-radius:8px;white-space:nowrap}
-.histlink svg{width:15px;height:15px;color:var(--muted)}
+/* New chat + History: the words in primary indigo, caption size, no border (DESIGN New chat button, History link) */
+.histlink{display:inline-flex;align-items:center;gap:6px;color:var(--primary);font-size:13px;min-height:44px;padding:0 8px;border-radius:8px;white-space:nowrap}
+.histlink svg{width:15px;height:15px;color:var(--primary)}
+.cbr{display:flex;align-items:center;gap:8px}
+/* Round done: 20 practice questions answered, mistakes still left. Neutral surface + indigo primary action;
+   NOT amber (no mistake context here) and NOT the All cleared panel (no tick, no indigo headline) */
+.rdone{flex:1;display:flex;align-items:center;justify-content:center;padding:48px}
+.rdone .box{text-align:center;max-width:480px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:32px 36px}
+.rdone h2{font-size:20px;font-weight:600;letter-spacing:-.015em;margin-bottom:8px;color:var(--text)}
+.rdone p{color:var(--muted);font-size:14.5px;line-height:1.7;margin-bottom:24px}
+.rdone .pair{display:flex;gap:10px;justify-content:center}
 </style>
 </head>
 <body>
@@ -238,7 +253,40 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Alt er repetert! Bra jobba." · "Repetisjon av feil" · "Du har repetert alle de 3 feilene fra quizene dine." <i>(proposed)</i> · "Lag en ny quiz" <i>(proposed)</i> · "← Tilbake til chatten" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Alt er repetert! Bra jobba." · "Repetisjon av feil" · "Du har repetert alle de 3 feilene fra quizene dine." <i>(proposed)</i> · "Lag en ny quiz" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
+
+<!-- ============ STATE 1c: ROUND DONE (20 PRACTICE QUESTIONS, MISTAKES LEFT) ============ -->
+<p class="caption"><b>Round done.</b> A later week: Emma had 24 mistakes in Biology. One Mistake Review round makes at most 20 practice questions; she has worked through all 20 and cleared most of them, but 4 mistakes are still to review. The round ends with "Round done. 4 mistakes still to review." on a plain surface panel with no tick and no celebration, so it is not the All cleared panel, and it is not amber either. "Review mistakes" is the primary button (indigo fill, dark label) and starts a new round of up to 20 practice questions from the mistakes that are left; "← Back to chat" sits beside it and in the header. Back in the chat, the card reads "4 mistakes to review".</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Mistake Review · Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:520px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="abar"><span class="back">← Back to chat</span><span class="title">Mistake Review</span></div>
+      <section class="rdone" role="status">
+        <div class="box">
+          <h2>Round done. 4 mistakes still to review.</h2>
+          <p>Your progress is saved.</p>
+          <div class="pair">
+            <span class="btn primary focus">Review mistakes</span>
+            <span class="btn ghost">← Back to chat</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Runden er ferdig. 4 feil igjen å repetere." <i>(proposed)</i> · "Fremgangen din er lagret." <i>(proposed)</i> · "Repeter feil" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
 
 <!-- ============ STATE 2: ZERO MISTAKES, CHAT HOME WITHOUT CARD ============ -->
 <p class="caption"><b>Back in the chat after "All cleared": no card.</b> Once every mistake is cleared, the chat home simply has no mistakes card. There's no "0 mistakes" label, no empty review screen, and nothing nudging Emma to do more. The chat starts right at the top.</p>
@@ -262,7 +310,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="chatin">
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread">
               <div class="me"><p>What does the kinetochore actually do?</p></div>

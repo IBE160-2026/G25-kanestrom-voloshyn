@@ -18,7 +18,16 @@
                   Google accounts: Google name/email/picture read-only; email accounts show initials,
                   'Change password', 'Link Google account' (override #71, not shown here);
                   Language labels 'English / Norsk' (#59, #77); Account menu top right (#41)
-    Source: memlog 2026-10-13 entries 45, 55, 59, 62, 67, 71, 77
+    ADDED (memlog 2026-10-14): 'Your data' copy follows soft project deletion (project restorable for 30 days,
+                  account deletion stays immediate + typed DELETE). State 3: email+password account not yet verified
+                  (C4): Account shows initials, 'Not verified yet', 'Resend verification email' link (emailed link
+                  valid 24 hours). Verification gates Google linking ONLY: 'Change password' stays enabled;
+                  only 'Link Google account' is disabled (reduced opacity, never red) with 'Verify your email first'.
+                  All state-3 copy proposed.
+    UPDATED (consistency check 2026-10-14): M3 Change password re-enabled in state 3; M12 'Delete a project' lists
+                  the projects, each with Delete; delete-account losses name Projects in Deleted projects.
+    Source: memlog 2026-10-13 entries 45, 55, 59, 62, 67, 71, 77; memlog 2026-10-14 C4, soft deletion,
+            consistency-check answers (1)
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -70,6 +79,10 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .row .d{color:var(--muted);font-size:13px;margin-top:2px}
 .seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;padding:3px;gap:2px}
 .seg span{padding:5px 14px;border-radius:6px;font-size:13px;color:var(--muted);white-space:nowrap}
+.plist{list-style:none;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin:0 0 14px}
+.plist li{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:8px 8px 8px 14px;font-size:13.5px;border-top:1px solid var(--line)}
+.plist li:first-child{border-top:none}
+.plist .btn{padding:6px 12px;font-size:13px}
 .seg span.on{background:rgba(108,124,255,.14);color:var(--text)}
 /* Dialog */
 .scrim{position:absolute;inset:0;background:rgba(8,9,12,.72);display:flex;align-items:center;justify-content:center}
@@ -84,13 +97,19 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .fld label b{color:var(--text);font-weight:600;letter-spacing:.04em}
 .input{height:42px;border:1px solid var(--line-2);border-radius:8px;background:var(--bg);display:flex;align-items:center;padding:0 12px;font-size:14px;letter-spacing:.04em}
 .dfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+/* Unverified email account (state 3) */
+.off{opacity:.38}
+.link{color:var(--primary);font-size:12.5px;margin-left:4px}
+.unver{color:var(--muted)}
+.caption.nb{font-size:12px;margin:-36px auto 48px;border-left:2px solid var(--line-2);padding-left:10px}
+.caption.nb i{font-style:normal;opacity:.7}
 </style>
 </head>
 <body>
 <p class="caption sample">Sample data: names, projects, files and counts are placeholders, kept consistent across these mocks. In the real app they come from the account.</p>
 
 <!-- ============ STATE 1: SETTINGS PAGE ============ -->
-<p class="caption"><b>Settings, one page, three sections.</b> Opened from Settings in the account menu. Account: Emma signed in with Google, so her name, email and picture come from Google and can't be edited here; Log out sits beside them. Language: English / Norsk. Your data: delete a single project, or the whole account. Each delete asks for confirmation first.</p>
+<p class="caption"><b>Settings, one page, three sections.</b> Opened from Settings in the account menu. Account: Emma signed in with Google, so her name, email and picture come from Google and can't be edited here; Log out sits beside them. Language: English / Norsk. Your data: "Delete a project" lists her projects, each with its own Delete (it opens the same delete-project dialog as the sidebar); or delete the whole account. Each delete asks for confirmation first; a deleted project can be restored for 30 days, the account cannot.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Settings · Study Buddy</span></div>
   <div class="app">
@@ -129,11 +148,15 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 
         <div class="sec">
           <h2>Your data</h2>
-          <p class="lead">Deleting is permanent. We'll always ask you to confirm first.</p>
+          <p class="lead">A deleted project can be restored for 30 days. Deleting your account is permanent. We'll always ask you to confirm first.</p>
           <div class="row">
-            <div><div class="t">Delete a project</div><div class="d">Removes one project with its files, mistakes and everything made from them.</div></div>
-            <span class="btn ghost">Delete a project</span>
+            <div><div class="t">Delete a project</div><div class="d">Moves one project to Deleted projects. After 30 days it is permanently deleted with its files, mistakes and everything made from them.</div></div>
           </div>
+          <ul class="plist">
+            <li>Biology — Cell Division <span class="btn ghost">Delete</span></li>
+            <li>Genetics — Inheritance Patterns <span class="btn ghost">Delete</span></li>
+            <li>Organic Chemistry — Reactions <span class="btn ghost">Delete</span></li>
+          </ul>
           <div class="row">
             <div><div class="t">Delete my account and all my files</div><div class="d">Removes your account, every project and everything in them.</div></div>
             <span class="btn ghost focus">Delete my account</span>
@@ -145,7 +168,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 </div>
 
 <!-- ============ STATE 2: DELETE ACCOUNT DIALOG ============ -->
-<p class="caption"><b>Delete my account: confirmation.</b> The dialog names exactly what goes (files, mistakes, generated material), says plainly that it can't be undone, and asks Emma to type DELETE (SLETT in Norwegian). The red Delete button stays disabled until the word matches; here she has typed it, so it's enabled. Cancel is always safe.</p>
+<p class="caption"><b>Delete my account: confirmation.</b> The dialog names exactly what goes (files, mistakes, generated material, including any projects waiting in Deleted projects), says plainly that it can't be undone, and asks Emma to type DELETE (SLETT in Norwegian). The red Delete button stays disabled until the word matches; here she has typed it, so it's enabled. Cancel is always safe.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Settings · Study Buddy</span></div>
   <div class="app" style="min-height:760px">
@@ -176,6 +199,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <li>Your files <span>7 files in 3 projects</span></li>
           <li>Your mistakes <span>everything waiting in your review</span></li>
           <li>Generated material <span>quizzes, flashcards, summaries and chats</span></li>
+          <li>Projects in Deleted projects <span>deleted now, not after 30 days</span></li>
         </ul>
         <p class="final">This can't be undone.</p>
         <div class="fld">
@@ -190,6 +214,51 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </div>
   </div>
 </div>
+
+<!-- ============ STATE 3: EMAIL ACCOUNT, NOT YET VERIFIED ============ -->
+<p class="caption"><b>Account section: email account, not verified yet.</b> If Emma had created her account with email and password instead of Google, and hasn't clicked the link in her verification email, Settings shows her initials, her email with "Not verified yet", and a "Resend verification email" link; the link in that email is valid for 24 hours. "Change password" works as normal, verified or not. Only "Link Google account" is disabled (reduced opacity, not red) with the plain reason "Verify your email first": Google can only be linked once the email is verified. All copy here is proposed.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Settings · Study Buddy</span></div>
+  <div class="app" style="min-height:420px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Settings</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <section class="content">
+        <div class="sec">
+          <h2>Account</h2>
+          <p class="lead">You signed up with email and password.</p>
+          <div class="who" style="margin-bottom:18px">
+            <div class="pic" aria-label="Initials">EN</div>
+            <div class="grow">
+              <div class="name">Emma Nilsen</div>
+              <div class="mail">emma.nilsen@gmail.com · <span class="unver">Not verified yet</span></div>
+              <div class="via">We sent you a link to verify this email. The link is valid for 24 hours. <a class="link focus">Resend verification email</a></div>
+            </div>
+            <span class="btn ghost">Log out</span>
+          </div>
+          <div class="row" style="border-top:1px solid var(--line);padding-top:14px">
+            <div><div class="t">Password</div><div class="d">Change the password you log in with.</div></div>
+            <span class="btn ghost">Change password</span>
+          </div>
+          <div class="row">
+            <div><div class="t">Google</div><div class="d">Verify your email first</div></div>
+            <span class="btn ghost off" aria-disabled="true">Link Google account</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Du registrerte deg med e-post og passord." <i>(proposed)</i> · "Ikke bekreftet ennå" <i>(proposed)</i> · "Vi har sendt deg en lenke for å bekrefte denne e-postadressen." <i>(proposed)</i> · "Send bekreftelsen på nytt" <i>(proposed)</i> · "Lenken er gyldig i 24 timer." <i>(proposed)</i> · "Endre passordet du logger inn med." <i>(proposed)</i> · "Endre passord" <i>(proposed, always enabled)</i> · "Bekreft e-postadressen din først" <i>(proposed, only on Koble til Google-konto)</i> · "Koble til Google-konto" <i>(proposed)</i> · "Logg ut" <i>(proposed)</i></p>
 
 </body>
 </html>

@@ -27,6 +27,8 @@
                   #62 failure pattern, #83 sample data, #90.2 finished-generation message + History
   Not invented: no count picker (Summarize has none), no 'Ask about this' action (not in the spines);
   UJ-3 returns to chat via '← Back to chat'.
+  UPDATED (memlog 2026-10-14 Norwegian terms): Chat = 'samtale' in every NO caption ('← Tilbake til samtalen',
+  'Du kan gå tilbake til samtalen.').
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -170,7 +172,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Oppsummer" <i>(proposed)</i> · "Lag et sammendrag" <i>(proposed)</i> · "Sammendrag lages bare fra filene dine, hver del med kilde." <i>(proposed)</i> · "Hvilken fil?" <i>(proposed)</i> · "Begrens til ett emne (valgfritt)" <i>(proposed)</i> · "Hele filen" <i>(proposed)</i> · "Lag sammendrag" <i>(proposed)</i> · "← Tilbake til chatten" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Oppsummer" <i>(proposed)</i> · "Lag et sammendrag" <i>(proposed)</i> · "Sammendrag lages bare fra filene dine, hver del med kilde." <i>(proposed)</i> · "Hvilken fil?" <i>(proposed)</i> · "Begrens til ett emne (valgfritt)" <i>(proposed)</i> · "Hele filen" <i>(proposed)</i> · "Lag sammendrag" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 2: SUMMARY READING SCREEN ============ -->
 <p class="caption"><b>The summary, as a reading screen.</b> A calm column at reading width, reading-size type with generous line height. Every part ends with source labels ("filename · slide N"), and nothing appears that isn't in the slides. The summary is written in the language of the material (English here), whatever the UI language. At the end: a quiet "Saved to History" line and "← Back to chat", which is where UJ-3 continues: Emma goes back to ask about the part she still doesn't get.</p>
@@ -244,7 +246,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian (UI strings only; the summary follows the material's language):</b> "Oppsummer · {fil}" <i>(proposed)</i> · "Sammendrag av {fil} · hele filen" <i>(proposed)</i> · "{fil} · lysbilde {N}" <i>(proposed)</i> · "Lagret i historikken" <i>(proposed)</i> · "← Tilbake til chatten" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian (UI strings only; the summary follows the material's language):</b> "Oppsummer · {fil}" <i>(proposed)</i> · "Sammendrag av {fil} · hele filen" <i>(proposed)</i> · "{fil} · lysbilde {N}" <i>(proposed)</i> · "Lagret i historikken" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 3a: GENERATING ============ -->
 <p class="caption"><b>Making the summary.</b> Same calm progress steps and Cancel as the Quiz. Cancel goes back to the setup with the file and topic still chosen. Emma can also go back to the chat; the summary keeps going, and when it's done a quiet message appears there, "Your summary of {file} is ready · Open", and it's saved to History. The step labels are adapted for a summary (the spine's labels are written for questions).</p>
@@ -278,7 +280,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Lager sammendraget ditt" <i>(proposed)</i> · "Hele {fil}. Dette kan ta opptil ett minutt." <i>(proposed)</i> · "Leser stoffet ditt" <i>(proposed)</i> · "Skriver sammendraget" <i>(proposed)</i> · "Sjekker kildene" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Du kan gå tilbake til chatten. Vi sier fra der når det er klart." <i>(proposed)</i> · "Sammendraget ditt av {fil} er klart · Åpne" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Lager sammendraget ditt" <i>(proposed)</i> · "Hele {fil}. Dette kan ta opptil ett minutt." <i>(proposed)</i> · "Leser stoffet ditt" <i>(proposed)</i> · "Skriver sammendraget" <i>(proposed)</i> · "Sjekker kildene" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Du kan gå tilbake til samtalen. Vi sier fra der når det er klart." <i>(proposed)</i> · "Sammendraget ditt av {fil} er klart · Åpne" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 3b: GENERATION ERROR ============ -->
 <p class="caption"><b>The summary couldn't be made.</b> The network or AI failed. A short inline message in red (a system error, so red), a line saying nothing she has made is lost, and "Try again", which has focus. It sits on the setup, so Emma's file and topic choices are still selected and she doesn't redo anything.</p>

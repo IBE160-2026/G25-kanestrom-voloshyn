@@ -44,7 +44,27 @@
                   New project icon button with its tooltip shown; project list hidden; chat and Files panel
                   widen. State saved to account; reduced motion = instant. Section 15 (narrow window, < 1024px):
                   BOTH the Projects sidebar and the Files panel start collapsed.
-    Source: memlog 2026-10-13 entries 23-99 (overrides win); PRD UJ-1, UJ-3, FR-4..FR-9, FR-16, FR-18
+    ADDED (memlog 2026-10-14, C10 several chats + topic limit):
+                  'New chat' button beside History in every chat bar (same .histlink bordered style, '+' icon);
+                  section 16: fresh empty chat (proposed copy) + History filtered to Chats showing several chats.
+                  Topic count on each file's meta line ('6 topics', ~1 per 5 pages/slides, min 3, photo = 1 page);
+                  section 17: large file at the 100-topic ceiling, topics grouped by chapter, groups collapsed
+                  (> ~20 topics), one expanded, list scrollable (static scrolled view + faux scrollbar), muted note
+                  'Large file, some topics are grouped.'; merge interaction (2 chips selected + Merge) is PROPOSED.
+    UPDATED (consistency check 2026-10-14; supersedes the older notes above where they differ):
+                  M4 Remove file dialog uses the EXPERIENCE strings verbatim: title 'Remove {file}?', body
+                  'Quizzes, flashcards, and summaries made from this file stay.' + 'Its mistakes stay in your
+                  review.', checkbox 'Also remove its mistakes from my review', buttons 'Cancel' · 'Remove'
+                  (Button danger); Reading… variant 'Reading stops and the file won't be added.' NO: 'Vil du
+                  fjerne {fil}?', 'Fjern også feilene fra repetisjonen min', 'Avbryt' · 'Fjern'.
+                  M5 file trigger accessible name 'More options for {file}' / 'Flere valg for {fil}'.
+                  M11 New chat + History = the words in primary indigo, caption size, no border (DESIGN New chat
+                  button, History link); 44px hit area. M7/D2 Merge per spine: Ctrl+click or Space selects chips
+                  (selected chip style), a small ghost 'Merge' at the end of the list; no tick circles or bar;
+                  Tab reaches group rows and chips, Enter/Space toggles a group.
+                  E9/M6 Norwegian (memlog 2026-10-14): Chat = 'samtale' ('Ny samtale', 'Samtaler', 'Tilbake til
+                  samtalen'); Flashcards = 'Treningskort'; material = 'stoffet'.
+    Source: memlog 2026-10-13 entries 23-99 (overrides win); PRD UJ-1, UJ-3, FR-4..FR-9, FR-16, FR-18, FR-20, FR-22
 */
 :root{
   --bg:#0F1115; --surface:#171A21; --text:#E6E8EE; --muted:#9AA3B2;
@@ -171,8 +191,9 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .caption.nb i{font-style:normal;opacity:.7}
 .ico{width:15px;height:15px;flex:none;display:inline-block;vertical-align:-3px}
 /* History link in the chat bar (keyboard reachable; replaces 'Most recent chat · View all chats') */
-.histlink{display:inline-flex;align-items:center;gap:6px;color:var(--text);font-size:13px;padding:5px 11px;border:1px solid var(--line-2);border-radius:8px;white-space:nowrap}
-.histlink .ico{color:var(--muted)}
+/* Per DESIGN New chat button / History link: the words in primary indigo, caption size, no border; 44px hit area */
+.histlink{display:inline-flex;align-items:center;gap:6px;color:var(--primary);font-size:13px;min-height:44px;padding:0 8px;border-radius:8px;white-space:nowrap}
+.histlink .ico{color:var(--primary)}
 /* History view (opens in place of the chat, activity header like Quiz/Flashcards) */
 .abar{display:flex;align-items:center;gap:16px;padding:14px 32px;border-bottom:1px solid var(--line)}
 .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text);border:1px solid var(--line-2);border-radius:8px;padding:6px 12px}
@@ -239,13 +260,35 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 .strip.left{border-left:none;border-right:1px solid var(--line);position:relative;z-index:6}
 .strip .iconbtn{position:relative;width:44px;height:44px;border-radius:8px;border:1px dashed var(--line-2);display:flex;align-items:center;justify-content:center;color:var(--text);font-size:18px;line-height:1}
 .tip{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--surface);border:1px solid var(--line-2);border-radius:6px;padding:4px 9px;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;z-index:7}
+/* Chat bar right cluster: New chat + History, same plain indigo text-link style */
+.cbr{display:flex;align-items:center;gap:8px}
+/* Fresh empty chat */
+.chatempty{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:260px}
+.chatempty h2{font-size:20px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}
+.chatempty p{color:var(--muted);font-size:14px;line-height:1.65;max-width:440px}
+/* Large file: grouped topic list (chapter/section headings, collapsed by default above ~20 topics) */
+.tgroups{margin:10px 0 0;position:relative;border:1px solid var(--line);border-radius:8px;height:430px;overflow:hidden}
+.tgscroll{padding:6px 14px 6px 6px}
+.tgfade{position:absolute;left:0;right:0;height:22px;pointer-events:none}
+.tgfade.t{top:0;background:linear-gradient(var(--bg),rgba(15,17,21,0))}
+.tgfade.b{bottom:0;background:linear-gradient(rgba(15,17,21,0),var(--bg))}
+.sbar{position:absolute;top:6px;bottom:6px;right:3px;width:4px;border-radius:2px;background:rgba(230,232,238,.05)}
+.sbar i{position:absolute;left:0;right:0;top:44%;height:16%;border-radius:2px;background:rgba(230,232,238,.22);display:block}
+.tg{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 8px;border-radius:6px;font-size:12.5px}
+.tg .tw{color:var(--muted);width:10px;font-size:10px;flex:none}
+.tg .tn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg .tc{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.tg.open{background:rgba(230,232,238,.04)}
+.tgbody{padding:6px 8px 10px 26px;display:flex;flex-wrap:wrap;gap:6px}
+/* Merge (per spine): selected chips take the selected style; a small ghost 'Merge' appears at the end of the list */
+.chip.sel{border-color:var(--primary);background:rgba(108,124,255,.12)}
 </style>
 </head>
 <body>
 <p class="caption sample">Sample data: names, projects, files and counts are placeholders, kept consistent across these mocks. In the real app they come from the account.</p>
 
 <!-- ============ SECTION 1: PROJECT HOME, RETURNING VISIT ============ -->
-<p class="caption"><b>Project home: the chat, with the Files panel open.</b> Emma opens Biology — Cell Division. A card at the top says she has 3 mistakes to review, but nothing starts until she clicks Start. The chat answers only from her files and labels each source as "filename · slide N". Quiz, Flashcards and Summarize sit in the chat, just above the input. On the right: "Files · 2 of 10" (the rejected photo doesn't count), a Ready file with an indigo dot, a partly unreadable one with a hollow muted dot, and a rejected one in red. Topics can be edited in place. Beside the wordmark, a small muted "‹" button hides the Projects sidebar (44×44 target, labelled "Hide projects").</p>
+<p class="caption"><b>Project home: the chat, with the Files panel open.</b> Emma opens Biology — Cell Division. A card at the top says she has 3 mistakes to review, but nothing starts until she clicks Start. The chat answers only from her files and labels each source as "filename · slide N". Quiz, Flashcards and Summarize sit in the chat, just above the input. On the right: "Files · 2 of 10" (the rejected photo doesn't count), a Ready file with an indigo dot, a partly unreadable one with a hollow muted dot, and a rejected one in red. Each file shows its topic count ("6 topics", about one per five slides, at least 3 per file), and topics can be edited in place. In the chat bar, "New chat" sits left of History in the same style: the words in indigo, caption size, no border, with a 44px hit area. Beside the wordmark, a small muted "‹" button hides the Projects sidebar (44×44 target, labelled "Hide projects").</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app">
@@ -273,7 +316,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
 
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
 
             <div class="thread">
@@ -313,13 +356,15 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="file">
             <div class="frow">
               <div class="ftype">PPTX</div>
-              <div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div>
+              <div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div>
               <span class="more">···</span>
             </div>
             <div class="topics">
               <span class="chip">Cell cycle <span class="x">×</span></span>
               <span class="chip">Mitosis <span class="x">×</span></span>
               <span class="chip">Meiosis <span class="x">×</span></span>
+              <span class="chip">Mitotic spindle <span class="x">×</span></span>
+              <span class="chip">Crossing over <span class="x">×</span></span>
               <span class="chip editing">Cytokinesis<span class="caret"></span></span>
               <span class="chip add">+ Add topic</span>
               <span class="hint">Click a topic to rename it</span>
@@ -329,13 +374,14 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="file">
             <div class="frow">
               <div class="ftype">JPG</div>
-              <div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div>
+              <div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div>
               <span class="more">···</span>
             </div>
             <p class="note">We couldn't read all of this page, so a few notes near the bottom may be missing. Everything we could read is ready to study.</p>
             <div class="topics">
               <span class="chip">Meiosis <span class="x">×</span></span>
               <span class="chip">Crossing over <span class="x">×</span></span>
+              <span class="chip">Homologous chromosomes <span class="x">×</span></span>
               <span class="chip add">+ Add topic</span>
             </div>
           </div>
@@ -353,7 +399,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> sidebar button label "Skjul prosjekter" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> sidebar button label "Skjul prosjekter" <i>(proposed)</i> · "Ny samtale" <i>(proposed)</i> · "6 emner" / "3 emner"</p>
 
 <!-- ============ SECTION 2: ACCOUNT MENU OPEN ============ -->
 <p class="caption"><b>Account menu open, reached by keyboard.</b> The trigger shows the focus ring (2px indigo outline, 2px offset). The menu holds Settings, Language (English / Norsk, each in its own name), a thin divider, and Log out last. Log out is normal text and turns red only on desktop hover.</p>
@@ -390,7 +436,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread"><div class="me"><p>What is the difference between mitosis and meiosis?</p></div></div>
           </div>
@@ -476,7 +522,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink focus"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink focus"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread"><div class="me"><p>What does the kinetochore actually do?</p></div></div>
             <div class="tools"><span class="lbl">Study this material</span><span class="btn ghost">Quiz</span><span class="btn ghost">Flashcards</span><span class="btn ghost">Summarize</span></div>
@@ -486,9 +532,9 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
         <aside class="files" aria-label="Files">
           <div class="fhead"><h2>Files<span>· 3 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
           <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
-          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="more">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="more">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="more">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="more">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="more">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · 3 topics · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="more">···</span></div></div>
         </aside>
       </div>
     </main>
@@ -529,7 +575,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Historikk" <i>(proposed)</i> · "Alle" <i>(proposed)</i> · "Chatter" <i>(proposed)</i> · "Quizer" <i>(proposed)</i> · "Flashkort" <i>(proposed)</i> · "Sammendrag" <i>(proposed)</i> · "17 av 20 riktige" <i>(proposed)</i> · "I dag" / "I går" <i>(proposed)</i> · "← Tilbake til chatten" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Historikk" <i>(proposed)</i> · "Alle" <i>(proposed)</i> · "Samtaler" <i>(proposed)</i> · "Quizer" <i>(proposed)</i> · "Treningskort" <i>(proposed)</i> · "Sammendrag" <i>(proposed)</i> · "17 av 20 riktige" <i>(proposed)</i> · "I dag" / "I går" <i>(proposed)</i> · "← Tilbake til samtalen" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 6: HISTORY EMPTY ============ -->
 <p class="caption"><b>History, empty.</b> In the new Chemistry project nothing has been made yet, so History says "Nothing here yet" with one plain line about what will show up. No illustration, no nudge.</p>
@@ -563,7 +609,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Ingenting her ennå" <i>(proposed, memlog #92)</i> · "Chatter, quizer, flashkortsett og sammendrag du lager i dette prosjektet, dukker opp her." <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Ingenting her ennå" <i>(proposed, memlog #92)</i> · "Samtaler, quizer, treningskort og sammendrag du lager i dette prosjektet, dukker opp her." <i>(proposed)</i></p>
 
 <!-- ============ SECTION 7: HISTORY LOADING ============ -->
 <p class="caption"><b>History, loading.</b> Skeleton rows in the shape of the list hold the space while it loads. The filter is already usable. The skeletons are static (no shimmer), so nothing moves for people who prefer reduced motion.</p>
@@ -657,7 +703,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread"></div>
           </div>
@@ -666,22 +712,22 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="fhead"><h2>Files<span>· 3 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
           <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
           <div class="file">
-            <div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div>
-              <span class="morebtn open focus" role="button" aria-haspopup="menu" aria-expanded="true" aria-label="More for lecture-04-cell-division.pptx">···</span>
+            <div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div>
+              <span class="morebtn open focus" role="button" aria-haspopup="menu" aria-expanded="true" aria-label="More options for lecture-04-cell-division.pptx">···</span>
             </div>
             <div class="fmenu" role="menu"><div class="mi hover" role="menuitem">Remove</div></div>
           </div>
-          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · 3 topics · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
         </aside>
       </div>
     </main>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Fjern" <i>(proposed)</i> · trigger label "Mer for {fil}" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Fjern" <i>(proposed)</i> · trigger label "Flere valg for {fil}" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 10: REMOVE FILE, CONFIRM DIALOG ============ -->
-<p class="caption"><b>Remove a file: confirmation.</b> The dialog says plainly what stays: quizzes, flashcards and summaries already made from the file. Two of Emma's three quiz mistakes came from these slides; they stay in her review unless she ticks "Also remove them from review", which starts unticked. Cancel has focus; "Remove file" is the one red button (the documented exception for final remove/delete buttons), with a dark label.</p>
+<p class="caption"><b>Remove a file: confirmation.</b> The dialog says plainly what stays: quizzes, flashcards and summaries already made from the file. Two of Emma's three quiz mistakes came from these slides; they stay in her review unless she ticks "Also remove its mistakes from my review", which starts unticked (the checkbox is hidden when the file has no mistakes). Cancel has focus; "Remove" is the one red button (the documented exception for final remove/delete buttons), with a dark label.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app rel" style="min-height:560px">
@@ -705,23 +751,23 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     <div class="scrim">
       <div class="dialog" role="alertdialog" aria-label="Remove lecture-04-cell-division.pptx">
         <h2>Remove lecture-04-cell-division.pptx?</h2>
-        <p class="lead">The file leaves this project and frees up a slot. <b>Quizzes, flashcards and summaries made from it stay.</b></p>
+        <p class="lead">Quizzes, flashcards, and summaries made from this file stay.</p>
         <div class="keep">
-          <p>Your 2 mistakes from this file stay in review.</p>
-          <div class="cbx"><span class="box" role="checkbox" aria-checked="false"></span>Also remove them from review</div>
+          <p>Its mistakes stay in your review.</p>
+          <div class="cbx"><span class="box" role="checkbox" aria-checked="false"></span>Also remove its mistakes from my review</div>
         </div>
         <div class="dfoot">
           <span class="btn ghost focus">Cancel</span>
-          <span class="btn danger">Remove file</span>
+          <span class="btn danger">Remove</span>
         </div>
       </div>
     </div>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Fjerne lecture-04-cell-division.pptx?" <i>(proposed)</i> · "Filen fjernes fra prosjektet, og du får en ledig plass. Quizer, flashkort og sammendrag laget fra den, blir liggende." <i>(proposed)</i> · "De 2 feilene dine fra denne filen blir liggende i repetisjonen." <i>(proposed)</i> · "Fjern dem også fra repetisjonen" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Fjern fil" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Vil du fjerne lecture-04-cell-division.pptx?" <i>(proposed)</i> · "Quizer, treningskort og sammendrag laget fra denne filen blir liggende." <i>(proposed)</i> · "Feilene fra den ligger fortsatt i repetisjonen din." <i>(proposed)</i> · "Fjern også feilene fra repetisjonen min" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Fjern" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 11: REMOVE A FILE STILL BEING READ ============ -->
-<p class="caption"><b>Remove a file that's still "Reading…".</b> Emma dropped her genetics slides into Biology by mistake. While a file is being read it already holds a slot ("Files · 4 of 10"). Removing it is allowed straight away and stops the reading. The dialog is short, because nothing has been made from it yet.</p>
+<p class="caption"><b>Remove a file that's still "Reading…".</b> Emma dropped her genetics slides into Biology by mistake. While a file is being read it already holds a slot ("Files · 4 of 10"). Removing it is allowed straight away and stops the reading. The dialog is short (one sentence and the two buttons), because nothing has been made from it yet.</p>
 <div class="browser">
   <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
   <div class="app rel" style="min-height:520px">
@@ -747,17 +793,17 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
     </main>
     <div class="scrim">
       <div class="dialog" role="alertdialog" aria-label="Remove lecture-05-genetics-intro.pdf">
-        <h2>Stop reading this file and remove it?</h2>
-        <p class="lead"><b>lecture-05-genetics-intro.pdf</b> is still being read. Nothing has been made from it yet.</p>
+        <h2>Remove lecture-05-genetics-intro.pdf?</h2>
+        <p class="lead">Reading stops and the file won't be added.</p>
         <div class="dfoot">
           <span class="btn ghost focus">Cancel</span>
-          <span class="btn danger">Remove file</span>
+          <span class="btn danger">Remove</span>
         </div>
       </div>
     </div>
   </div>
 </div>
-<p class="caption nb"><b>Norwegian:</b> "Slutte å lese denne filen og fjerne den?" <i>(proposed)</i> · "{fil} leses fortsatt. Ingenting er laget fra den ennå." <i>(proposed)</i> · "Leser…" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Fjern fil" <i>(proposed)</i></p>
+<p class="caption nb"><b>Norwegian:</b> "Vil du fjerne lecture-05-genetics-intro.pdf?" <i>(proposed)</i> · "Lesingen stopper, og filen blir ikke lagt til." <i>(proposed)</i> · "Leser…" <i>(proposed)</i> · "Avbryt" <i>(proposed)</i> · "Fjern" <i>(proposed)</i></p>
 
 <!-- ============ SECTION 12: AFTER REMOVAL, COUNTER DECREMENTED ============ -->
 <p class="caption"><b>After removing.</b> The genetics PDF is gone and its slot is free (4 of 10 → 3 of 10). Then Emma also removed the lecture slides with the box left unticked: Files drops to 2 of 10, and the card still says 3 mistakes, because those 2 mistakes stayed in her review. (Had she ticked the box, the card would read 1.)</p>
@@ -785,15 +831,15 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
           </div>
         </section>
         <aside class="files" aria-label="Files">
           <div class="fhead"><h2>Files<span>· 2 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
           <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
-          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · 3 topics · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
         </aside>
       </div>
     </main>
@@ -827,7 +873,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread">
               <div class="me"><p>What does the kinetochore actually do?</p></div>
@@ -873,7 +919,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread">
               <div class="me"><p>What does the kinetochore actually do?</p></div>
@@ -891,9 +937,9 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
           <div class="fhead"><h2>Files<span>· 3 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
           <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
           <p class="fhint">Or drop files anywhere here · PDF, Word, PowerPoint, text, Markdown, images · up to 50 MB each</p>
-          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
-          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · 3 topics · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
         </aside>
       </div>
     </main>
@@ -921,7 +967,7 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
             </div>
             <div class="chatbar">
               <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
-              <a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
             </div>
             <div class="thread">
               <div class="me"><p>What does the kinetochore actually do?</p></div>
@@ -946,6 +992,160 @@ body{background:#08090C;color:var(--text);font-family:Inter,system-ui,-apple-sys
   </div>
 </div>
 <p class="caption nb narrowcap"><b>Norwegian:</b> "Vis prosjekter" <i>(proposed)</i> · "Nytt prosjekt" <i>(proposed)</i> · "3 av 10" <i>(proposed)</i> · mistakes card: "Du har 3 feil å repetere" · "Historikk" <i>(proposed)</i></p>
+
+<!-- ============ SECTION 16: NEW CHAT (FRESH, EMPTY) + HISTORY WITH SEVERAL CHATS ============ -->
+<p class="caption"><b>New chat: a fresh, empty conversation.</b> Emma clicked "New chat" to start on a new question. The earlier chat isn't gone: it is saved and listed in History. The thread area shows a short empty state; the mistakes card, the scope picker, the tool buttons and the input work as usual. "New chat" keeps the focus ring after the click. The empty-state copy is proposed.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:560px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="work">
+        <section class="chatcol">
+          <div class="chatin">
+            <div class="mcard">
+              <div class="l"><strong>3 mistakes to review</strong><span class="sub">From your recent quizzes. Practice them whenever you're ready.</span></div>
+              <div class="r"><span>·</span><span class="btn ghost sm">Start</span></div>
+            </div>
+            <div class="chatbar">
+              <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
+              <span class="cbr"><a class="histlink focus"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
+            </div>
+            <div class="chatempty">
+              <div>
+                <h2>Ask anything about your material</h2>
+                <p>Answers come only from the files in this project, with the source under each one. Your earlier chats are in History.</p>
+              </div>
+            </div>
+            <div class="tools"><span class="lbl">Study this material</span><span class="btn ghost">Quiz</span><span class="btn ghost">Flashcards</span><span class="btn ghost">Summarize</span></div>
+            <div class="composer"><span class="ph">Ask anything about your material…</span><span class="btn primary">Send</span></div>
+          </div>
+        </section>
+        <aside class="files" aria-label="Files">
+          <div class="fhead"><h2>Files<span>· 3 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
+          <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
+          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">JPG</div><div class="fbody"><div class="fname">handwritten-notes-p1.jpg</div><div class="fmeta">Image · 3 topics · added Oct 9</div><span class="status st-warn"><span class="dot"></span>Ready, partly unreadable</span></div><span class="morebtn">···</span></div></div>
+          <div class="file"><div class="frow"><div class="ftype">IMG</div><div class="fbody"><div class="fname">Handwritten notes, 5 pages</div><div class="fmeta">From your phone · 3 topics · added Oct 12</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Ny samtale" <i>(proposed)</i> · "Spør om hva som helst i stoffet ditt." <i>(proposed)</i> · "Svarene kommer bare fra filene i dette prosjektet, med kilden under hvert svar. De tidligere samtalene dine ligger i Historikk." <i>(proposed)</i></p>
+
+<p class="caption"><b>History, filtered to Chats: several chats per project.</b> Each chat keeps its own history and is listed separately, newest first. Clicking a row reopens that chat where Emma left off, and she can keep asking in it. The new chat shows up here once she has sent its first message.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">History · Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:460px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="abar"><span class="back">← Back to chat</span><span class="title">History</span></div>
+      <section class="hist">
+        <div class="hhead">
+          <h2>History</h2>
+          <span class="seg" role="radiogroup" aria-label="Filter by type"><span>All</span><span class="on">Chats</span><span>Quizzes</span><span>Flashcards</span><span>Summaries</span></span>
+        </div>
+        <div class="hrow"><span class="htype">Chat</span><div class="hmain"><div class="htitle">How is anaphase I different from anaphase II?</div><div class="hmeta">2 messages · all materials</div></div><span class="hdate">Today, 15:05</span></div>
+        <div class="hrow"><span class="htype">Chat</span><div class="hmain"><div class="htitle">What does the kinetochore actually do?</div><div class="hmeta">2 messages · all materials</div></div><span class="hdate">Today, 13:40</span></div>
+        <div class="hrow"><span class="htype">Chat</span><div class="hmain"><div class="htitle">Explain crossing over using my notes</div><div class="hmeta">6 messages · handwritten-notes-p1.jpg</div></div><span class="hdate">Yesterday</span></div>
+        <div class="hrow"><span class="htype">Chat</span><div class="hmain"><div class="htitle">What is the difference between mitosis and meiosis?</div><div class="hmeta">4 messages · all materials</div></div><span class="hdate">Oct 10</span></div>
+      </section>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "Samtaler" <i>(proposed)</i> · "2 meldinger · alt stoffet" <i>(proposed)</i> · "I dag" / "I går" <i>(proposed)</i></p>
+
+<!-- ============ SECTION 17: LARGE FILE, GROUPED TOPICS + MERGE (PROPOSED) ============ -->
+<p class="caption"><b>A large file: 100 topics, grouped by chapter.</b> Emma adds her biology textbook (512 pages). It hits the ceiling of 100 topics, so the file shows "100 topics" and a muted gray note "Large file, some topics are grouped." (nothing is dropped; extra content sits under broader topics). With more than 20 topics, the list is grouped by the book's chapters and every group starts collapsed, showing its name and count. Emma has scrolled to Chapter 12 and expanded it. The list scrolls inside the file card and works with the keyboard: Tab reaches each group row and chip, and Enter or Space opens or closes a group.</p>
+<p class="caption"><b>Merging two topics.</b> In Chapter 12 she spotted two topics that mean the same thing. She selected "Mitotic phase" and "Stages of mitosis" with Ctrl+click (or Space on a focused chip); selected chips take the indigo selected style. With two or more chips selected, a small ghost "Merge" appears at the end of the list. Merging combines them into one topic, which opens for rename, and only changes this file. The label "Merge" is still an assumption.</p>
+<div class="browser">
+  <div class="chrome"><i></i><i></i><i></i><span class="tabtitle">Biology — Cell Division · Study Buddy</span></div>
+  <div class="app" style="min-height:820px">
+    <aside class="side">
+      <div class="wordmark">Study Buddy</div>
+      <h6>Projects</h6>
+      <a class="proj on">Biology — Cell Division</a>
+      <a class="proj">Genetics — Inheritance Patterns</a>
+      <a class="proj">Organic Chemistry — Reactions</a>
+      <div class="grow"></div>
+      <a class="newproj">+ New project</a>
+      <p class="credit">© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved.</p>
+    </aside>
+    <main class="main">
+      <div class="top"><h1>Biology — Cell Division</h1><div class="acct"><span class="avatar">E</span>Welcome, Emma<span class="chev">▾</span></div></div>
+      <div class="work">
+        <section class="chatcol">
+          <div class="chatin">
+            <div class="mcard">
+              <div class="l"><strong>3 mistakes to review</strong><span class="sub">From your recent quizzes. Practice them whenever you're ready.</span></div>
+              <div class="r"><span>·</span><span class="btn ghost sm">Start</span></div>
+            </div>
+            <div class="chatbar">
+              <div class="scope">Answer from <span class="seg"><span class="on">All materials</span><span>One file<span class="caret">▾</span></span></span></div>
+              <span class="cbr"><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3.5v9M3.5 8h9"/></svg>New chat</a><a class="histlink"><svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.25"/><path d="M8 4.5V8l2.5 1.5"/></svg>History</a></span>
+            </div>
+            <div class="thread"></div>
+          </div>
+        </section>
+        <aside class="files" aria-label="Files">
+          <div class="fhead"><h2>Files<span>· 4 of 10</span></h2><span class="collapse" aria-label="Hide files">›</span></div>
+          <div class="uprow"><span class="btn ghost sm">Upload</span><span class="btn ghost sm">Upload from phone</span></div>
+          <div class="file"><div class="frow"><div class="ftype">PPTX</div><div class="fbody"><div class="fname">lecture-04-cell-division.pptx</div><div class="fmeta">32 slides · 6 topics · added Oct 9</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div></div>
+          <div class="file">
+            <div class="frow"><div class="ftype">PDF</div><div class="fbody"><div class="fname">biology-textbook-ch1-20.pdf</div><div class="fmeta">512 pages · 100 topics · added Oct 14</div><span class="status st-ready"><span class="dot"></span>Ready</span></div><span class="morebtn">···</span></div>
+            <p class="note" style="margin-left:0">Large file, some topics are grouped.</p>
+            <div class="tgroups" role="tree" aria-label="Topics in biology-textbook-ch1-20.pdf, 100 topics">
+              <div class="tgscroll">
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 9 · Cellular respiration</span><span class="tc">6 topics</span></div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 10 · Photosynthesis</span><span class="tc">5 topics</span></div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 11 · Cell communication</span><span class="tc">4 topics</span></div>
+                <div class="tg open focus" role="treeitem" aria-expanded="true"><span class="tw">▾</span><span class="tn">Ch. 12 · The cell cycle</span><span class="tc">7 topics</span></div>
+                <div class="tgbody" role="group">
+                  <span class="chip">Cell cycle overview</span>
+                  <span class="chip">Interphase</span>
+                  <span class="chip sel" aria-pressed="true">Mitotic phase</span>
+                  <span class="chip sel focus" aria-pressed="true">Stages of mitosis</span>
+                  <span class="chip">Mitotic spindle</span>
+                  <span class="chip">Cytokinesis</span>
+                  <span class="chip">Cell cycle control system</span>
+                  <span class="btn ghost sm">Merge</span>
+                </div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 13 · Meiosis and sexual life cycles</span><span class="tc">5 topics</span></div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 14 · Mendel and the gene idea</span><span class="tc">6 topics</span></div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 15 · The chromosomal basis of inheritance</span><span class="tc">5 topics</span></div>
+                <div class="tg" role="treeitem" aria-expanded="false"><span class="tw">▸</span><span class="tn">Ch. 16 · The molecular basis of inheritance</span><span class="tc">5 topics</span></div>
+              </div>
+              <span class="tgfade t"></span><span class="tgfade b"></span>
+              <span class="sbar" aria-hidden="true"><i></i></span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+<p class="caption nb"><b>Norwegian:</b> "100 emner" · "Stor fil, noen emner er gruppert." · "Kap. 12 · Cellesyklusen" <i>(proposed)</i> · "7 emner" · "Slå sammen" <i>(proposed)</i></p>
 
 </body>
 </html>
