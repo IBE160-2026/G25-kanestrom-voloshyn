@@ -24,7 +24,7 @@ Create the V1 architecture spine with `bmad-architecture` (Coaching path), refre
   - CLAUDE.md has `@AGENTS.md` plus the sesjonslogg section.
   - PROJECT-CONTEXT.md stays deleted, as on main.
   - The AGENTS.md pointer was moved to the spec.
-- **Update started:** commit `a89ea05` logs the start of the spine Update. The branches `architecture-spine` and `feature/architecture-update` are deleted locally. `main` is not pushed.
+- **Update started:** commit `a89ea05` logs the start of the spine Update. The branches `architecture-spine` and `feature/architecture-update` are deleted locally. `main` was pushed to GitHub (`22fc9f0..07e11db`).
 - **Impact analysis:** a subagent analysis of the revised PRD and UX against the spine was still running at the end of the session. Report: `.../architecture-AI-StudyBuddy-2026-10-13/reviews/update-impact-2026-10-27.md`.
 
 ### Åpne punkter
