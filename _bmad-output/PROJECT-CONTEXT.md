@@ -1,7 +1,7 @@
 ---
 title: "Project Context: AI Study Buddy"
 purpose: "Onboarding doc for a teammate starting a fresh Claude Code chat on this project"
-updated: 2026-10-13
+updated: 2026-10-27
 ---
 
 # Project Context: AI Study Buddy
@@ -38,8 +38,11 @@ This project uses the **BMAD-METHOD v6.12.0** framework (already installed — s
 - **PRD (final):**
   `_bmad-output/planning-artifacts/prds/prd-AI-StudyBuddy-2026-10-06/prd.md`
   (+ `.memlog.md`, `review-rubric.md`, `reconcile-brief.md` — review/audit trail)
+- **Architecture spine (final):**
+  `_bmad-output/planning-artifacts/architecture/architecture-AI-StudyBuddy-2026-10-13/ARCHITECTURE-SPINE.md`
+  (+ `.memlog.md` — why each decision was made; `reviews/` — reviewer-gate reports)
 
-Both carry `status: final` in their frontmatter. Nothing past the PRD has been started yet.
+All three carry `status: final` in their frontmatter. No application code exists yet.
 
 ## 3. Current status
 
@@ -47,9 +50,10 @@ Both carry `status: final` in their frontmatter. Nothing past the PRD has been s
 |---|---|---|
 | Product Brief | **Final** | ~1–2 pages, approved as-is |
 | PRD | **Final** | 18 FRs, 3 UJs, reviewer-gate passed after fixes |
-| UX spec | Not started | Natural next step (`bmad-ux`) |
-| Architecture | Not started | Natural next step (`bmad-architecture`); one `[NOTE FOR PM]` in the PRD is routed here |
-| Epics/Stories | Not started | Comes after UX/architecture (`bmad-create-epics-and-stories`) |
+| Architecture | **Final** | 18 decisions (AD-1–AD-18); resolves the PRD's `[NOTE FOR PM]` (AD-6) |
+| Spec | Not started | Next step (`bmad-spec`), adopting the spine as a companion |
+| UX spec | Not started | `bmad-ux` — the spine leaves screens, styling, and routing library to it |
+| Epics/Stories | Not started | After spec/UX (`bmad-create-epics-and-stories`) |
 
 ## 4. Product Brief — condensed
 
@@ -110,10 +114,43 @@ Both carry `status: final` in their frontmatter. Nothing past the PRD has been s
 
 ### Open items
 - §9 Open Questions: none requiring a product decision remain.
-- One `[NOTE FOR PM]` outstanding, routed to architecture: the numeric confidence thresholds behind
-  the FR-7 accept/warn/reject OCR behavior.
+- The one `[NOTE FOR PM]` (numeric accept/warn/reject thresholds for FR-7 and §5.1) is now
+  resolved by the architecture spine's AD-6.
 - §10 Assumptions Index: 6 entries, all round-trip-verified against inline `[ASSUMPTION]` tags in
   the document.
+
+## 5b. Architecture — condensed
+
+Source: the architecture spine (§2). Cite decisions by ID (AD-n); the IDs never change.
+
+**Stack:** FastAPI backend (Python 3.14, uv) · React + Vite SPA in plain JavaScript (Node ≥ 22.12)
+· Supabase for Auth, Postgres, and file Storage · OpenRouter as the LLM provider, called through the
+official `openai` SDK · one Docker app container in which FastAPI serves both `/api/*` and the built SPA.
+
+**Shape:** a layered modular monolith — API routers → one service per feature → adapters (database,
+storage, LLM gateway, extraction). No microservices, job queues, or background workers.
+
+**Key decisions:**
+- **AD-1:** the browser talks to Supabase only to log in; all app data goes through FastAPI.
+- **AD-2:** one auth dependency; the 30-day session limit is enforced by the backend, because
+  Supabase's own session limit is a paid feature.
+- **AD-3 / AD-4:** all AI calls go through `backend/app/llm/`. `LLM_MODE=mock` returns fixed,
+  schema-valid responses, so the app and tests run without a key. Production never falls back to mock
+  silently.
+- **AD-5 / AD-6:** every upload becomes ordered Sections (PDF page, slide, heading, image). This
+  architecture sets the accept/warn/reject thresholds the PRD left open.
+- **AD-7:** a Selection Scope is a list of Section ids. Text is sent to the model directly within a
+  configurable token budget; Ask AI falls back to Postgres full-text search. No embeddings in V1.
+- **AD-9:** quiz and practice questions are 4-option multiple choice, scored deterministically
+  without an AI call.
+- **AD-10 / AD-11:** a single Mistakes service creates and clears Mistakes. Only a correct answer in
+  Mistake Review clears one; each review session covers at most 20 Mistakes.
+- **AD-12:** daily quotas (50 Ask AI messages, 25 images) are atomic Postgres counters.
+- **AD-16:** the schema and storage bucket change only through `supabase/migrations/`.
+- **AD-18:** one database transaction per request, and never an AI call inside an open write.
+
+**Planned grader run (verify once code exists):** copy `.env.example` to `.env` →
+`npx supabase start` (Docker) → `npx supabase db reset` → `docker compose up`.
 
 ## 6. Working conventions established in this project
 
@@ -135,14 +172,14 @@ If you continue planning work here, these patterns were used throughout and shou
 
 ## 7. Suggested next steps (not started — pick one and say so explicitly)
 
-- **`bmad-ux`** — UX/experience spec, building on the PRD's User Journeys.
-- **`bmad-architecture`** — technical design; this is where the FR-7 OCR confidence thresholds
-  get decided.
-- Either can come first; `bmad-create-epics-and-stories` naturally follows once one or both exist.
+- **`bmad-spec`** — adopt the architecture spine as a spec companion, keeping AD-1–AD-18 stable.
+- **`bmad-ux`** — UX/experience spec, building on the PRD's User Journeys; the spine leaves screens,
+  styling, and routing library to it.
+- **`bmad-create-epics-and-stories`** — follows once the spec (and ideally UX) exists.
 
 ## 8. How to resume in a new chat
 
-Point your Claude session at this file first (`_bmad-output/PROJECT-CONTEXT.md`), then at the brief
-and PRD above if you need exact wording. From there, treat the brief and PRD as approved — to
-change a final requirement, explain the conflict, propose the change, and wait for explicit
+Point your Claude session at this file first (`_bmad-output/PROJECT-CONTEXT.md`), then at the brief,
+PRD, and architecture spine above if you need exact wording. From there, treat all three as
+approved — to change a final requirement or architecture decision, explain the conflict, propose the change, and wait for explicit
 approval from Cristoffer or Ihor.
