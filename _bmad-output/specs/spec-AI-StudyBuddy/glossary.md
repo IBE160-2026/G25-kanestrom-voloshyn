@@ -30,6 +30,7 @@ The terms every capability, story, and test uses (PRD §3, plus architecture ter
 - **Mistake:** a Quiz question answered incorrectly, recorded with the Study Material it came from. It stays outstanding until it is cleared in Mistake Review, or until it is taken out of review when its material is removed.
 - **Mistake Review:** student-initiated practice built from outstanding Mistakes, in rounds of at most 20.
 - **Practice Question:** a multiple-choice question targeting one Mistake. When the Mistake's material was removed, the saved original question is reused instead.
+- **Privacy notice:** the one-time notice before an Account's first upload. It says that uploaded material is sent to an external AI service to generate study content. Uploading starts only after the student accepts it.
 - **Phone upload link:** a one-time, upload-only, short-lived link, shown as a QR code, that lets a phone send photos into one Project without logging in.
 - **Interface language:** English or Norwegian (bokmål) for the app's own text. It never changes the language of generated content.
 - **Settings:** where a student manages their Account, interface language, and data.

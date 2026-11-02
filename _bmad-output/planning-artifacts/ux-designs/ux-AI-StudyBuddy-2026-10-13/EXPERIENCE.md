@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-10-14
+updated: 2026-11-02
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -52,6 +52,7 @@ Each rule is stated once, in the section that owns it; other sections point to i
 | Mistakes card | Top of the chat when active mistakes > 0 | "{n} mistakes to review · Start" | FR-9, FR-17 | As PRD (card instead of tab is UI only) |
 | Files panel | Right of the project home; collapses to the Files strip | "Files · n of 10", file statuses, Topic list per file (edit, merge, delete, add), per-file "···" menu, Upload, Upload from phone | FR-6, FR-7, FR-20, FR-21, FR-22 | As PRD |
 | Remove file dialog | File row "···" → Remove | Confirm removing a file; optionally remove its mistakes from review | FR-20, FR-18 | As PRD |
+| Privacy notice | The Account's first Upload, drop, or "Upload from phone"; afterwards "How your files are used" in the Files panel | Says, once, that files are sent to an external AI service to make study material; the upload starts only after "Got it, upload" | FR-6, §5.3 | As PRD |
 | Quiz | Tool button "Quiz" | Pick topics and 5 / 10 / 20 questions (default 10), answer with feedback, score | FR-10, FR-11, FR-12, FR-22 | As PRD |
 | Flashcards | Tool button "Flashcards" | Pick 5 / 10 / 20 cards (default 10) and topics, flip, "Got it" / "Not yet" | FR-13, FR-14, FR-22 | As PRD |
 | Summarize | Tool button "Summarize" | Pick a file, optionally one of its topics, read the summary | FR-15, FR-22 | As PRD |
@@ -98,7 +99,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Say what stays when something is removed: generated material stays, mistakes stay unless the student opts out | Remove data silently or without saying what is kept |
 | Keep password-reset replies the same whether or not the email has an account | Reveal whether an email is registered |
 
-**Bilingual terms (confirmed).** This table becomes the binding glossary once the team signs off the (proposed) strings (see Open Questions). Use these terms consistently in buttons, headings, and Settings. The team writes the remaining Norwegian strings and follows this glossary.
+**Bilingual terms (confirmed).** This table becomes the binding glossary once the team signs off the (proposed) strings (see Open Questions). Use these terms consistently in buttons, headings, and Settings. Every V1 surface now has a drafted Norwegian string (Strings by surface); the team reviews them with [norwegian-strings-signoff.md](norwegian-strings-signoff.md).
 
 | English | Norwegian (bokmål) |
 |---|---|
@@ -113,7 +114,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Language labels | "English" and "Norsk", each in its own name, in every UI language |
 | Login toggle | EN \| NO |
 
-**Strings by surface.** English labels marked [ASSUMPTION] are not yet confirmed; every Norwegian string marked (proposed) still needs the team's check against the glossary.
+**Strings by surface.** English labels marked [ASSUMPTION] are not yet confirmed; every Norwegian string marked (proposed) still needs the team's check against the glossary and sign-off in [norwegian-strings-signoff.md](norwegian-strings-signoff.md). Counts with `{n}` need singular and plural forms in both languages (the sign-off checklist lists them). The app copies this table into `frontend/src/i18n/en.json` and `nb.json` (architecture AD-26).
 
 | Surface | English | Norwegian (bokmål) |
 |---|---|---|
@@ -189,10 +190,76 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Link Google account, email not verified | "Verify your email first" · "Resend verification email" | Bekreft e-postadressen din først · Send bekreftelseslenken på nytt (proposed) |
 | Verification email resent | "We've sent a new link. It works for 24 hours." [ASSUMPTION: copy] | Vi har sendt en ny lenke. Den virker i 24 timer. (proposed) |
 | Google takeover, one-time notice | "Your account now signs in with Google." | Kontoen din logger nå inn med Google. (proposed) |
-| Google sign-in, existing verified email account | "You already have an account with this email. Log in with your password once to link Google." | Du har allerede en konto med denne e-postadressen. Logg inn med passordet ditt én gang for å koble til Google. (proposed) |
 | Phone page, over image limit | "You can send {k} more photos today. {n} photos won't be sent." [ASSUMPTION: copy not confirmed] | Du kan sende {k} bilder til i dag. {n} bilder blir ikke sendt. (proposed) |
 | Phone page, photo over 50 MB | "This photo is over 50 MB and won't be sent." [ASSUMPTION: copy not confirmed] | Dette bildet er over 50 MB og blir ikke sendt. (proposed) |
 | Account deleted, login screen | "Your account and files have been deleted." | Kontoen din og filene dine er slettet. (proposed) |
+| Login, tagline | "Study from your own notes, with sources" | Studer fra dine egne notater, med kilder (proposed) |
+| Login, privacy line | "Your files are only used to create your study material." | Filene dine brukes bare til å lage studiemateriellet ditt. (proposed) |
+| Login, actions | "Sign in with Google" · "Log in" · "Forgot password?" · "Create account" | Logg inn med Google · Logg inn · Glemt passordet? · Opprett konto (proposed) |
+| Login and Create account, fields | "First name" · "Email" · "Password" [ASSUMPTION: labels] | Fornavn · E-post · Passord (proposed) |
+| Login, invalid email or password | "Wrong email or password." [ASSUMPTION: copy; generic, FR-2] | Feil e-post eller passord. (proposed) |
+| Sign-in failure or cancel | "Sign-in didn't work. Try again." | Innloggingen fungerte ikke. Prøv igjen. (proposed) |
+| Create account, password too short | "Use at least 8 characters." [ASSUMPTION: copy] | Bruk minst 8 tegn. (proposed) |
+| Password reset, request screen | "Reset your password" · "Send link" [ASSUMPTION: copy] | Tilbakestill passordet · Send lenke (proposed) |
+| Password reset, new-password screen | "Choose a new password" · "Save password" [ASSUMPTION: copy] | Velg et nytt passord · Lagre passordet (proposed) |
+| Password reset saved | "Your password is changed. Log in with the new one." [ASSUMPTION: copy] | Passordet er endret. Logg inn med det nye. (proposed) |
+| Email verified | "Your email is verified." [ASSUMPTION: copy] | E-postadressen din er bekreftet. (proposed) |
+| Projects page (empty) | "Create your first project" | Opprett ditt første prosjekt (proposed) |
+| Sidebar, new project | "+ New project" | + Nytt prosjekt (proposed) |
+| Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt (proposed) |
+| Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} (proposed) |
+| Upload drop zone | "Upload your notes to start" · "Upload from phone" | Last opp notatene dine for å starte · Last opp fra mobilen (proposed) |
+| Upload buttons | "Upload" · "Upload from phone" | Last opp · Last opp fra mobilen (proposed) |
+| Privacy notice, title | "Before your first upload" [ASSUMPTION: copy] | Før du laster opp første gang (proposed) |
+| Privacy notice, body | "Study Buddy sends your files to an external AI service (through OpenRouter) to make your quizzes, flashcards, summaries, and answers. Your files are used only for your own study material, aren't shared with other users, and aren't kept by the AI service." [ASSUMPTION: copy; claims limited to architecture AD-3] | Study Buddy sender filene dine til en ekstern KI-tjeneste (via OpenRouter) for å lage quizer, treningskort, sammendrag og svar til deg. Filene dine brukes bare til ditt eget studiemateriell, deles ikke med andre brukere og lagres ikke av KI-tjenesten. (proposed) |
+| Privacy notice, buttons and link | "Cancel" · "Got it, upload" · "How your files are used" · "Close" [ASSUMPTION: copy] | Avbryt · Forstått, last opp · Slik brukes filene dine · Lukk (proposed) |
+| File status | "Reading…" · "Ready" · "Ready, partly unreadable" · "Rejected" | Leser … · Klar · Klar, delvis uleselig · Avvist (proposed) |
+| File, partly unreadable note | "Everything we could read is ready to study." | Alt vi klarte å lese, er klart til bruk. (proposed) |
+| File, phone batch with unreadable pages | "Pages {pages} couldn't be read." [ASSUMPTION: copy] | Side {pages} kunne ikke leses. (proposed) |
+| File, unreadable image | "This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick." | Bildet er for uskarpt til å leses, så vi kan ikke studere fra det. Et skarpere bilde i godt lys pleier å hjelpe. (proposed) |
+| Upload, unsupported type | "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC." [ASSUMPTION: copy] | Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC. (proposed) |
+| Upload, over 50 MB | "This file is over 50 MB." [ASSUMPTION: copy] | Filen er over 50 MB. (proposed) |
+| Upload, 11th file | "A project can hold 10 files. Remove one to add another." [ASSUMPTION: copy] | Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny. (proposed) |
+| Upload, image limit reached | "You've used today's 25 images. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 25 bilder. Prøv igjen i morgen. (proposed) |
+| Topic list, add | "+ Add topic" | + Legg til emne (proposed) |
+| Chat, scope control | "All materials" · "One file" | Alt stoff · Én fil (proposed) |
+| Chat, composer | "Ask about your material" · "Send" [ASSUMPTION: placeholder] | Spør om stoffet ditt · Send (proposed) |
+| Tool buttons | "Quiz" · "Flashcards" · "Summarize" | Quiz · Treningskort · Oppsummer (proposed) |
+| Limit notice | "{n} messages left today" · "{n} images left today" | {n} meldinger igjen i dag · {n} bilder igjen i dag (proposed) |
+| Chat, message limit reached | "You've used today's 50 messages. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 50 meldinger. Prøv igjen i morgen. (proposed) |
+| Mistakes card, action | "Start" | Start (proposed) |
+| Quiz setup | "Make a quiz" · "Which topics?" · "All topics" [ASSUMPTION: copy] | Lag en quiz · Hvilke emner? · Alle emner (proposed) |
+| Answer option labels | "Your answer" · "Correct answer" | Ditt svar · Riktig svar (proposed) |
+| Feedback, correct | "Correct" [ASSUMPTION: copy] | Riktig (proposed) |
+| Score summary | "{correct} of {total} correct" · "Missed questions stay in your review." · "New quiz" [ASSUMPTION: copy] | {correct} av {total} riktige · Spørsmål du bommet på, ligger i repetisjonen din. · Ny quiz (proposed) |
+| Progress steps, cancel | "Cancel" | Avbryt (proposed) |
+| Generation cancelled | "Cancelled. Your choices are kept." [ASSUMPTION: copy] | Avbrutt. Valgene dine er beholdt. (proposed) |
+| Flashcards, actions | "Got it" · "Not yet" · "Stop for now" | Kan det · Ikke ennå · Stopp for nå (proposed) |
+| Flashcards, progress | "{n} of {total}" | {n} av {total} (proposed) |
+| Flashcard end screen | "{n} cards done. {m} needed a second try" · "Make more cards" | {n} treningskort ferdige. {m} trengte et nytt forsøk · Lag flere treningskort (proposed) |
+| Activity header, every activity | "← Back to chat" | ← Tilbake til samtalen (proposed) |
+| Mistake Review, progress | "{n} of {m} cleared" | {n} av {m} repetert (proposed) |
+| Mistake Review, context | "Your earlier answer" [ASSUMPTION: copy] | Det tidligere svaret ditt (proposed) |
+| Mistake Review, already starting | "Your practice questions are already being made." [ASSUMPTION: copy] | Øvingsspørsmålene dine lages allerede. (proposed) |
+| Account menu | "Settings" · "Language" · "Log out" | Innstillinger · Språk · Logg ut (proposed) |
+| Settings, sections | "Account" · "Language" · "Your data" | Konto · Språk · Dataene dine (proposed) |
+| Settings, account actions | "Change password" · "Link Google account" | Endre passord · Koble til Google-konto (proposed) |
+| Settings, sign-in method | "Signs in with Google" · "Signs in with email" [ASSUMPTION: copy] | Logger inn med Google · Logger inn med e-post (proposed) |
+| Settings, password changed | "Your password is changed." [ASSUMPTION: copy] | Passordet er endret. (proposed) |
+| Settings, delete account entry | "Delete my account and all my files" | Slett kontoen min og alle filene mine (proposed) |
+| Confirm dialog (delete account) | "Delete your account?" · "Your projects, including those in Deleted projects, and their files, mistakes, and generated material are deleted now. This can't be undone." · "Type DELETE to confirm" · "Cancel" · "Delete account" [ASSUMPTION: wording; meaning confirmed] | Vil du slette kontoen din? · Prosjektene dine, også de i Slettede prosjekter, med filer, feil og generert innhold, slettes nå. Dette kan ikke angres. · Skriv SLETT for å bekrefte · Avbryt · Slett kontoen (proposed) |
+| QR dialog | "Upload from phone" · "Waiting for photos…" · "This code works for 10 minutes and stops when you close this window." | Last opp fra mobilen · Venter på bilder … · Koden virker i 10 minutter og slutter å virke når du lukker dette vinduet. (proposed) |
+| Phone batch name | "Handwritten notes, {n} pages" | Håndskrevne notater, {n} sider (proposed) |
+| Phone page, header | "Uploading to {project}" [ASSUMPTION: copy] | Laster opp til {project} (proposed) |
+| Phone page, actions | "Take photos" · "Choose from gallery" · "Send {n} photos" | Ta bilder · Velg fra galleriet · Send {n} bilder (proposed) |
+| Phone page, countdown | "Link expires in {n} min" · last minute "Link expires in {m}:{ss}" | Lenken utløper om {n} min · Lenken utløper om {m}:{ss} (proposed) |
+| Phone page, expired | "This link has expired. Scan a new code on your computer." | Lenken er utløpt. Skann en ny kode på datamaskinen. (proposed) |
+| Phone page, sent | "Your photos are in {project}. Your computer shows when they're ready." · "Send more" [ASSUMPTION: copy] | Bildene er i {project}. Datamaskinen viser når de er klare. · Send flere (proposed) |
+| Phone page, project full | "This project already has 10 files, so these photos can't be added." [ASSUMPTION: copy] | Prosjektet har allerede 10 filer, så disse bildene kan ikke legges til. (proposed) |
+| Inline error, generic | "Something went wrong." · "Try again" [ASSUMPTION: copy] | Noe gikk galt. · Prøv igjen (proposed) |
+| Inline error, AI service down | "The AI service isn't responding right now." [ASSUMPTION: copy] | KI-tjenesten svarer ikke akkurat nå. (proposed) |
+| Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye stoff. Velg færre emner eller én fil. (proposed) |
+| Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. (proposed) |
 
 ## Component Patterns
 
@@ -251,7 +318,8 @@ Behavioral. Visual specs live in DESIGN.md Components, which uses the same compo
 |---|---|---|
 | Files panel | Right of the chat | Collapses to the Files strip. Header "Files · n of 10". Accepts drag and drop [ASSUMPTION: drop-on-panel from mock hint]. Archived or deleted: files can be read, not uploaded, removed, or retopiced. |
 | Files strip | Files panel collapsed | Files icon and "n of 10"; a warning icon when any file is partly unreadable or rejected, so a problem file is never hidden. The collapsed or expanded choice is saved to the account per Project. Below 1024px the panel always starts collapsed, overriding a remembered "expanded". Instant under reduced motion. |
-| Upload buttons | Files panel; Upload drop zone | "Upload" opens the file picker (FR-6 types, 50 MB each). "Upload from phone" opens the QR dialog. Disabled while archived or deleted. |
+| Upload buttons | Files panel; Upload drop zone | "Upload" opens the file picker (FR-6 types, 50 MB each). "Upload from phone" opens the QR dialog. Disabled while archived or deleted. Until the Account has accepted the Privacy notice, Upload, a drop, and "Upload from phone" open the Privacy notice first. |
+| Privacy notice | Before the Account's first upload (FR-6, §5.3) | Modal dialog, shown once per Account: title "Before your first upload", the body text in Strings by surface, "Cancel" and "Got it, upload" (Button (primary)). Cancel uploads nothing and keeps any dropped files out. "Got it, upload" saves the acceptance to the Account and continues the action that opened it (file picker, the dropped files, or the QR dialog). Never shown again after acceptance; the Files panel keeps a muted "How your files are used" link that reopens the text with only "Close". Calm, not a warning: no `{colors.error}`, no icon. |
 | File row | Files panel | Shows File status and the Topic count ("{n} topics"). Non-rejected rows have an Overflow menu (Remove). Rejected rows offer Remove directly: immediate, no confirmation. |
 | File status | File row, QR dialog | Reading…, Ready, Ready (partly unreadable), Rejected (State Patterns › Study Material). |
 | Topic chip | Topic list | AI-detected topics (FR-22). Click to rename (Enter saves), × deletes, "+ Add topic" adds. The student can merge or delete down to one topic; the file's last topic has no × and can't be deleted. Renaming, merging, and deleting change only that file's topics. Topics feed Quiz, Flashcards, and Summarize scope. |
@@ -292,10 +360,10 @@ Behavioral. Visual specs live in DESIGN.md Components, which uses the same compo
 |---|---|---|
 | Projects page (empty) | First sign-in with no Projects; after deleting the last active Project | "Create your first project" creates an empty Project and opens it. |
 | Login screen | Signed-out entry | Wordmark, "Study from your own notes, with sources", "Sign in with Google", email and password with "Log in", "Forgot password?", "Create account", privacy line "Your files are only used to create your study material.", EN \| NO toggle. |
-| Google button | Login, Create account | Starts Google sign-in (FR-19); takes first name and photo from the profile. An email that already has a verified password account does not complete sign-in until linked; a verified Google sign-in takes over an unverified email account with the same address (State Patterns › Account). |
+| Google button | Login, Create account | Starts Google sign-in (FR-19); takes first name and photo from the profile. An email that already has a verified password account signs in at once and the Google identity is linked to it, with no password step; a verified Google sign-in takes over an unverified email account with the same address (State Patterns › Account). |
 | Text input | Every text field, including the composer and inline renames | Keyboard shortcuts are disabled while focus is in a text input. |
 | Language toggle (login) | Login, Create account, Password reset | The Language switch, before sign-in. |
-| Error line | Login, Create account | Above the buttons after failure or cancel; buttons stay active, the typed email stays, and focus returns to the form [ASSUMPTION: kept email and focus return from mock]. Announced to assistive technology. The Google-linking guidance ("You already have an account with this email…") uses the same place but is not an error: it shows without the red treatment (DESIGN.md Error line). |
+| Error line | Login, Create account | Above the buttons after failure or cancel; buttons stay active, the typed email stays, and focus returns to the form [ASSUMPTION: kept email and focus return from mock]. Announced to assistive technology. |
 | Create account screen | Login, "Create account" | First name, email, password (at least 8 characters), or "Sign in with Google". Success lands on the Projects page (empty). Errors: State Patterns › Account. |
 | Password reset screens | Login, "Forgot password?" | Email request, then the emailed link opens a new-password screen (FR-3). States: State Patterns › Account. |
 | Settings section | Settings | Layout: IA › Settings (FR-27). "Link Google account" works only for an email account with a verified email; otherwise it shows "Verify your email first" with "Resend verification email", and does not start Google consent. Verification gates only Google linking: "Change password" is never disabled. After linking Google, both sign-in methods work; verification and link states in State Patterns › Account. Log out is immediate, with no confirmation. |
@@ -327,6 +395,7 @@ Behavioral. Visual specs live in DESIGN.md Components, which uses the same compo
 | Rejected (unreadable) | `{colors.error}` status and note saying why and what helps; Remove is immediate. A Reading… file that ends up rejected frees its slot. | No |
 | Rejected (unsupported type, over 50 MB, 11th file, 26th image today) | `{colors.error}` message naming the rule (FR-6, FR-7). Not added. In a phone batch, an over-50 MB photo or a photo past today's image limit is declined on its own and the rest of the batch is added (Phone link). | No |
 | Removed | Via the Remove file dialog. The row leaves, the slot frees, "n of 10" updates. Generated material stays. | No |
+| Privacy notice not yet accepted | The first Upload, drop, or "Upload from phone" opens the Privacy notice; nothing is uploaded and no phone link is created until "Got it, upload". The server also refuses uploads and phone links until acceptance is saved. | — |
 
 **Account (FR-1, FR-2, FR-3, FR-19, FR-27, §5.5).** Messages show in the Error line unless stated.
 
@@ -336,7 +405,7 @@ Behavioral. Visual specs live in DESIGN.md Components, which uses the same compo
 | Create account, password too short | At least 8 characters; no account until it is. [ASSUMPTION: message shown in the Error line; copy not confirmed] |
 | Sign-in failure or cancel | "Sign-in didn't work. Try again." (`{colors.error}`); buttons stay active. |
 | Invalid email login | Generic invalid-login message (FR-2). |
-| Google sign-in, email has a verified password account | "You already have an account with this email. Log in with your password once to link Google." in the Error line's place, without the red treatment (guidance, not an error). After one password login, Google is linked and both methods work. One Account per email (FR-1, FR-19). |
+| Google sign-in, email has a verified password account | Sign-in completes at once and the Google identity is linked to that Account; no password step and no linking message. Both sign-in methods then work. One Account per email (FR-1, FR-19 as amended 2026-11-02). |
 | Google sign-in, email has an unverified password account | The verified Google sign-in takes over that Account and sign-in completes (FR-19); no linking message. The old password stops working and every existing session of that Account ends. The student sees the one-time notice "Your account now signs in with Google." (Undo message, no action). |
 | Password reset requested | "If an account exists, we've sent a link", whether or not the account exists. The link is valid for 1 hour, works once, and any newer reset link replaces it (FR-3). |
 | Reset link opened (valid, unused, newest) | New-password screen. |
@@ -554,7 +623,7 @@ Emma, university biology student, first visit.
 
 1. On the Login screen, Emma selects "Create account" and enters her first name, email, and password (or uses "Sign in with Google", which takes her name from the profile).
 2. She lands on the Projects page (empty) and selects "Create your first project".
-3. The empty Project shows "Upload your notes to start". She drops her lecture slides on it; the file shows "Reading…", then "Ready".
+3. The empty Project shows "Upload your notes to start". She drops her lecture slides on it; because this is her first upload, the Privacy notice explains that her files go to an external AI service to make her study material, and she selects "Got it, upload". The file shows "Reading…", then "Ready".
 4. The Project name generates from the material, topics appear, and the composer and tool buttons enable.
 5. She selects Quiz, picks topics, and chooses 5, 10, or 20 questions (10 is preselected); the Too-little-material note appears if needed. Progress steps show while it generates.
 6. She answers with number keys and moves on with "Next question" (→); the last question shows "See results".
@@ -665,7 +734,7 @@ UX-only flow, derived from UJ-1 and FR-19 (the PRD has no separate journey for i
 Failure paths:
 
 - She cancels or sign-in fails → "Sign-in didn't work. Try again."; both ways in stay active.
-- Her Google email already has a verified password account → the account-linking message; after one password login, Google is linked to that Account and both methods work.
+- Her Google email already has a verified password account → she is signed in to that Account at once and Google is linked, with no password step; both methods then work.
 - Her Google email has an unverified password account → her verified Google sign-in takes over that Account: the old password stops working, all other sessions end, and she lands as in step 3 with the one-time notice "Your account now signs in with Google."
 - A student with an unverified email account selects "Link Google account" in Settings → "Verify your email first" with "Resend verification email"; nothing is linked until the emailed link (valid 24 hours) is opened.
 
@@ -704,6 +773,7 @@ Every scope change this spine made against the original PRD is now absorbed into
 | Several chats per Project: "New chat" starts a fresh conversation; older chats are in History; each chat persists | FR-16, Glossary (Chat) |
 | Topics scale with length: about 1 per 5 pages (about 500 words = 1 page for .txt, .md, .docx; slide or photo = 1 page), 3 to 100 per file at detection, extra grouped under broader topics, never dropped; Merge; edits down to 1 topic, affecting only their file; grouped Topic list with a topic count | FR-22, §5.2 |
 | Quiz length of 5, 10, or 20 questions (default 10); Too-little-material note | FR-10 |
+| A one-time Privacy notice before the Account's first upload says files are sent to an external AI service to make study material | FR-6, §5.3 (amended 2026-11-02) |
 | Accepted files can be removed with confirmation; the slot frees; generated material stays; mistakes stay unless the student opts out (Remove file dialog) | FR-20, FR-18, §5.4 |
 | One History list behind one History link, filterable by type; read-only results with "Do it again"; unfinished quizzes resumable | FR-25 |
 | Finished generation posts a quiet chat message and saves to History | FR-26 |
@@ -713,7 +783,7 @@ Every scope change this spine made against the original PRD is now absorbed into
 | Archive projects: no confirmation, Undo message, "Archived (n)" group, read-only until Restore, mistakes kept but no Mistakes card while archived | FR-23 |
 | A phone batch with an unreadable page becomes one "Ready, partly unreadable" Study Material naming the failed pages | FR-21, §5.1 |
 | Phone batches: 50 MB per photo, no maximum photos per batch; photos past the 25 images per day limit are declined individually and the rest go through | FR-6, FR-7, FR-21, §5.2 |
-| Sign in with Google alongside email and password; linking after one password login; takeover of an unverified email Account (old password stops, all sessions end, one-time notice); verification by emailed link (24 hours) gates Google linking only | FR-1, FR-19, FR-27, §5.5 |
+| Sign in with Google alongside email and password; a verified email Account is linked at once on Google sign-in (FR-19 as amended 2026-11-02); takeover of an unverified email Account (old password stops, all sessions end, one-time notice); verification by emailed link (24 hours) gates Google linking only | FR-1, FR-19, FR-27, §5.5 |
 | Sign-up asks for first name; Google accounts take it from the profile | FR-1, FR-19 |
 | Settings page (Account, Language, Your data) with Change password, Link Google account, Resend verification email, delete project, and delete account | FR-27, FR-28 |
 | Upload from phone via QR code; the phone page is a mobile surface in a desktop product; one batch = one Study Material; the page shows only the Project name | FR-21, §6 |
@@ -726,7 +796,7 @@ Every scope change this spine made against the original PRD is now absorbed into
 
 | Topic | Note |
 |---|---|
-| [NOTE FOR ARCHITECTURE] Account identity and linking | One Account per email (FR-1, FR-19, §5.5). The Account stores whether its email is verified; verification is by an emailed link valid 24 hours, resendable from Settings, and gates only Google linking (never Change password). Google can be linked to an email-and-password Account only once its email is verified: a Google sign-in matching a verified Account links after one password login, and Settings › "Link Google account" links explicitly. A verified Google sign-in matching an unverified Account takes that Account over (closes the pre-registration hijack hole): the unverified password is removed, every existing session of that Account is ended, and a one-time notice flag is set for the student. Enforce both rules server-side (State Patterns › Account). |
+| [NOTE FOR ARCHITECTURE] Account identity and linking | One Account per email (FR-1, FR-19, §5.5). The Account stores whether its email is verified; verification is by an emailed link valid 24 hours, resendable from Settings, and gates only Google linking (never Change password). Google can be linked to an email-and-password Account only once its email is verified: a Google sign-in matching a verified Account signs in and links at once (no password step), and Settings › "Link Google account" links explicitly. A verified Google sign-in matching an unverified Account takes that Account over (closes the pre-registration hijack hole): the unverified password is removed, every existing session of that Account is ended, and a one-time notice flag is set for the student. Enforce both rules server-side (State Patterns › Account). |
 | [NOTE FOR ARCHITECTURE] Password reset | Emailed link (FR-3), valid 1 hour, single-use, and invalidated by any newer reset link for the Account. The request reply is identical whether or not the Account exists (no account enumeration). Expired, used, and replaced links show the same expired state. |
 | [NOTE FOR ARCHITECTURE] Streaming chat answers | Ask AI answers stream to the client: first words within 5 seconds, complete within 15 seconds. The client needs an explicit completion signal to re-enable Send and to announce the answer to screen readers. |
 | [NOTE FOR ARCHITECTURE] Topic detection | Runs after extraction; topics are stored per Study Material and can be renamed, merged, deleted, and added, each change affecting only that file. Target about 1 topic per 5 pages (a page is about 500 words for .txt, .md, and .docx; each slide and each photo is 1 page), minimum 3 at detection, ceiling 100 per file; student edits may go down to 1 topic, and the server refuses deleting a file's last topic; above the ceiling, group extra content under broader topics, never drop it. The topic count is calculated server-side, never trusted from the client. Store chapter or section grouping when the file has it. A hand-added topic is a label that scopes generation within the Project's material; Content Integrity still applies (no content if the topic isn't in the material). |
@@ -750,6 +820,7 @@ Every scope change this spine made against the original PRD is now absorbed into
 
 ## Open Questions
 
-1. **Norwegian strings (pending team action):** Team sign-off of every Norwegian string tagged (proposed); the Voice and Tone term table (including Chat = samtale and Flashcards = Treningskort) becomes the binding glossary once signed off.
+1. **Norwegian strings (pending team sign-off):** Every V1 surface now has a drafted Norwegian string, tagged (proposed). Ihor and Cristoffer review and sign them off in [norwegian-strings-signoff.md](norwegian-strings-signoff.md); until both have signed, FR-29 is not complete. The Voice and Tone term table (including Chat = samtale and Flashcards = Treningskort) becomes the binding glossary on sign-off.
+2. **2026-11-02 changes need Cristoffer's review:** the Google-linking state now follows the approved FR-19 amendment (verified Account linked at once, no password step), and the Privacy notice before the first upload is new (FR-6, §5.3). Ihor approved both; Cristoffer owns this spine and should confirm the wording.
 
 Content Integrity thresholds and the AI provider's data-use terms are routed to architecture (Notes for Architecture; PRD §9).

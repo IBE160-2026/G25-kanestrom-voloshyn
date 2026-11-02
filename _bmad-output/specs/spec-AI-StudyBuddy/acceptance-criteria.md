@@ -64,6 +64,12 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
     - an upload past 10 is rejected with a clear message
   - A file over 50 MB is rejected; for phone batches the limit applies per photo.
   - The server enforces 10 files and 50 MB on receipt, whatever the client showed.
+  - **Privacy notice** (§5.3):
+    - Before an Account's first upload, from the computer or by creating a phone link, a short notice says uploaded material is sent to an external AI service to generate study content.
+    - Nothing is uploaded, and no phone link is created, until the student accepts. Cancel uploads nothing.
+    - The acceptance is saved to the Account and never blocks a later upload. The text stays reachable from the Files panel.
+    - The server refuses uploads and new phone links with `privacy_notice_required` until acceptance is saved (AD-19).
+    - The wording claims nothing beyond AD-3: used only for the student's own content, not shared with other users, not kept by the AI service.
 - **FR-7 Text extraction from images** (UJ-1, UJ-4).
   - No feature distinguishes image-sourced material from text-sourced material.
   - Each image is accepted, accepted with an "extraction may be incomplete" warning, or rejected, per AD-6.
@@ -234,13 +240,13 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
   - With no saved choice, the interface follows the browser language, with English as the fallback.
   - A chosen language is saved to the Account and persists.
   - Generated Study Content, practice, and chat answers follow the main language of the selected material, whatever the interface language.
-  - FR-29 is done only after the team signs off the Norwegian strings in EXPERIENCE.md (PRD §9.3).
+  - FR-29 is done only after Ihor and Cristoffer both sign `norwegian-strings-signoff.md` (PRD §9.3); the drafted strings are tagged *(proposed)* until then.
 
 ## Cross-cutting
 
 - **§5.1 Sources:** every Quiz explanation, flashcard answer, summary section, practice feedback, and chat answer names its Study Material and, where available, the slide or page.
 - **§5.2 Limits:** the server enforces every limit, each with a clear message in the interface language. No other daily limit exists.
-- **§5.3 Data use:** uploaded material serves only its owner's own content, is never shared with other Accounts, and isn't retained by the AI provider (AD-3).
+- **§5.3 Data use:** uploaded material serves only its owner's own content, is never shared with other Accounts, and isn't retained by the AI provider (AD-3). The student is told before their first upload (FR-6).
 - **§5.4 Lifecycle:** removal, archive, soft delete, delete forever, and Account deletion behave as in CAP-3, CAP-9, and CAP-13. Permanent deletion covers files, extracted text, generated content, chats, and Mistakes, including their history.
 - **SM-4 Grounding (gating):** sampled Quiz questions, Flashcards, Summaries, chat answers, and practice contain no unsupported claims, including image-sourced material, and each names a source that contains it. Saved items reused for removed material are judged as originally generated.
 - **SM-5 No instruction needed (gating):** every user in the SM-1 cohort completes UJ-1 (sign up → upload → generate → quiz → score) without being told how.

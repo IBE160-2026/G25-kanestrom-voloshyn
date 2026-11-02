@@ -201,6 +201,8 @@ A student can upload one or more files into an active Project at any time, in PD
 - A Project holds up to 10 Study Materials. Material still processing counts toward the 10; rejected material never counts, and a processing file that is then rejected frees its slot. An upload that would exceed 10 is rejected with a clear message.
 - A file over 50 MB is rejected with a clear message. For phone batches, the limit applies to each photo (FR-21).
 - The server enforces the 10-file and 50 MB limits on receipt, whatever the client showed before sending.
+- Before an Account's first upload, from the computer or by creating a Phone upload link (FR-21), the student sees a short notice that uploaded material is sent to an external AI service to generate their study content (§5.3). Nothing is uploaded and no Phone upload link is created until the student accepts it; cancelling uploads nothing.
+- The acceptance is saved to the Account: the notice never blocks a later upload, and its text stays reachable from the upload area. The server refuses an upload or a new Phone upload link from an Account that has not accepted it.
 
 #### FR-7: Text extraction from images
 For an uploaded .jpg/.jpeg, .png, or .heic image, on its own or in a phone batch, the system extracts the printed or handwritten text it contains, so that content works with Quiz, Flashcards, Summarize, and Ask AI on equal footing with text formats. Realizes UJ-1 and UJ-4 for image uploads.
@@ -489,7 +491,7 @@ No other daily limit exists. The server enforces every limit, and reaching one s
 
 ### 5.3 Data Use
 
-Uploaded Study Material is used only to generate that student's own Study Content, chat answers, and Mistake Review practice. It is not shared with other Accounts. `[ASSUMPTION: the team can honor this promise with the chosen AI provider; architecture must confirm.]`
+Uploaded Study Material is used only to generate that student's own Study Content, chat answers, and Mistake Review practice. It is not shared with other Accounts. Generation sends it to an external AI service; the student is told so once, before their first upload (FR-6), in wording that claims no more than the architecture guarantees. `[ASSUMPTION: the team can honor this promise with the chosen AI provider; architecture must confirm.]`
 
 ### 5.4 Data Lifecycle and Deletion
 
@@ -584,7 +586,7 @@ No product decision is outstanding. These items remain open for other owners:
 
 1. **Content Integrity thresholds (architecture).** The numeric confidence thresholds behind the three outcomes (accept, warn and continue, reject) are deliberately unset in this PRD (§5.1, FR-7); whoever builds the extraction pipeline must define and document them.
 2. **AI provider data handling (architecture).** Confirm that the chosen AI provider lets the team honor the data-use promise (§5.3) and that permanent deletion (§5.4) reaches any copies the provider keeps.
-3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision.
+3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision, tracked in `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`.
 
 §10 lists the inferences made while applying product decisions.
 

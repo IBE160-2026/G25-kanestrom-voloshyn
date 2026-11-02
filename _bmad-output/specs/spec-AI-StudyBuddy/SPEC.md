@@ -57,6 +57,7 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
     - Each upload ends accepted, accepted with a warning, or rejected, per AD-6.
     - These are declined with specific messages: unsupported types, files over 50 MB, an 11th slot (processing counts toward it, rejected files don't), and a 26th image in a day.
     - A removal frees the slot at once and keeps generated content in History. The material's Mistakes stay outstanding unless the student takes them out of review.
+    - Before an Account's first upload or phone link, a one-time notice says material is sent to an external AI service to generate study content; nothing is uploaded until the student accepts it.
 
 - **CAP-4** — Quiz (FR-10, FR-11, FR-12)
   - **intent:** A student can generate a Quiz of 5, 10, or 20 multiple-choice questions (default 10) from all Topics or chosen Topics, answer one at a time with immediate grounded explanations that name their source, see a final score, and have every wrong answer recorded as a Mistake.
@@ -157,7 +158,7 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
   - 100 Topics per Material
 
   No other daily limit exists.
-- **Data use.** Uploaded material serves only its owner's own content and is never shared with other Accounts (§5.3). Live AI calls retain nothing at the provider (AD-3).
+- **Data use.** Uploaded material serves only its owner's own content and is never shared with other Accounts (§5.3). Live AI calls retain nothing at the provider (AD-3). Students are told once, before their first upload, that material goes to an external AI service, in wording that claims no more than AD-3 guarantees (FR-6).
 - **Data lifecycle.** Deletion follows PRD §5.4: Material removal, archive, soft delete with a 30-day purge, delete forever, and Account deletion.
 - **Account boundary:** a Project belongs to exactly one Account; there is no sharing.
 - **Platform:** a desktop web app plus one single-purpose phone upload page.
@@ -213,6 +214,4 @@ All of the following must also hold:
 
 ## Open Questions
 
-- **Privacy notice:** must students be told, before uploading, that their material is sent to a third-party AI provider (OpenRouter and the model host) for processing? Deletion and retention are settled by FR-24, FR-28, and §5.4, and provider retention by AD-3's zero-data-retention routing, but neither the PRD nor the UX shows students a notice.
-- **Norwegian strings:** FR-29 is done only once the team signs off the Norwegian strings in EXPERIENCE.md (PRD §9.3).
-- **Stale UX state:** EXPERIENCE.md still shows the "log in with your password once to link Google" state, which the 2026-11-02 FR-19 amendment removed. Cristoffer must approve the UX update.
+- **Norwegian strings:** FR-29 is done only once Ihor and Cristoffer sign off the drafted Norwegian strings in EXPERIENCE.md, using `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md` (PRD §9.3).

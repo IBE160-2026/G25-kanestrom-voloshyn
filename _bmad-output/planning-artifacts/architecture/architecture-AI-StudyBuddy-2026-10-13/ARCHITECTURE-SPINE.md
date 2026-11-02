@@ -73,6 +73,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
   - `jobs` → each feature's registered `run_job`/save-plan handler, keyed by `kind`
   - `materials` → `topics`, `projects.auto_name_if_unnamed`
   - `phone` → `materials.create_from_batch`
+  - `materials` and `phone` → `identity.require_privacy_ack`
   - `projects` → `phone.revoke_for_project`
   - `review` → `quiz` read functions
   - `history` → read functions of `chat`, `quiz`, `flashcards`, `summaries`
@@ -431,7 +432,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 
 ### AD-19 — Identity: profiles, app-level verification, Google takeover, backend auth emails, Account deletion [ADOPTED]
 
-- **Binds:** FR-1, FR-2, FR-3, FR-19, FR-27, FR-28, FR-29
+- **Binds:** FR-1, FR-2, FR-3, FR-6, FR-19, FR-27, FR-28, FR-29, §5.3
 - **Prevents:** Every Account counting as "verified"; a Google-only Account gaining a password; a skipped browser call leaving a pre-registered attacker's password alive; auth emails in the wrong language; leftovers after an Account is deleted.
 - **Rule:**
   - **Profiles.** `profiles` holds:
@@ -440,8 +441,10 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - `google_takeover_at`, `notice_google_takeover`
     - `ui_prefs jsonb` (panel and sidebar collapse state)
     - `last_project_id`
+    - `privacy_notice_ack_at`
 
     `GET/PATCH /api/me` and `PATCH /api/me/prefs` read and write it. With Google linked, the first name and picture come from the Google identity data and are read-only (FR-27).
+  - **Privacy notice (FR-6, §5.3):** `POST /api/me/privacy-notice` sets `privacy_notice_ack_at`. Until it is set, `identity.require_privacy_ack` makes every upload and every new phone link fail with `privacy_notice_required`. The notice's wording claims only what AD-3 guarantees: material goes to an external AI service through OpenRouter, is used only for the student's own content, and is not retained by the provider.
   - **After sign-up and sign-in.** `POST /api/auth/after-sign-in` is called after sign-up and after every sign-in:
     - On sign-up it sets `first_name` from the sign-up metadata and sends the first verification email.
     - On a Google sign-in it is a fast path for the takeover check below.
@@ -454,7 +457,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - **Unverified email Account — takeover, enforced by `user_auth`.** On any request where the Account has a Google identity, `email_verified_at IS NULL`, and `google_takeover_at IS NULL`, it runs once: set a random password through the admin API, delete every other `auth.sessions` row, and set `google_takeover_at` and `notice_google_takeover`.
     - A Google identity already linked elsewhere → `google_identity_in_use`.
     - Settings' "Link Google" (`linkIdentity`) is offered only while `email_verified_at` is set. The backend re-checks after linking: a link made without verification is removed through the admin API (`email_not_verified`).
-    - EXPERIENCE.md's "log in with your password once to link Google" state is superseded by the FR-19 amendment.
+    - EXPERIENCE.md shows this flow: a verified Account is signed in and linked at once, with no password step (updated 2026-11-02).
   - **Password reset (FR-3):**
     - `POST /api/auth/password-reset` always answers the same way.
     - Only for an Account with an email identity does it call Supabase admin `generate_link` (type recovery, 1 h, no Supabase email) and email the link through `mailer.py`.
@@ -646,7 +649,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | --- | --- |
 | Naming | Python `snake_case` modules and functions. React components `PascalCase.jsx`, each with a `PascalCase.module.css`. DB tables plural `snake_case`. REST paths are plural nouns nested under the Project: `/api/projects/{project_id}/quizzes`. |
 | IDs and time | UUID primary keys (`gen_random_uuid()`); `timestamptz` stored in UTC; ISO-8601 strings in JSON. |
-| API shape | JSON in `snake_case`. Long work returns `202 {job_id}`. Errors are always `{"error": {"code": "<snake_code>", "params": {…}, "message": "<developer fallback>"}}` with a matching HTTP status, mapped in `api/` from domain errors. Codes include `unauthorized`, `session_expired`, `not_found`, `invalid_name`, `project_read_only`, `unsupported_file_type`, `file_too_large`, `material_limit_reached`, `material_unusable`, `material_removed`, `scope_too_large`, `insufficient_material`, `topic_last_cannot_delete`, `topic_limit_reached`, `topic_merge_cross_material`, `quota_exceeded`, `link_expired`, `email_not_verified`, `google_identity_in_use`, `review_in_progress`, `chat_busy`, `generation_cancelled`, `interrupted`, `llm_unavailable`, `llm_output_invalid`. |
+| API shape | JSON in `snake_case`. Long work returns `202 {job_id}`. Errors are always `{"error": {"code": "<snake_code>", "params": {…}, "message": "<developer fallback>"}}` with a matching HTTP status, mapped in `api/` from domain errors. Codes include `unauthorized`, `session_expired`, `not_found`, `invalid_name`, `project_read_only`, `unsupported_file_type`, `file_too_large`, `material_limit_reached`, `material_unusable`, `material_removed`, `scope_too_large`, `insufficient_material`, `topic_last_cannot_delete`, `topic_limit_reached`, `topic_merge_cross_material`, `quota_exceeded`, `link_expired`, `email_not_verified`, `google_identity_in_use`, `privacy_notice_required`, `review_in_progress`, `chat_busy`, `generation_cancelled`, `interrupted`, `llm_unavailable`, `llm_output_invalid`. |
 | Config | All settings come from environment variables, read in one `backend/app/config.py` (Pydantic settings). Each variable name, with no value, goes into `.env.example`. There are no `VITE_*` secrets or build-time Supabase values (AD-17). App variables must not use the `SUPABASE_AUTH_*` prefix except the documented Google switch, because the CLI reads such variables as config overrides. |
 | Logging | Python `logging`. Never log passwords, tokens (including phone-link and verification tokens), API keys, or Study Material text. Log the task name, model, duration, and outcome for each gateway call and job. |
 | Limits | Every PRD limit is enforced in a backend service. SPA checks and the phone page's pre-send warnings are UX hints only. |
@@ -798,7 +801,6 @@ erDiagram
   - Set up a real SMTP provider for `mailer.py` in the cloud.
   - Apply AD-2's auth settings to the Cloud project from `config.toml` (the CLI's config push), not by hand.
 - **Concrete OpenRouter model IDs and tuning values** (`LLM_CONTEXT_BUDGET_TOKENS`, `CAPACITY_WORDS_PER_ITEM`, `LLM_TIMEOUT_SECONDS`, `JOBS_MAX_CONCURRENT`): set in `.env` once tested. The models must support structured output (and, for vision, image input) under `zdr: true`. Use a cheap paid model with a spend limit on the key.
-- **UX amendment for Cristoffer:** EXPERIENCE.md still shows the "log in with your password once to link Google" state, which the 2026-11-02 FR-19 edit removed (AD-19).
 - **Norwegian interface strings:** need team sign-off (PRD §9.3). This blocks FR-29 "done", not the architecture.
 - **CI pipeline and frontend test runner:** decided when the first stories land.
 - **Embeddings / pgvector retrieval:** a V2 candidate if full-text retrieval proves weak.
