@@ -68,6 +68,14 @@ Update the architecture spine for the revised 29-FR PRD and Cristoffer's final U
 - **Branch:** `feature/architecture-update`, 2 commits ahead of `main`.
 - **Spec updated with `bmad-spec`:** `spec-AI-StudyBuddy` re-derived for the 29-FR PRD and spine AD-1 to AD-29. It has 14 capabilities (CAP-1 to CAP-8 kept, CAP-9 to CAP-14 new). Acceptance criteria cover FR-1 to FR-29, checked mechanically. User journeys UJ-1 to UJ-5. DESIGN.md and EXPERIENCE.md are adopted companions. Self-validation passed both checks. The GDPR question was answered by FR-24, FR-28, §5.4, and AD-3 (ZDR), except for the privacy notice. Not committed yet.
 
+- **Open items resolved (requested and approved by Ihor; not committed):**
+  - **Privacy notice:** PRD FR-6 gains two consequences and §5.3 one sentence; spine AD-19 adds `privacy_notice_ack_at`, `POST /api/me/privacy-notice`, and `privacy_notice_required`; the UX adds a Privacy notice modal before the first upload (EXPERIENCE and DESIGN); spec CAP-3, acceptance criteria, and glossary updated.
+  - **Google linking:** EXPERIENCE.md and DESIGN.md now match FR-19 (verified Account linked at once, no password step); the spine's AD-19 note and Deferred item are updated.
+  - **Norwegian strings:** drafted for every V1 surface (142 rows, tagged proposed), plus the checklist `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`. FR-29 is not marked complete.
+  - **Checks:** 29 FRs, 14 CAPs, 29 ADs, spine lint clean, no stale Google phrases outside the memlog history, tables consistent.
+- `bmad-create-epics-and-stories` was started; it stopped at step 1 (choosing input documents) and has not created `epics.md` yet.
+
 ### Åpne punkter
-- Cristoffer must approve updating EXPERIENCE.md: the "log in with your password once to link Google" state is out of date after the FR-19 edit (listed under Deferred in the spine).
-- Privacy notice: should students be told, before uploading, that their material is sent to a third-party AI provider (OpenRouter plus the model host)? This is an open question in the spec; neither the PRD nor the UX shows a notice.
+- Cristoffer should review the 2026-11-02 changes to his UX documents: the Google-linking flow and the new Privacy notice (Ihor approved both).
+- Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md`; FR-29 is not complete until then.
+- Continue `bmad-create-epics-and-stories` from step 1.
