@@ -73,9 +73,10 @@ Update the architecture spine for the revised 29-FR PRD and Cristoffer's final U
   - **Google linking:** EXPERIENCE.md and DESIGN.md now match FR-19 (verified Account linked at once, no password step); the spine's AD-19 note and Deferred item are updated.
   - **Norwegian strings:** drafted for every V1 surface (142 rows, tagged proposed), plus the checklist `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`. FR-29 is not marked complete.
   - **Checks:** 29 FRs, 14 CAPs, 29 ADs, spine lint clean, no stale Google phrases outside the memlog history, tables consistent.
-- `bmad-create-epics-and-stories` was started; it stopped at step 1 (choosing input documents) and has not created `epics.md` yet.
+- Open items committed in `d7ccb31`. Ihor marked the privacy notice and Google linking as resolved. FR-29 sign-off is an acceptance dependency that doesn't block the build.
+- **Merge:** `feature/architecture-update` was merged into `main` (`d3ebf29`, merge commit) and pushed to GitHub (`2856d23..d3ebf29`).
+- **`bmad-create-epics-and-stories`:** step 1 is done. `epics.md` holds the requirements inventory (not committed). In step 2, the proposed 7-epic structure waits for Ihor's approval.
 
 ### Åpne punkter
-- Cristoffer should review the 2026-11-02 changes to his UX documents: the Google-linking flow and the new Privacy notice (Ihor approved both).
 - Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md`; FR-29 is not complete until then.
-- Continue `bmad-create-epics-and-stories` from step 1.
+- Approve the epic structure (7 epics) in `bmad-create-epics-and-stories` step 2, then create the stories.
