@@ -1,9 +1,9 @@
 <!-- bmad:context -->
-<!-- Verified 2026-10-27 against d6791ab. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-02 against 46bd497. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## AI Study Buddy
 
-IBE160 group project (G25, Høgskolen i Molde, autumn 2026): a desktop web app where students upload their own study material and generate quizzes, flashcards, summaries, and grounded chat from it, with wrong answers feeding Mistake Review. Stack (fixed by the architecture spine; no application code yet): FastAPI backend on Python/uv, React + Vite SPA in JavaScript, Supabase (Auth, Postgres, Storage), OpenRouter through the `openai` SDK, shipped as one Docker app container. Planning lives in `_bmad-output/planning-artifacts/`; the spec is `_bmad-output/specs/spec-AI-StudyBuddy/`.
+IBE160 group project (G25, Høgskolen i Molde, autumn 2026): a desktop web app, plus a single phone upload page (FR-21), where students upload their own study material and generate quizzes, flashcards, summaries, and grounded chat from it, with wrong answers feeding Mistake Review. Stack (fixed by the architecture spine; no application code yet): async FastAPI backend on Python/uv with in-process background jobs, React + Vite SPA in JavaScript, Supabase (Auth, Postgres, Storage), OpenRouter through the `openai` SDK, shipped as one Docker app container running as one instance. Planning lives in `_bmad-output/planning-artifacts/`; the spec is `_bmad-output/specs/spec-AI-StudyBuddy/`.
 
 ## Policy
 
@@ -14,21 +14,23 @@ IBE160 group project (G25, Høgskolen i Molde, autumn 2026): a desktop web app w
 - Commit messages in English, preferably `type: summary` (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`), saying what changes; the commit log is graded.
 - English for code, identifiers, comments, tests, BMAD artifacts, and technical docs; `README.md` stays Norwegian.
 - Never hand-edit `_bmad/`, `.claude/skills/`, or `.agents/skills/` — customize via `bmad-customize` or `_bmad/custom/`; install or update with `npx bmad-method`.
-- Never silently edit a document marked `status: final` (brief, PRD, architecture spine). When work conflicts with a final requirement or AD, explain the conflict, propose the change, and wait for explicit approval from Cristoffer or Ihor; until then implement it as written.
-- V1 is exactly Quiz, Flashcards, Summarize, Ask AI, Mistake Review, Saved Projects (PRD §7). Never build post-V1 items (spaced repetition, adaptive learning, progress tracking/analytics, cross-document linking, recommendations, exam planning) or requirements absent from the brief and PRD unless asked — propose them instead.
-- Pick the simplest design that meets the PRD; no microservices, job queues, or extra infrastructure. Never introduce a technology the spine doesn't name — amend the spine through `bmad-architecture` instead; technology choices stay out of the brief and PRD.
+- Never silently edit a document marked `status: final` (brief, PRD, UX, architecture spine). When work conflicts with a final requirement or AD, explain the conflict, propose the change, and wait for explicit approval from Cristoffer or Ihor; until then implement it as written.
+- V1 is exactly PRD §7.1 (FR-1 to FR-29). Never build post-V1 items (spaced repetition, adaptive learning, progress tracking/analytics, cross-document linking, recommendations, exam planning) or requirements absent from the brief and PRD unless asked — propose them instead.
+- Pick the simplest design that meets the PRD; no microservices, separate workers, Redis/Celery/RQ queues, cron services, or extra infrastructure — background work runs in-process (AD-20). Never introduce a technology the spine doesn't name — amend the spine through `bmad-architecture` instead; technology choices stay out of the brief and PRD.
 - Never claim AI Study Buddy is the first or only tool of its kind — NotebookLM, Quizlet, StudyFetch, Quizgecko, and Revisely exist. Differentiation is the focused workflow and integrated Mistake Review; never add a feature because a competitor has it.
 
 ## Where things are
 
 - Product brief: `_bmad-output/planning-artifacts/briefs/brief-AI-StudyBuddy-2026-09-16/brief.md`
 - PRD: `_bmad-output/planning-artifacts/prds/prd-AI-StudyBuddy-2026-10-06/prd.md` — cite requirements by ID (FR-n, UJ-n, SM-n).
+- UX: `_bmad-output/planning-artifacts/ux-designs/ux-AI-StudyBuddy-2026-10-13/` — build every screen from `DESIGN.md` (look, tokens) and `EXPERIENCE.md` (behavior, states, copy), with `mockups/*.html` as composition reference; DESIGN.md wins over a mock (AD-28).
 - Architecture spine: `_bmad-output/planning-artifacts/architecture/architecture-AI-StudyBuddy-2026-10-13/ARCHITECTURE-SPINE.md` — read it before creating or changing anything under `backend/`, `frontend/`, or `supabase/`; cite decisions by AD-n. The reasoning behind each AD is in that folder's `.memlog.md`.
 
 ## Running and verifying
 
 - Run `_bmad/scripts/*.py` with `uv run`, e.g. `uv run _bmad/scripts/memlog.py append --workspace <dir> --type decision --text "..."`.
-- TODO (planned in the spine, unverified until the scaffold exists): Python 3.14 via uv, Node ≥ 22.12. Grader run: `.env.example` → `.env`, `npx supabase start` (needs Docker), `npx supabase db reset`, `docker compose up`. Dev: `uv run uvicorn …` plus `npm run dev` (Vite proxies `/api`). Backend tests: `pytest` via `uv run`, always with `LLM_MODE=mock`, against local Supabase. Replace with verified commands on the first refresh after scaffolding.
+- Keep the Supabase CLI pinned at exactly `2.122.0`; never upgrade to 3.x without amending AD-16 — 3.x makes `db push` target the local stack.
+- TODO (planned in the spine, unverified until the scaffold exists): Python 3.14 via uv, Node ≥ 22.22. Grader run: `.env.example` → `.env`, `npx supabase start` (needs Docker; copy the printed local keys into `.env`), `npx supabase db reset`, `docker compose up`. Dev: `uv run uvicorn …` with one worker, plus `npm run dev` (Vite proxies `/api`). Backend tests: `pytest` via `uv run`, always with `LLM_MODE=mock`, against local Supabase. Replace with verified commands on the first refresh after scaffolding.
 
 ## Conventions that differ from defaults
 
@@ -36,7 +38,9 @@ IBE160 group project (G25, Høgskolen i Molde, autumn 2026): a desktop web app w
 - Spine AD ids are permanent: amend a Rule in place or add the next AD-n; never renumber or reuse one.
 - The browser uses Supabase only for auth; all app data goes through FastAPI `/api/*` (AD-1).
 - Change the schema or storage bucket only through SQL in `supabase/migrations/`, never in the Supabase dashboard (AD-16).
-- Only `services/mistakes` writes Mistakes and only `services/usage` touches quota counters; other services call them (AD-10, AD-12).
-- Services take the request's `conn` and never commit; never call the LLM inside an open write transaction (AD-18).
+- Only `services/mistakes` writes Mistakes, only `services/usage` touches quota counters, and only `services/jobs` writes `generation_jobs`; other services call them (AD-10, AD-12, AD-20).
+- Resolve every Selection Scope through `topics.resolve_scope` only (AD-7); every content mutation calls `projects.require_active` first (AD-22).
+- Services take the given `conn` and never commit; never call the LLM inside an open write transaction (AD-18). Keep I/O paths `async` and pure domain helpers synchronous; run blocking parsers via `asyncio.to_thread` (AD-29).
+- Interface text lives only in `frontend/src/i18n/` catalogues and API errors carry `code` + `params` (AD-26); styles use only `var(--…)` from `frontend/src/styles/tokens.css`, never hard-coded colours (AD-28).
 
 <!-- /bmad:context -->
