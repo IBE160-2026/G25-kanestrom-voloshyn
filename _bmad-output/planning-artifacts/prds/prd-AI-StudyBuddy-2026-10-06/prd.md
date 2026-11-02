@@ -2,7 +2,7 @@
 title: "PRD: AI Study Buddy"
 status: final
 created: 2026-10-06
-updated: 2026-10-14
+updated: 2026-11-02
 sources:
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
   - ../../ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md
@@ -166,7 +166,7 @@ A visitor can create an Account, or log in to one, with a Google account as an a
 **Consequences (testable):**
 - At most one Account exists per email address, whichever sign-in method created it.
 - A Google-created Account takes its first name and profile picture from the Google profile.
-- A Google sign-in whose email matches an email-and-password Account with a **verified** email does not sign in at once. The student is told to log in once with the password; after that login the Google identity is linked, and either method reaches the same Account.
+- A Google sign-in whose email matches an email-and-password Account with a **verified** email signs in to that Account and links the Google identity at once; after that, either method reaches the same Account.
 - A Google sign-in whose email matches an email-and-password Account with an **unverified** email takes over that Account: the student is signed in, and the Google identity is linked.
 - After such a takeover, the old password no longer works, every session that existed before the takeover ends at once, and the student is told once (not on later logins) that the Account now signs in with Google.
 - Google can be linked to an email-and-password Account, by either route, only after that Account's email is verified (FR-1). This rule and the takeover rule together stop someone from pre-registering another person's email to block or capture their Google sign-in.
@@ -201,6 +201,8 @@ A student can upload one or more files into an active Project at any time, in PD
 - A Project holds up to 10 Study Materials. Material still processing counts toward the 10; rejected material never counts, and a processing file that is then rejected frees its slot. An upload that would exceed 10 is rejected with a clear message.
 - A file over 50 MB is rejected with a clear message. For phone batches, the limit applies to each photo (FR-21).
 - The server enforces the 10-file and 50 MB limits on receipt, whatever the client showed before sending.
+- Before an Account's first upload, from the computer or by creating a Phone upload link (FR-21), the student sees a short notice that uploaded material is sent to an external AI service to generate their study content (§5.3). Nothing is uploaded and no Phone upload link is created until the student accepts it; cancelling uploads nothing.
+- The acceptance is saved to the Account: the notice never blocks a later upload, and its text stays reachable from the upload area. The server refuses an upload or a new Phone upload link from an Account that has not accepted it.
 
 #### FR-7: Text extraction from images
 For an uploaded .jpg/.jpeg, .png, or .heic image, on its own or in a phone batch, the system extracts the printed or handwritten text it contains, so that content works with Quiz, Flashcards, Summarize, and Ask AI on equal footing with text formats. Realizes UJ-1 and UJ-4 for image uploads.
@@ -245,7 +247,7 @@ A student can remove any Study Material from an active Project, including one st
 From an active Project on the computer, a student can create a one-time Phone upload link, shown as a QR code. Opening it on a phone lets the student take or choose photos and send them into that Project without logging in on the phone. Realizes UJ-4.
 
 **Consequences (testable):**
-- The link can only add Study Material to that one Project. The only data it can read is the Project's name, which the phone page shows so the student can confirm the destination; it cannot list the Project's files.
+- The link can only add Study Material to that one Project. The only data it can read is the Project's name, which the phone page shows so the student can confirm the destination, and whether a batch still fits the daily image limit and the Project's 10-file limit; it cannot list the Project's files.
 - The link expires about 10 minutes after creation, when the student closes it on the computer, or when the Project is archived or deleted, whichever comes first; an expired link cannot send. `[ASSUMPTION: "about 10 minutes" is a round-number lifetime, not a measured requirement.]`
 - All photos sent together become one Study Material, which uses one of the Project's 10 slots (FR-6). There is no maximum number of photos per batch.
 - A photo over 50 MB, or past the Account's 25 images per day (FR-7), is declined individually with a clear message, and the rest of the batch goes through. If no photo goes through, no Study Material is created and no slot is used.
@@ -489,7 +491,7 @@ No other daily limit exists. The server enforces every limit, and reaching one s
 
 ### 5.3 Data Use
 
-Uploaded Study Material is used only to generate that student's own Study Content, chat answers, and Mistake Review practice. It is not shared with other Accounts. `[ASSUMPTION: the team can honor this promise with the chosen AI provider; architecture must confirm.]`
+Uploaded Study Material is used only to generate that student's own Study Content, chat answers, and Mistake Review practice. It is not shared with other Accounts. Generation sends it to an external AI service; the student is told so once, before their first upload (FR-6), in wording that claims no more than the architecture guarantees. `[ASSUMPTION: the team can honor this promise with the chosen AI provider; architecture must confirm.]`
 
 ### 5.4 Data Lifecycle and Deletion
 
@@ -513,7 +515,7 @@ Account security rules are owned by their FRs:
 - Google linking only after verification, and takeover of an unverified Account by a matching Google sign-in, which together close the pre-registration hole (FR-19).
 - Login errors and reset replies that never reveal whether an email is registered (FR-2, FR-3).
 - Single-use, 1-hour reset links, invalidated by any newer link (FR-3).
-- An upload-only, one-Project, short-lived Phone upload link that reads only the Project's name (FR-21).
+- An upload-only, one-Project, short-lived Phone upload link that reads only the Project's name and whether a batch fits the daily image and 10-file limits, never the Project's file list (FR-21).
 
 ### 5.6 Interface Language
 
@@ -584,7 +586,7 @@ No product decision is outstanding. These items remain open for other owners:
 
 1. **Content Integrity thresholds (architecture).** The numeric confidence thresholds behind the three outcomes (accept, warn and continue, reject) are deliberately unset in this PRD (§5.1, FR-7); whoever builds the extraction pipeline must define and document them.
 2. **AI provider data handling (architecture).** Confirm that the chosen AI provider lets the team honor the data-use promise (§5.3) and that permanent deletion (§5.4) reaches any copies the provider keeps.
-3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision.
+3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision, tracked in `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`.
 
 §10 lists the inferences made while applying product decisions.
 

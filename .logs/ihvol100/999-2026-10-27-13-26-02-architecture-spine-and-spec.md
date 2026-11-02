@@ -32,3 +32,50 @@ Create the V1 architecture spine with `bmad-architecture` (Coaching path), refre
 - Read the impact report `reviews/update-impact-2026-10-27.md` when it's ready, and make the decisions it raises.
 - The managed AGENTS.md block doesn't point to the UX documents (`ux-designs/ux-AI-StudyBuddy-2026-10-13/`). Fix this on the next `bmad-project-context` refresh.
 - The spec's open GDPR question is probably answered by FR-28 (account deletion). Confirm this during the spec update.
+
+## 2026-11-02 kl. 14:22 — Ihvol100
+
+### Oppgave
+Update the architecture spine for the revised 29-FR PRD and Cristoffer's final UX (`bmad-architecture` Update, Coaching path), apply the PRD edits this required, and refresh AGENTS.md. Nothing was merged or pushed.
+
+### Plan
+- Work from the impact report `reviews/update-impact-2026-10-27.md` and go through decisions H1–H10 one at a time with Ihor.
+- Distill the spine (AD-1 to AD-18 stable; AD-13 and AD-15 replaced; new AD-19 to AD-29), run the reviewer gate (four subagent lenses), and apply the fixes.
+- `bmad-project-context` refresh of AGENTS.md, with the block shown and approved before writing.
+
+### Resultat
+- **Decisions**, all approved by Ihor and logged in the spine's `.memlog.md`:
+
+  | Decision | Choice |
+  | --- | --- |
+  | FR-26 jobs | in-process background jobs in `generation_jobs`, with cancel (required by both PRD and UX) |
+  | H1 Google | (b) verified Accounts are linked automatically; unverified Accounts are taken over |
+  | H3 phone | (a) the link may read whether a batch fits the limits |
+  | H4 file removal | (a) tombstone |
+  | H5 capacity | (a) deterministic estimate before generating |
+  | H6 data use | (a) ZDR, with a paid model and a spend cap |
+  | H7 frontend | Cristoffer's mockups + DESIGN.md tokens, plain CSS, Radix |
+  | H8 | a reset ends other sessions; Google owns the name |
+  | H9 | the backend sends auth emails in the Account's language |
+  | AD-29 | async for I/O, synchronous pure helpers, 3 concurrent jobs |
+
+- **PRD edits (approved):** FR-19 (verified Account → automatic linking) and FR-21/§5.5 (the phone link reads whether the batch fits). Logged in the PRD memlog; `updated: 2026-11-02`.
+- **Spine:** `status: final`, AD-1 to AD-29, binds FR-1 to FR-29.
+  - The reviewer gate (reconcile, rubric, tech-currency, adversary) found about 20 high findings. All were fixed: job save transactions, Material state, one scope resolver, quota timing, the read-only guard, Supabase settings, and the CLI pin.
+  - Supabase CLI 3.0 was released on 2026-11-02 and changes `db push`, so the CLI is pinned at 2.122.0.
+  - Commit `46bd497` (spine + PRD + reviews).
+- **AGENTS.md:** managed block refreshed (V1 = PRD §7.1, phone page, UX pointer, CLI pin, new cross-component rules; run commands still TODO). Commit `038d9b2`.
+- **Branch:** `feature/architecture-update`, 2 commits ahead of `main`.
+- **Spec updated with `bmad-spec`:** `spec-AI-StudyBuddy` re-derived for the 29-FR PRD and spine AD-1 to AD-29. It has 14 capabilities (CAP-1 to CAP-8 kept, CAP-9 to CAP-14 new). Acceptance criteria cover FR-1 to FR-29, checked mechanically. User journeys UJ-1 to UJ-5. DESIGN.md and EXPERIENCE.md are adopted companions. Self-validation passed both checks. The GDPR question was answered by FR-24, FR-28, §5.4, and AD-3 (ZDR), except for the privacy notice. Not committed yet.
+
+- **Open items resolved (requested and approved by Ihor; not committed):**
+  - **Privacy notice:** PRD FR-6 gains two consequences and §5.3 one sentence; spine AD-19 adds `privacy_notice_ack_at`, `POST /api/me/privacy-notice`, and `privacy_notice_required`; the UX adds a Privacy notice modal before the first upload (EXPERIENCE and DESIGN); spec CAP-3, acceptance criteria, and glossary updated.
+  - **Google linking:** EXPERIENCE.md and DESIGN.md now match FR-19 (verified Account linked at once, no password step); the spine's AD-19 note and Deferred item are updated.
+  - **Norwegian strings:** drafted for every V1 surface (142 rows, tagged proposed), plus the checklist `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`. FR-29 is not marked complete.
+  - **Checks:** 29 FRs, 14 CAPs, 29 ADs, spine lint clean, no stale Google phrases outside the memlog history, tables consistent.
+- `bmad-create-epics-and-stories` was started; it stopped at step 1 (choosing input documents) and has not created `epics.md` yet.
+
+### Åpne punkter
+- Cristoffer should review the 2026-11-02 changes to his UX documents: the Google-linking flow and the new Privacy notice (Ihor approved both).
+- Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md`; FR-29 is not complete until then.
+- Continue `bmad-create-epics-and-stories` from step 1.

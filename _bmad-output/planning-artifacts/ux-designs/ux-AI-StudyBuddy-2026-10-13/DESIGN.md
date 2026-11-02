@@ -2,7 +2,7 @@
 title: "Design: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-10-14
+updated: 2026-11-02
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -522,7 +522,6 @@ components:
   error-line:
     foreground: '{colors.error}'
     dot: '{colors.error}'
-    guidance-foreground: '{colors.text}'   # Google-linking guidance, not an error: no dot [ASSUMPTION: Color-role rule 3]
   create-account-screen:
     panel: '{components.auth-panel}'
     input: '{components.text-input}'
@@ -777,6 +776,7 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Topic list** | The file's Topic chips as a wrapping row. When the file has chapters or sections, chips sit under muted caption group rows (chapter name, topic count, expand chevron; each row at least `{spacing.touch-target-min}` tall, hover `{colors.hover}`). The list scrolls inside the file row. With two or more chips selected, a small ghost "Merge" appears at the end of the list. In a narrow window the chips keep wrapping at the panel width. [ASSUMPTION: scroll height, Merge placement, and narrow-window layout; grouping is mocked in `mockups/key-project-home.html`] |
 | **Topic count** | Muted caption in the file metadata: "{n} topics". |
 | **Grouped-topics note** | Muted caption under the Topic list, shown only at the 100-topic ceiling: "Large file, some topics are grouped." Not a warning; no icon, never amber or red. |
+| **Privacy notice** | Modal dialog. Title "Before your first upload", one body paragraph in `{typography.body}`, ghost Cancel and Button (primary) "Got it, upload". Calm, not a warning: no icon, no `{colors.error}` or `{colors.mistake}`. The later "How your files are used" link in the Files panel is a muted `{typography.caption}` text link; it reopens the same text with only "Close". Labels (EXPERIENCE.md Strings by surface) are canonical. [ASSUMPTION: layout] |
 | **Remove file dialog** | Modal dialog. Title names the file; body in `{typography.body}`; one unchecked Checkbox and radio checkbox with its label; ghost Cancel and Button (danger) "Remove". Short variant (file still Reading…): one sentence and the two buttons. Labels (EXPERIENCE.md Strings by surface) are canonical. |
 
 **Activities**
@@ -815,7 +815,7 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Google button** | Full-width ghost button, `{spacing.auth-button-height}` tall, "Sign in with Google". [ASSUMPTION: from mock] |
 | **Text input** | `{colors.background}` fill, `{colors.border-control}` boundary, `{spacing.input-height}` tall, muted placeholder; muted caption label above; inline link ("Forgot password?") in `{colors.primary}`. [ASSUMPTION: from mock] |
 | **Language toggle (login)** | Small "EN \| NO" text toggle; selected in `{colors.text}` semibold, other muted. |
-| **Error line** | `{colors.error}` text with a small `{colors.error}` dot, above the buttons in the Auth panel: "Sign-in didn't work. Try again." Also carries the duplicate-email message. The Google-linking guidance ("You already have an account with this email…") takes the same place in `{colors.text}` with no dot, because it is guidance, not a system error (Color-role rule 3). [ASSUMPTION: guidance styling] |
+| **Error line** | `{colors.error}` text with a small `{colors.error}` dot, above the buttons in the Auth panel: "Sign-in didn't work. Try again." Also carries the duplicate-email message. |
 | **Create account screen** | Login screen layout. Auth panel: Google button, "or" divider, Text inputs for first name, email, and password, full-width Button (primary) "Create account", Error line above it when needed. [ASSUMPTION: not mocked; reuses Login screen parts] |
 | **Password reset screens** | Login screen layout, one Auth panel per step. Request: email Text input and Button (primary). Sent: muted confirmation text in place of the form. New password: password Text input and Button (primary). Expired link (also used or replaced links): "This link has expired" in `{colors.text}`, muted supporting text, Button (primary) "Send a new link". [ASSUMPTION: not mocked; reuses Login screen parts; button style not confirmed] |
 | **Settings section** | Surface card: heading in `{typography.heading}`, muted lead line, rows separated by hairlines. Account row: `{spacing.avatar-lg}` avatar, name (a Text input for email accounts, plain text for Google accounts), muted email and sign-in method, ghost Log out. [ASSUMPTION: layout from mock] The account-linking message "This Google account is already linked to another Study Buddy account." is in `{colors.error}`. For an email account whose email is not verified, the "Link Google account" row shows "Verify your email first" in `{colors.text-muted}` in place of the link action, followed by "Resend verification email" as a `{colors.primary}` text action. [ASSUMPTION: muted, not an error; resend style] "Change password" is never shown disabled. |
