@@ -2,7 +2,7 @@
 title: "PRD: AI Study Buddy"
 status: final
 created: 2026-10-06
-updated: 2026-10-14
+updated: 2026-11-02
 sources:
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
   - ../../ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md
@@ -166,7 +166,7 @@ A visitor can create an Account, or log in to one, with a Google account as an a
 **Consequences (testable):**
 - At most one Account exists per email address, whichever sign-in method created it.
 - A Google-created Account takes its first name and profile picture from the Google profile.
-- A Google sign-in whose email matches an email-and-password Account with a **verified** email does not sign in at once. The student is told to log in once with the password; after that login the Google identity is linked, and either method reaches the same Account.
+- A Google sign-in whose email matches an email-and-password Account with a **verified** email signs in to that Account and links the Google identity at once; after that, either method reaches the same Account.
 - A Google sign-in whose email matches an email-and-password Account with an **unverified** email takes over that Account: the student is signed in, and the Google identity is linked.
 - After such a takeover, the old password no longer works, every session that existed before the takeover ends at once, and the student is told once (not on later logins) that the Account now signs in with Google.
 - Google can be linked to an email-and-password Account, by either route, only after that Account's email is verified (FR-1). This rule and the takeover rule together stop someone from pre-registering another person's email to block or capture their Google sign-in.
@@ -245,7 +245,7 @@ A student can remove any Study Material from an active Project, including one st
 From an active Project on the computer, a student can create a one-time Phone upload link, shown as a QR code. Opening it on a phone lets the student take or choose photos and send them into that Project without logging in on the phone. Realizes UJ-4.
 
 **Consequences (testable):**
-- The link can only add Study Material to that one Project. The only data it can read is the Project's name, which the phone page shows so the student can confirm the destination; it cannot list the Project's files.
+- The link can only add Study Material to that one Project. The only data it can read is the Project's name, which the phone page shows so the student can confirm the destination, and whether a batch still fits the daily image limit and the Project's 10-file limit; it cannot list the Project's files.
 - The link expires about 10 minutes after creation, when the student closes it on the computer, or when the Project is archived or deleted, whichever comes first; an expired link cannot send. `[ASSUMPTION: "about 10 minutes" is a round-number lifetime, not a measured requirement.]`
 - All photos sent together become one Study Material, which uses one of the Project's 10 slots (FR-6). There is no maximum number of photos per batch.
 - A photo over 50 MB, or past the Account's 25 images per day (FR-7), is declined individually with a clear message, and the rest of the batch goes through. If no photo goes through, no Study Material is created and no slot is used.
@@ -513,7 +513,7 @@ Account security rules are owned by their FRs:
 - Google linking only after verification, and takeover of an unverified Account by a matching Google sign-in, which together close the pre-registration hole (FR-19).
 - Login errors and reset replies that never reveal whether an email is registered (FR-2, FR-3).
 - Single-use, 1-hour reset links, invalidated by any newer link (FR-3).
-- An upload-only, one-Project, short-lived Phone upload link that reads only the Project's name (FR-21).
+- An upload-only, one-Project, short-lived Phone upload link that reads only the Project's name and whether a batch fits the daily image and 10-file limits, never the Project's file list (FR-21).
 
 ### 5.6 Interface Language
 
