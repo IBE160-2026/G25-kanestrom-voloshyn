@@ -66,8 +66,8 @@ Update the architecture spine for the revised 29-FR PRD and Cristoffer's final U
   - Commit `46bd497` (spine + PRD + reviews).
 - **AGENTS.md:** managed block refreshed (V1 = PRD §7.1, phone page, UX pointer, CLI pin, new cross-component rules; run commands still TODO). Commit `038d9b2`.
 - **Branch:** `feature/architecture-update`, 2 commits ahead of `main`.
+- **Spec updated with `bmad-spec`:** `spec-AI-StudyBuddy` re-derived for the 29-FR PRD and spine AD-1 to AD-29. It has 14 capabilities (CAP-1 to CAP-8 kept, CAP-9 to CAP-14 new). Acceptance criteria cover FR-1 to FR-29, checked mechanically. User journeys UJ-1 to UJ-5. DESIGN.md and EXPERIENCE.md are adopted companions. Self-validation passed both checks. The GDPR question was answered by FR-24, FR-28, §5.4, and AD-3 (ZDR), except for the privacy notice. Not committed yet.
 
 ### Åpne punkter
-- `spec-AI-StudyBuddy` still reflects the 18-FR PRD. It must be updated with `bmad-spec` to cover the 29-FR PRD and the spine AD-1 to AD-29.
 - Cristoffer must approve updating EXPERIENCE.md: the "log in with your password once to link Google" state is out of date after the FR-19 edit (listed under Deferred in the spine).
-- The spec's GDPR question is probably answered by FR-28 and §5.3/§9.2. Confirm this during the spec update.
+- Privacy notice: should students be told, before uploading, that their material is sent to a third-party AI provider (OpenRouter plus the model host)? This is an open question in the spec; neither the PRD nor the UX shows a notice.
