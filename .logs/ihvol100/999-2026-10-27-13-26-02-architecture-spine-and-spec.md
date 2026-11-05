@@ -104,3 +104,20 @@ Break V1 into epics and stories with `bmad-create-epics-and-stories`, and review
 - Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md` (the acceptance dependency of Story 7.5).
 - Stories 1.1, 2.2, and 4.4 are large; split them if one development session turns out to be too little.
 - Next step: `bmad-sprint-planning` (readiness check and sprint status file), then `bmad-build` story by story.
+
+## 2026-11-05 kl. 16:56 — Ihvol100
+
+### Oppgave
+Run `bmad-sprint-planning`: check that the planning is ready to build, then generate the sprint status file from the epics.
+
+### Plan
+- Readiness gate: inventory brief, PRD, UX, spine, spec, and `epics.md`; check FR traceability, forward dependencies, open decisions, and conflicts.
+- Generate `sprint-status.yaml` with the skill's `sprint_plan.py generate`.
+
+### Resultat
+- **Gate: PASS.** All 29 FRs map to stories. `epics.md` (2026-11-05) postdates every `status: final` document (2026-11-02). The PRD's only `[NOTE FOR PM]` (extraction thresholds) is resolved by AD-6. The 2026-11-02 review findings (job ownership, async runtime, takeover enforcement) are in the spine and in the stories. AD-13 and AD-15 are replaced and not cited.
+- **`_bmad-output/implementation-artifacts/sprint-status.yaml`:** created with 7 epics and 32 stories, all `backlog`; the 7 retrospectives are `optional`. The two parser warnings are the document title and the "Epic List" heading, not missed epics.
+- The status file is not committed yet (created on `main`).
+
+### Åpne punkter
+- Start `bmad-build` with Story 1.1 (scaffold) on a `feature/` branch.
