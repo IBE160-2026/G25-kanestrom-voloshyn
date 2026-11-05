@@ -96,7 +96,9 @@ Break V1 into epics and stories with `bmad-create-epics-and-stories`, and review
 - **`_bmad-output/planning-artifacts/epics.md`:** 7 epics and 32 stories with Given/When/Then criteria citing FR, CAP, and AD ids. It also has an FR coverage map and a "Done for every story" checklist. `stepsCompleted: [1, 2, 3, 4]`.
 - **Validation:** all 29 FRs and 17 UX-DRs are covered. Four forward dependencies were fixed: Settings in the Account menu, the phone gate in 2.3, the Project home layout in 2.1, and the parallelism claim. Story 1.1 now cites NFR-12.
 - **FR-29:** Story 7.5 carries the Norwegian sign-off as its only acceptance dependency; Story 1.2 explicitly has none.
-- **Commit:** `db933d9` on `feature/epics-and-stories` (not merged, not pushed).
+- **Commit:** `db933d9` on `feature/epics-and-stories`.
+- **Merge:** `feature/epics-and-stories` was merged into `main` (`b4fc494`) and pushed to GitHub, so Cristoffer can pull it. The local feature branch is deleted.
+- **Not done:** deleting the remote branch `origin/design` (Cristoffer's, already fully merged into `main`) was blocked by the permission system, so it still exists on GitHub.
 
 ### Åpne punkter
 - Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md` (the acceptance dependency of Story 7.5).
