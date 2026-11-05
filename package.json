@@ -1,0 +1,10 @@
+{
+  "name": "ai-study-buddy",
+  "private": true,
+  "engines": {
+    "node": ">=22.22"
+  },
+  "devDependencies": {
+    "supabase": "2.122.0"
+  }
+}

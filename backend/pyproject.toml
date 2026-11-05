@@ -1,0 +1,27 @@
+[project]
+name = "ai-study-buddy-backend"
+version = "0.1.0"
+description = "AI Study Buddy backend: async FastAPI API that also serves the built SPA"
+authors = [
+    { name = "Ihvol100", email = "ihor.voloshyn@himolde.no" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.162.0",
+    "psycopg-pool>=3.3.3",
+    "psycopg[binary]>=3.3.8",
+    "pydantic-settings>=2.16.2",
+    "uvicorn>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
