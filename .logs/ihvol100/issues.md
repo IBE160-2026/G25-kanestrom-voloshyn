@@ -11,4 +11,4 @@
 `- [ ] 2026-11-02 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md` (FR-29 is not complete until then).
 `- [x] 2026-11-02 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Continue `bmad-create-epics-and-stories` from step 1. (løst 2026-11-02: step 1 done)
 `- [x] 2026-11-02 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Approve the epic structure (step 2) and create the stories in `bmad-create-epics-and-stories`. (løst 2026-11-05: 7 epics, 32 stories, db933d9)
-`- [ ] 2026-11-05 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Run \`bmad-sprint-planning\` for the 32 stories, then start \`bmad-build\` with Story 1.1.
+- [ ] 2026-11-05 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Run `bmad-sprint-planning` for the 32 stories, then start `bmad-build` with Story 1.1.
