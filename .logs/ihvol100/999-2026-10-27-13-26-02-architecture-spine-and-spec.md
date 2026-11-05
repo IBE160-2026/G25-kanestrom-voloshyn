@@ -80,3 +80,25 @@ Update the architecture spine for the revised 29-FR PRD and Cristoffer's final U
 ### Åpne punkter
 - Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md`; FR-29 is not complete until then.
 - Approve the epic structure (7 epics) in `bmad-create-epics-and-stories` step 2, then create the stories.
+
+## 2026-11-05 kl. 16:48 — Ihvol100
+
+### Oppgave
+Break V1 into epics and stories with `bmad-create-epics-and-stories`, and review the structure with Ihor before treating it as final. Nothing was merged or pushed.
+
+### Plan
+- Step 1: requirements inventory (29 FRs, 12 NFRs, architecture requirements, 17 UX-DRs) from the PRD, spine, UX, and spec.
+- Step 2: an epic structure organized by user value, approved by Ihor (Ask AI kept in Epic 4).
+- Step 3: draft stories one epic at a time, each approved by Ihor.
+- Step 4: final validation, fixing forward dependencies.
+
+### Resultat
+- **`_bmad-output/planning-artifacts/epics.md`:** 7 epics and 32 stories with Given/When/Then criteria citing FR, CAP, and AD ids. It also has an FR coverage map and a "Done for every story" checklist. `stepsCompleted: [1, 2, 3, 4]`.
+- **Validation:** all 29 FRs and 17 UX-DRs are covered. Four forward dependencies were fixed: Settings in the Account menu, the phone gate in 2.3, the Project home layout in 2.1, and the parallelism claim. Story 1.1 now cites NFR-12.
+- **FR-29:** Story 7.5 carries the Norwegian sign-off as its only acceptance dependency; Story 1.2 explicitly has none.
+- **Commit:** `db933d9` on `feature/epics-and-stories` (not merged, not pushed).
+
+### Åpne punkter
+- Ihor and Cristoffer sign off the Norwegian strings in `norwegian-strings-signoff.md` (the acceptance dependency of Story 7.5).
+- Stories 1.1, 2.2, and 4.4 are large; split them if one development session turns out to be too little.
+- Next step: `bmad-sprint-planning` (readiness check and sprint status file), then `bmad-build` story by story.
