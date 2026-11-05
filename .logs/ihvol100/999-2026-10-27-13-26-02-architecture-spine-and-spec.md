@@ -121,3 +121,21 @@ Run `bmad-sprint-planning`: check that the planning is ready to build, then gene
 
 ### Åpne punkter
 - Start `bmad-build` with Story 1.1 (scaffold) on a `feature/` branch.
+
+## 2026-11-05 kl. 17:10 — Ihvol100
+
+### Oppgave
+Start `bmad-build` for Story 1.1. Its render step left template tags unresolved, so update BMad, then commit and push the update and the sprint status file.
+
+### Plan
+- Diagnose: the installed `bmad-build` skill (6.13.0-next) used `{{ }}`/`{% %}` tags that the 6.12.0 `render_skill.py` doesn't resolve; every render output equalled its source.
+- `npx bmad-method@6.12.4 install --action quick-update --yes`, check the render, delete the installer's `.bak` files, commit, push.
+
+### Resultat
+- BMad core and bmm updated 6.12.0 → 6.12.4; settings kept. `_bmad/config.toml` gained the defaults `user_name = "BMad"`, `communication_language`, and `user_skill_level`.
+- `bmad-build` now renders with no leftover template tags.
+- Commits on `main`, pushed to GitHub: `bc22ae8` (chore: update BMad to 6.12.4) and `33349f0` (docs: add sprint status for 7 epics and 32 stories).
+- `bmad-build` hasn't been started yet.
+
+### Åpne punkter
+- Start `bmad-build` with Story 1.1 on a `feature/` branch (already in `issues.md`).
