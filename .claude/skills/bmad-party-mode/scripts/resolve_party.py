@@ -16,6 +16,9 @@ into one collective, then projects only what the moment needs:
   * --party <id> — full member detail for one chosen group, on demand
     (e.g. when the user switches rooms). Unknown id returns the available
     names instead of an error wall.
+  * --list-codes — every token that resolves to a member (code, alias,
+    lower-cased name, custom-only codes) mapped to that member's code and
+    name. The collision check before adding custom members.
 
 The merge is deterministic (a keyed union; a custom member whose code
 matches an installed agent overrides it), so the orchestrator consumes a
@@ -28,6 +31,7 @@ customize.toml directly if the customization resolver is unavailable.
   resolve_party.py --project-root P --skill S
   resolve_party.py --project-root P --skill S --list-groups
   resolve_party.py --project-root P --skill S --party writers-room
+  resolve_party.py --project-root P --skill S --list-codes
 """
 
 import argparse
@@ -46,7 +50,9 @@ except ImportError:  # pragma: no cover - guarded for <3.11
 def _run_json(cmd):
     """Run a resolver script and parse its JSON stdout. None on any failure."""
     try:
-        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=60)
+        out = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", timeout=60
+        )
     except (OSError, subprocess.SubprocessError):
         return None
     if out.returncode != 0 or not out.stdout.strip():
@@ -70,16 +76,7 @@ def load_workflow(project_root: Path, skill_root: Path):
     """Merged [workflow] table. Falls back to the skill's base customize.toml."""
     script = project_root / "_bmad" / "scripts" / "resolve_customization.py"
     data = _run_json(
-        [
-            sys.executable,
-            str(script),
-            "--skill",
-            str(skill_root),
-            "--project-root",
-            str(project_root),
-            "--key",
-            "workflow",
-        ]
+        [sys.executable, str(script), "--skill", str(skill_root), "--project-root", str(project_root), "--key", "workflow"]
     )
     if data is not None and "workflow" in data:
         return data["workflow"]
@@ -98,7 +95,7 @@ def _alias(code: str) -> str:
     """Short alias for an installed agent code: bmad-agent-analyst -> analyst."""
     for prefix in ("bmad-agent-", "bmad-"):
         if code.startswith(prefix):
-            return code[len(prefix) :]
+            return code[len(prefix):]
     return code
 
 
@@ -130,22 +127,19 @@ def build_collective(agents: dict, party_members: list):
             index[name.lower()] = code
 
     for code, info in agents.items():
-        register(
-            code,
-            {
-                "code": code,
-                "name": info.get("name", code),
-                "icon": info.get("icon", ""),
-                "title": info.get("title", ""),
-                "description": info.get("description", ""),
-                "module": info.get("module", ""),
-                "team": info.get("team", ""),
-                "source": "installed",
-            },
-        )
+        register(code, {
+            "code": code,
+            "name": info.get("name", code),
+            "icon": info.get("icon", ""),
+            "title": info.get("title", ""),
+            "description": info.get("description", ""),
+            "module": info.get("module", ""),
+            "team": info.get("team", ""),
+            "source": "installed",
+        })
         installed_codes.append(code)
 
-    for m in party_members if isinstance(party_members, list) else []:
+    for m in (party_members if isinstance(party_members, list) else []):
         if not isinstance(m, dict):
             continue
         code = m.get("code")
@@ -182,6 +176,12 @@ def resolve_members(member_tokens, collective, index):
     return resolved, unresolved
 
 
+def code_map(collective, index):
+    """Every resolvable token -> the member it resolves to (code + name)."""
+    return {token: {"code": code, "name": collective[code].get("name", code)}
+            for token, code in sorted(index.items()) if code in collective}
+
+
 def group_menu(groups):
     """Names only — the cheap menu. Open-cast groups (no roster) are flagged."""
     out = []
@@ -189,7 +189,8 @@ def group_menu(groups):
         if not isinstance(g, dict) or not g.get("id"):
             continue
         members = g.get("members", []) or []
-        entry = {"id": g["id"], "name": g.get("name", g["id"]), "member_count": len(members)}
+        entry = {"id": g["id"], "name": g.get("name", g["id"]),
+                 "member_count": len(members)}
         if not members:
             entry["open_cast"] = True
         out.append(entry)
@@ -217,13 +218,9 @@ def group_detail(g, collective, index):
     """
     raw_members = g.get("members", []) or []
     members, unresolved = resolve_members(raw_members, collective, index)
-    detail = {
-        "active": g["id"],
-        "name": g.get("name", g["id"]),
-        "members": members,
-        "unresolved": unresolved,
-        "memory_enabled": bool(g.get("memory", False)),
-    }
+    detail = {"active": g["id"], "name": g.get("name", g["id"]),
+              "members": members, "unresolved": unresolved,
+              "memory_enabled": bool(g.get("memory", False))}
     if g.get("scene"):
         detail["scene"] = g["scene"]
     if not raw_members:
@@ -237,6 +234,8 @@ def main():
     ap.add_argument("--skill", required=True, help="Path to the bmad-party-mode skill dir")
     ap.add_argument("--party", help="Resolve full detail for this group id")
     ap.add_argument("--list-groups", action="store_true", help="Group names only")
+    ap.add_argument("--list-codes", action="store_true",
+                    help="Every code, alias and name in the collective, for collision checks")
     args = ap.parse_args()
 
     project_root = Path(args.project_root).resolve()
@@ -252,37 +251,41 @@ def main():
 
     # Group menu never needs the (more expensive) installed-agent resolve.
     if args.list_groups:
-        _emit(
-            {
-                "party_mode": party_mode,
-                "default_party": default_party,
-                "groups": group_menu(groups),
-            }
-        )
+        _emit({
+            "party_mode": party_mode,
+            "default_party": default_party,
+            "groups": group_menu(groups),
+        })
         return
 
     agents, agents_ok = load_agents(project_root)
     collective, index, installed_codes = build_collective(agents, workflow.get("party_members", []))
 
+    if args.list_codes:
+        _emit({"installed_agents_resolved": agents_ok, "codes": code_map(collective, index)})
+        return
+
     if args.party:
         g = find_group(groups, args.party)
         if g is None:
-            _emit({"error": "unknown_group", "requested": args.party, "available": group_menu(groups)})
+            _emit({"error": "unknown_group", "requested": args.party,
+                   "available": group_menu(groups)})
             return
         _emit({**group_detail(g, collective, index), "party_mode": party_mode})
         return
 
     # Default: the active roster to load on entry.
-    result = {"party_mode": party_mode, "groups": group_menu(groups), "installed_agents_resolved": agents_ok}
+    result = {"party_mode": party_mode, "groups": group_menu(groups),
+              "installed_agents_resolved": agents_ok}
     g = find_group(groups, default_party) if default_party else None
     if g is not None:
         result.update(group_detail(g, collective, index))
     else:
         # No default group: the installed agents (custom additions stay in the
         # pool but don't crowd the default room), exactly like a plain install.
-        result.update(
-            {"active": "installed", "members": [collective[c] for c in installed_codes], "memory_enabled": party_memory}
-        )
+        result.update({"active": "installed",
+                       "members": [collective[c] for c in installed_codes],
+                       "memory_enabled": party_memory})
     _emit(result)
 
 

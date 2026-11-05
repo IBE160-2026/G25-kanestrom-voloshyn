@@ -1,4 +1,3 @@
-{% if workflow.route != "oneshot" %}
 ---
 ---
 
@@ -6,6 +5,7 @@
 
 ## RULES
 
+- **Language** — Speak in `{{.communication_language}}`. Write any file output in `{{.document_output_language}}`.
 - NEVER auto-push.
 
 ## INSTRUCTIONS
@@ -14,13 +14,13 @@
 
 Change `{spec_file}` status to `done` in the frontmatter.
 
-If `{story_key}` is not empty and `{{ config.implementation_artifacts }}/sprint-status.yaml` exists, read `{{ rendered("sync-sprint-status.md") }}` with `{target_status}` = `review`.
+If `{story_key}` is not empty and `{{.implementation_artifacts}}/sprint-status.yaml` exists, read `[[bmad-snapshot:sync-sprint-status.md]]` with `{target_status}` = `review`.
 
 ### Commit and Complete
 
 If version control is available and the tree is dirty, create a local commit with a conventional message derived from the spec title.
 
-{{ workflow.open_spec }}
+{workflow.open_spec}
 
 ### Display Summary
 
@@ -40,5 +40,4 @@ Workflow complete.
 
 If anything appears below, follow it as the final terminal instruction before exiting; otherwise exit normally.
 
-{{ workflow.on_complete }}
-{% endif %}
+{workflow.on_complete}

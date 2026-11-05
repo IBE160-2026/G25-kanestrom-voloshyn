@@ -71,14 +71,16 @@ Treat every entry in `{workflow.persistent_facts}` as foundational context you c
 
 ### Step 4: Load Config
 
-Run: `uv run {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key modules.bmm.planning_artifacts --key modules.bmm.project_knowledge`
-
+Run `uv run {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root}` and use:
+- Use `{user_name}` for greeting
+- Use `{communication_language}` for all communications
+- Use `{document_output_language}` for output documents
 - Use `{planning_artifacts}` for output location and artifact scanning
 - Use `{project_knowledge}` for additional context scanning
 
 ### Step 5: Greet the User
 
-Greet the user.
+Greet `{user_name}`, speaking in `{communication_language}`.
 
 ### Step 6: Execute Append Steps
 
@@ -88,4 +90,4 @@ Activation is complete. If `activation_steps_prepend` or `activation_steps_appen
 
 ## Execution
 
-Read fully and follow: `steps/step-01-validate-prerequisites.md` to begin the workflow.
+Read fully and follow: `./steps/step-01-validate-prerequisites.md` to begin the workflow.

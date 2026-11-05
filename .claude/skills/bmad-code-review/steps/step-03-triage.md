@@ -3,6 +3,10 @@
 
 # Step 3: Triage
 
+## RULES
+
+- YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
+
 ## INSTRUCTIONS
 
 1. **Normalize** findings from all layers into a unified list where each finding has:
@@ -47,4 +51,4 @@
 
 ## NEXT
 
-Read fully and follow `{{ rendered("step-04-present.md") }}`
+Read fully and follow `./step-04-present.md`

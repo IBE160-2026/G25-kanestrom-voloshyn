@@ -3,11 +3,6 @@ title: '{title}'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '{date}'
 status: 'draft' # draft | ready-for-dev | in-progress | in-review | done | blocked
-route: '' # oneshot | full — set by step-02
-route_source: '' # pinned | auto — set with route by step-02
-review: '' # none | quick | thorough — set by step-04
-review_source: '' # pinned | auto — set with review by step-04
-lenses_ran: [] # ids of the lenses launched, set by step-04
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done — true if the LLM decided another review pass is worthwhile
 context: [] # optional: `{project-root}/`-prefixed paths to project-wide standards/docs the implementation agent should load. Keep short — only what isn't already distilled into the spec body.
@@ -15,8 +10,7 @@ warnings: [] # optional: machine-readable warnings for orchestration, e.g. overs
 deferred: [] # append-only machine-readable deferred review findings; each item carries summary/evidence and optional location/severity
 ---
 
-<!-- Target: 900–1300 tokens (less if route is oneshot). Above 1600 = high risk of context rot;
-     add `oversized` to frontmatter `warnings` and continue.
+<!-- Aim for 900–1600 tokens. If larger, add `oversized` to frontmatter `warnings` and continue.
      Never over-specify "how" — use boundaries + examples instead.
      Cohesive cross-layer stories (DB+BE+UI) stay in ONE file.
      IMPORTANT: Remove all HTML comments when filling this template. -->
@@ -33,8 +27,7 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 
 ## Boundaries & Constraints
 
-<!-- Two tiers: Always = invariant rules. Never = out of scope + forbidden approaches.
-     Delete this section if route is oneshot. -->
+<!-- Two tiers: Always = invariant rules. Never = out of scope + forbidden approaches. -->
 
 **Always:** INVARIANT_RULES
 
@@ -42,8 +35,7 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 
 ## I/O & Edge-Case Matrix
 
-<!-- If no meaningful I/O scenarios exist, delete this section. Do not write "N/A" or "None".
-     Delete this section if route is oneshot. -->
+<!-- If no meaningful I/O scenarios exist, DELETE THIS ENTIRE SECTION. Do not write "N/A" or "None". -->
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |----------|--------------|---------------------------|----------------|
@@ -54,8 +46,7 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 
 ## Code Map
 
-<!-- Agent-populated during planning. Annotated paths prevent blind codebase searching.
-     Delete this section if route is oneshot. -->
+<!-- Agent-populated during planning. Annotated paths prevent blind codebase searching. -->
 
 - `FILE` -- ROLE_OR_RELEVANCE
 - `FILE` -- ROLE_OR_RELEVANCE
@@ -65,19 +56,12 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 <!-- Tasks: backtick-quoted file path -- action -- rationale. Prefer one task per file; group tightly-coupled changes when splitting would be artificial. -->
 <!-- If an I/O Matrix is present, include a task to unit-test its edge cases. -->
 <!-- AC covers system-level behaviors not captured by the I/O Matrix. Do not duplicate I/O scenarios here. -->
-<!-- Delete this section if route is oneshot. -->
 
 **Execution:**
-- [ ] `FILE` -- ACTION -- RATIONALE
+- `FILE` -- ACTION -- RATIONALE
 
 **Acceptance Criteria:**
 - Given PRECONDITION, when ACTION, then EXPECTED_RESULT
-
-## Implementation Notes
-
-<!-- Agent-owned. Append-only during implementation: decisions made, files touched, surprises
-     encountered. Never delete this section. Leave empty at planning time, except on the
-     oneshot route: start with a short explanation of why. -->
 
 ## Spec Change Log
 
@@ -95,15 +79,14 @@ deferred: [] # append-only machine-readable deferred review findings; each item 
 
 ## Design Notes
 
-<!-- If the approach is straightforward, delete this section. Do not write "N/A" or "None".
-     Delete this section if route is oneshot. -->
+<!-- If the approach is straightforward, DELETE THIS ENTIRE SECTION. Do not write "N/A" or "None". -->
 <!-- Design rationale and golden examples only when non-obvious. Keep examples to 5–10 lines. -->
 
 DESIGN_RATIONALE_AND_EXAMPLES
 
 ## Verification
 
-<!-- If no build, test, or lint commands apply, delete this section. Do not write "N/A" or "None". -->
+<!-- If no build, test, or lint commands apply, DELETE THIS ENTIRE SECTION. Do not write "N/A" or "None". -->
 <!-- How the agent confirms its own work. Prefer CLI commands. When no CLI check applies, state what to inspect manually. -->
 
 **Commands:**

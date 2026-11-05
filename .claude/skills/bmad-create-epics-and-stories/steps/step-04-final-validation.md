@@ -12,7 +12,7 @@ To validate complete coverage of all requirements and ensure stories are ready f
 - 📖 CRITICAL: Read the complete step file before taking any action
 - 🔄 CRITICAL: Process validation sequentially without skipping
 - 📋 YOU ARE A FACILITATOR, not a content generator
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### Role Reinforcement:
 
@@ -119,22 +119,20 @@ For each epic, review stories in order:
 
 ### 6. Complete and Save
 
-If all validations pass:
-
 - Update any remaining placeholders in the document
 - Ensure proper formatting
-- Save the final epics.md
+- Save epics.md with frontmatter `status: draft`
+
+If any validation failed, list each failed check with what is missing, keep `status: draft`, and tell the user "epics.md saved as draft, N checks open". Offer to fix the open checks now and re-run this validation; if the user declines, end the workflow with the document still a draft. Do not offer [C].
+
+If all validations pass:
 
 **Present Final Menu:**
 **All validations complete!** [C] Complete Workflow
 
 HALT — wait for user input before proceeding.
 
-When C is selected, the workflow is complete and the epics.md is ready for development.
-
-Epics and Stories complete. Invoke the `bmad-help` skill.
-
-Upon Completion of task output: offer to answer any questions about the Epics and Stories.
+When C is selected, set epics.md frontmatter `status: final`, tell the user the epics.md is complete and ready for development, invoke the `bmad-help` skill, and offer to answer any questions about the Epics and Stories.
 
 ## On Complete
 

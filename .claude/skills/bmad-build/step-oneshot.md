@@ -1,15 +1,10 @@
-{% if workflow.route != "full" %}
-{% if workflow.review == "auto" %}
-{% set review = "quick" %}
-{% else %}
-{% set review = workflow.review %}
-{% endif %}
 # Step One-Shot: Implement, Review, Present
 
 You reach this step from step 2, or from step 1 when resuming a spec whose `route` is `oneshot`. `{spec_file}` already exists.
 
 ## RULES
 
+- Speak in `{{.communication_language}}`. Write files in `{{.document_output_language}}`.
 - Do not push to a remote unless the user asks.
 - Do not edit anything inside `<frozen-after-approval>` in `{spec_file}`.
 - Review subagents must use the same model level as this session.
@@ -19,50 +14,29 @@ You reach this step from step 2, or from step 1 when resuming a spec whose `rout
 
 ### Implement
 
-If `{story_key}` is not empty and `{{ config.implementation_artifacts }}/sprint-status.yaml` exists, read `{{ rendered("sync-sprint-status.md") }}` with `{target_status}` = `in-progress`.
-
-If intent gaps remain, present each as a numbered question with its options and what each option means, HALT for the human's answers, and fold the answers into the Intent.
-
-Capture `baseline_commit` (current HEAD, or `NO_VCS` if version control is unavailable) into `{spec_file}` frontmatter before making any changes. If the frontmatter already contains `baseline_commit` (resumed run), preserve the existing value.
+If `{story_key}` is not empty and `{{.implementation_artifacts}}/sprint-status.yaml` exists, read `[[bmad-snapshot:sync-sprint-status.md]]` with `{target_status}` = `in-progress`.
 
 Build the change from `{spec_file}`. The Intent section is what you implement. As you work, add notes to `## Implementation Notes`: decisions you made, files you changed, surprises.
 
-{% if workflow.route == "oneshot" %}
-**When to stop.** Stop coding if the request left out something the user would notice in the result. Write the gap in `## Implementation Notes`, then ask the human — do not guess.
-{% else %}
-**When to stop and replan.** Stop coding if the request left out something the user would notice in the result. Write the gap in `## Implementation Notes`. Then update `{spec_file}`: add back `## Code Map` (filled in from what you learned while implementing) and `## Open Questions` (one question per gap), set `route: 'full'` and `status: 'draft'`. Go back to `{{ rendered("step-02-plan.md") }}` step 6.
-{% endif %}
+**When to stop and replan.** Stop coding if you learn something step 2 did not account for:
+
+- the request left out something the user would notice in the result
+- you need to do something you cannot undo
+- the change is growing beyond what was planned
+
+Write what triggered the stop in `## Implementation Notes`. Then update `{spec_file}`: add back `## Code Map` (filled in from what you learned while implementing) and `## Open Questions` (one question per gap), set `route: 'dispatch'` and `status: 'draft'`. Go back to `[[bmad-snapshot:step-02-plan.md]]` step 6.
 
 ### Review
 
-{% if workflow.review == "none" %}
-Write `review: 'none'`, `review_source: 'pinned'`, and `lenses_ran: []` to `{spec_file}` frontmatter.
-{% elif workflow.review == "auto" %}
-Write `review: 'quick'` and `review_source: 'auto'` to `{spec_file}` frontmatter.
-{% else %}
-Write `review: '{{ workflow.review }}'` and `review_source: 'pinned'` to `{spec_file}` frontmatter.
-{% endif %}
-{% if review != "none" %}
+Say which review layers you are skipping, then start every active layer before reading any results. Run them at the same time when you can. Fill in runtime placeholders first. When a layer tells you to launch a reviewer subagent, launch it with that prompt text. Do not read the reviewer's instruction file yourself. For any other customized instruction, do what it says:
 
-Read `{baseline_commit}` from `{spec_file}` frontmatter. If it is `NO_VCS`, use best effort to determine what changed. Otherwise use the repository's version-control tooling to write a unified diff of all changes since `{baseline_commit}`, untracked files included, to a uniquely-named file in the system temp directory; set `{diff_file}` to its absolute path. Set `{claims_file}` = `{spec_file}`.
+{workflow.oneshot_review_layers}
 
-Runtime placeholders: `{diff_file}`, `{claims_file}`, and `{spec_file}` are paths, substituted absolute so a lens can read them; a launch prompt never carries diff text. `{verbatim_intent}` is the `## Intent` section of `{spec_file}` (inside `<frozen-after-approval>`), substituted inline as text. Before launching a lens, expand its skill-root placeholder to this skill's absolute installed directory; never leave that placeholder unresolved in a child prompt.
-
-Say which review lenses you are skipping, then start every active lens before reading any results. Run them at the same time when you can. Fill in runtime placeholders first. When a lens tells you to launch a reviewer subagent, launch it with that prompt text. Do not read the reviewer's instruction file yourself. For any other customized instruction, do what it says:
-
-{% if review == "thorough" %}
-{{ workflow.thorough_lenses }}
-{% else %}
-{{ workflow.quick_lenses }}
-{% endif %}
-
-If a lens needs subagents and you cannot launch them, write the full prompt for each lens under `{{ config.implementation_artifacts }}` (with placeholders filled in, not just file paths). Stop and ask the user to run each prompt in a separate session and paste back the findings.
-
-Write `lenses_ran` — the ids launched, in launch order — to `{spec_file}` frontmatter.
+If a layer needs subagents and you cannot launch them, write the full prompt for each layer under `{{.implementation_artifacts}}` (with placeholders filled in, not just file paths). Stop and ask the user to run each prompt in a separate session and paste back the findings.
 
 ### Classify
 
-Wait until every review lens has reported. Then judge each finding. Ignore severity labels from reviewers — you decide.
+Wait until every review layer has reported. Then judge each finding. Ignore severity labels from reviewers — you decide.
 
 For each finding:
 
@@ -85,7 +59,7 @@ For each group:
 
 - **patch** — This change caused or exposed the problem. The smallest fix is simple, adds no new public API, and does not guard code paths you did not show are reachable. Fix it now.
 - **HALT** — Same as patch, but the smallest fix is not that simple. Stop and ask the user before continuing.
-- **defer** — Everything else: old bugs not caused by this change, ideas for later, groups where every member is `maybe-false` and would be `medium` or `high` if true (record that severity marked unverified, and what would prove it; if it would only be `low`, reject it), or fixes that would edit CLAUDE.md, AGENTS.md, rules, or specs. Add one entry to `{{ config.implementation_artifacts }}/deferred-work.md`:
+- **defer** — Everything else: old bugs not caused by this change, ideas for later, groups where every member is `maybe-false` and would be `medium` or `high` if true (record that severity marked unverified, and what would prove it; if it would only be `low`, reject it), or fixes that would edit CLAUDE.md, AGENTS.md, rules, or specs. Add one entry to `{{.implementation_artifacts}}/deferred-work.md`:
 
   ```markdown
   - source_spec: `{spec_file}`
@@ -94,7 +68,6 @@ For each group:
   ```
 
   Do not edit old entries or check for duplicates.
-{% endif %}
 
 ### Finalize Spec
 
@@ -103,7 +76,7 @@ Update `{spec_file}`:
 1. Set `status: 'done'` in the frontmatter.
 2. If review found anything, add `## Review Triage Log` with one line per finding: verdict and evidence. For `false`, the disproof. For `maybe-false`, what would settle it. For rejected `low`, why it was not worth fixing.
 
-If `{story_key}` is not empty and `{{ config.implementation_artifacts }}/sprint-status.yaml` exists, read `{{ rendered("sync-sprint-status.md") }}` with `{target_status}` = `review`.
+If `{story_key}` is not empty and `{{.implementation_artifacts}}/sprint-status.yaml` exists, read `[[bmad-snapshot:sync-sprint-status.md]]` with `{target_status}` = `review`.
 
 ### Commit
 
@@ -111,7 +84,7 @@ If git is available and there are uncommitted changes, commit with a conventiona
 
 ### Present
 
-{{ workflow.open_spec }}
+{workflow.open_spec}
 
 Give the user a short summary — one or two sentences:
 
@@ -131,5 +104,4 @@ Workflow complete.
 
 If anything appears below, do it before exiting. Otherwise exit.
 
-{{ workflow.on_complete }}
-{% endif %}
+{workflow.on_complete}
