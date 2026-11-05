@@ -12,4 +12,7 @@
 - [x] 2026-11-02 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Continue `bmad-create-epics-and-stories` from step 1. (løst 2026-11-02: step 1 done)
 - [x] 2026-11-02 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Approve the epic structure (step 2) and create the stories in `bmad-create-epics-and-stories`. (løst 2026-11-05: 7 epics, 32 stories, db933d9)
 - [x] 2026-11-05 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Run `bmad-sprint-planning` for the 32 stories, then start `bmad-build` with Story 1.1. (løst 2026-11-05: sprint planning done, gate PASS)
-- [ ] 2026-11-05 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Start `bmad-build` with Story 1.1 (scaffold) on a `feature/` branch.
+- [x] 2026-11-05 [architecture-spine-and-spec](999-2026-10-27-13-26-02-architecture-spine-and-spec.md) — Start `bmad-build` with Story 1.1 (scaffold) on a `feature/` branch. (løst 2026-11-05: built on feature/app-skeleton, 0720687)
+- [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Open http://localhost:8000 in a real browser and check for console errors (Story 1.1 manual check).
+- [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Add an automated smoke check that the Docker image serves the SPA at `/` (deferred from Story 1.1 review).
+- [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Replace AGENTS.md's TODO "Running and verifying" with the verified commands via `bmad-project-context`.
