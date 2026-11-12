@@ -103,7 +103,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 - **Prevents:** One student reading another's Project; token checks that differ by router or environment; a logged-out token still working; the phone link doing more than adding photos; Supabase settings drifting between local and cloud.
 - **Rule:**
   - **`user_auth`** (`app/auth.py`) turns a bearer token into `account_id`:
-    1. Validate the token with `GET {SUPABASE_URL}/auth/v1/user`.
+    1. Validate the token with `GET {SUPABASE_URL}/auth/v1/user` through `supabase_auth.py`. Only a 401 or 403 from Supabase Auth means `unauthorized`. A timeout, connection error or 5xx gives `auth_unavailable` (503), and the SPA keeps its session and shows the generic error.
     2. Look up the token's `session_id` in `auth.sessions` (via `db/`):
        - row missing (logged out, or ended by a reset or takeover) → `unauthorized`
        - `created_at` NULL, or older than `SESSION_MAX_AGE_DAYS` (default 30) → `session_expired`
@@ -111,6 +111,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
     4. Enforce the Google takeover (AD-19).
 
     The SPA signs out on `unauthorized` or `session_expired`, keeping the intended route in `sessionStorage` so the student returns to the same Project after logging in again (FR-2).
+  - **Supabase Auth adapter.** `app/supabase_auth.py` is the only code that calls Supabase Auth over HTTP (token check, admin `generate_link`, admin user update and delete, identity unlink). It uses one `httpx2` client created in the lifespan. `storage.py` uses the same client for Storage. No `supabase` Python SDK.
   - **`phone_link_auth`** (AD-24) accepts only a phone-link token and only for routes under `/api/phone/`. No other code parses tokens.
   - **Scoping:** every repository function that touches Project-owned data takes `account_id` and filters by it. Any id the client sends (Topic, Material, Mistake, Question, Chat, Job) is checked to belong to the URL's Project. There is no unscoped lookup by id.
   - **System-context exceptions**, a closed list:
@@ -429,6 +430,9 @@ Arrows are the only allowed dependency directions. Adapters never import service
     2. Stream with no connection held.
     3. Insert the messages in transaction 2.
   - **No LLM call inside an open write transaction.** Quota `reserve` is the only write allowed before one.
+  - **No external side effect inside an open write transaction.** No Supabase admin call (`supabase_auth.py`) and no SMTP send (`mailer.py`) runs while a write transaction is open:
+    - Emails go out after the commit. A send failure is logged and never changes the response.
+    - The Google takeover (AD-19) commits in its own transaction inside `user_auth`, before the route handler runs, so a later rollback can't undo the session deletes.
 
 ### AD-19 — Identity: profiles, app-level verification, Google takeover, backend auth emails, Account deletion [ADOPTED]
 
@@ -462,11 +466,11 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - `POST /api/auth/password-reset` always answers the same way.
     - Only for an Account with an email identity does it call Supabase admin `generate_link` (type recovery, 1 h, no Supabase email) and email the link through `mailer.py`.
     - After the browser completes the reset, `POST /api/auth/after-password-reset` deletes every other `auth.sessions` row.
-  - **Auth emails** are sent only by `mailer.py` over SMTP (Mailpit locally), in `profiles.language`, falling back to the pre-sign-in language the SPA sends.
+  - **Auth emails** are sent only by `mailer.py` over SMTP with `aiosmtplib` (Mailpit locally), in `profiles.language`, falling back to the pre-sign-in language the SPA sends.
   - **Account deletion (FR-28):** `DELETE /api/me` runs, in this order:
     1. `jobs.cancel_for_account` and wait
     2. delete the Storage prefix `{account_id}/`
-    3. `auth.admin.delete_user` (app tables cascade, AD-16)
+    3. the admin delete-user call through `supabase_auth.py` (app tables cascade, AD-16)
 
     The SPA then signs out.
 
@@ -649,12 +653,12 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | --- | --- |
 | Naming | Python `snake_case` modules and functions. React components `PascalCase.jsx`, each with a `PascalCase.module.css`. DB tables plural `snake_case`. REST paths are plural nouns nested under the Project: `/api/projects/{project_id}/quizzes`. |
 | IDs and time | UUID primary keys (`gen_random_uuid()`); `timestamptz` stored in UTC; ISO-8601 strings in JSON. |
-| API shape | JSON in `snake_case`. Long work returns `202 {job_id}`. Errors are always `{"error": {"code": "<snake_code>", "params": {…}, "message": "<developer fallback>"}}` with a matching HTTP status, mapped in `api/` from domain errors. Codes include `unauthorized`, `session_expired`, `not_found`, `invalid_name`, `project_read_only`, `unsupported_file_type`, `file_too_large`, `material_limit_reached`, `material_unusable`, `material_removed`, `scope_too_large`, `insufficient_material`, `topic_last_cannot_delete`, `topic_limit_reached`, `topic_merge_cross_material`, `quota_exceeded`, `link_expired`, `email_not_verified`, `google_identity_in_use`, `privacy_notice_required`, `review_in_progress`, `chat_busy`, `generation_cancelled`, `interrupted`, `llm_unavailable`, `llm_output_invalid`. |
+| API shape | JSON in `snake_case`. Long work returns `202 {job_id}`. Errors are always `{"error": {"code": "<snake_code>", "params": {…}, "message": "<developer fallback>"}}` with a matching HTTP status, mapped in `api/` from domain errors. Codes include `unauthorized`, `session_expired`, `auth_unavailable`, `not_found`, `invalid_name`, `project_read_only`, `unsupported_file_type`, `file_too_large`, `material_limit_reached`, `material_unusable`, `material_removed`, `scope_too_large`, `insufficient_material`, `topic_last_cannot_delete`, `topic_limit_reached`, `topic_merge_cross_material`, `quota_exceeded`, `link_expired`, `email_not_verified`, `google_identity_in_use`, `privacy_notice_required`, `review_in_progress`, `chat_busy`, `generation_cancelled`, `interrupted`, `llm_unavailable`, `llm_output_invalid`. |
 | Config | All settings come from environment variables, read in one `backend/app/config.py` (Pydantic settings). Each variable name, with no value, goes into `.env.example`. There are no `VITE_*` secrets or build-time Supabase values (AD-17). App variables must not use the `SUPABASE_AUTH_*` prefix except the documented Google switch, because the CLI reads such variables as config overrides. |
 | Logging | Python `logging`. Never log passwords, tokens (including phone-link and verification tokens), API keys, or Study Material text. Log the task name, model, duration, and outcome for each gateway call and job. |
 | Limits | Every PRD limit is enforced in a backend service. SPA checks and the phone page's pre-send warnings are UX hints only. |
 | Tests | Backend `pytest`, always `LLM_MODE=mock`, against the local Supabase stack. Tests assert: no module outside `app/llm/` imports `openai`; every mutating route calls `require_active` or is allowlisted; a 7-character password sign-up fails. Frontend tests use Vitest with `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, and jsdom (`npm test` = `vitest run` in `frontend/`, configured in `vite.config.js`; `globals: false`; one setup file, `src/test/setup.js`). They need no backend, Supabase, or network. `api/client.js` and `auth/` are tested by stubbing `fetch` and `supabase-js`, and every other test mocks those two modules. Tests use the real i18n catalogues through a shared render helper and never mock `react-i18next`. Sample files go only in `test-data/` (small, self-made samples, including own photos and a generated long text file). |
-| Local run (grader) | `.env.example` → `.env` → `npx supabase start`, copying the printed local keys into `.env` (`npx supabase status` shows them again) → `npx supabase db reset` (migrations) → `docker compose up` → open the app. Auth emails arrive in Mailpit (`localhost:54324`). Google sign-in stays hidden unless its keys and switch are set. For the phone demo, set `APP_PUBLIC_URL` to the computer's LAN address. |
+| Local run (grader) | `.env.example` → `.env` → `npx supabase start`, copying the printed local keys into `.env` (`npx supabase status` shows them again) → `npx supabase db reset` (migrations) → `docker compose up` → open the app. Auth emails arrive in Mailpit (`localhost:54324`). `config.toml` enables Mailpit's SMTP port (54325), and the app container reaches it through `host.docker.internal`. Google sign-in stays hidden unless its keys and switch are set. For the phone demo, set `APP_PUBLIC_URL` to the computer's LAN address. |
 
 ## Stack
 
@@ -668,6 +672,8 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | pdfplumber | 0.11 |
 | pillow-heif | 1.8 |
 | psycopg (+ `psycopg_pool`) | 3.3 |
+| httpx2 (async HTTP client: Supabase Auth calls; also Starlette's TestClient) | 2.16 |
+| aiosmtplib (async SMTP for `mailer.py`) | 5.1 |
 | Node.js (frontend tooling) | ≥ 22.22.2; 24 (≥ 24.15) or 26 LTS, set in `engines` |
 | React / react-dom | 19.3 |
 | Vite (via `npm create vite@9`, `react` JavaScript template) | 8.3 |
@@ -703,6 +709,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
       db/                   # async pool + repositories, history.py (AD-16, AD-27, AD-29)
       storage.py            # private bucket access
       mailer.py             # SMTP auth emails (AD-19)
+      supabase_auth.py      # only Supabase Auth HTTP caller (AD-2, AD-19)
       extraction/           # pdfplumber, MarkItDown, images, sectioning, integrity (AD-5, AD-6), run via to_thread
       llm/                  # gateway, schemas.py, prompts/, fixtures/ (AD-3, AD-4)
     tests/
