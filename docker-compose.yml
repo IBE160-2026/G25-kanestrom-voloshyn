@@ -1,0 +1,14 @@
+# The single app container (AD-17). Local Supabase runs separately: npx supabase start.
+services:
+  app:
+    build: .
+    env_file: .env
+    environment:
+      # Inside the container, local Supabase is on the host; these override the host values in .env.
+      SUPABASE_URL: http://host.docker.internal:54321
+      DATABASE_URL: postgresql://postgres:postgres@host.docker.internal:54322/postgres
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      # Lets the container reach local Supabase on the host, also on Linux.
+      - "host.docker.internal:host-gateway"

@@ -1,0 +1,121 @@
+/* Design tokens: every DESIGN.md frontmatter token (colors, typography, rounded, spacing)
+   as a CSS custom property. Dark theme only (AD-28). Components use only var(--...).
+   Source: _bmad-output/planning-artifacts/ux-designs/ux-AI-StudyBuddy-2026-10-13/DESIGN.md */
+
+:root {
+  color-scheme: dark;
+
+  /* Font family: Inter (bundled via @fontsource-variable/inter), then the system sans stack */
+  --font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* colors */
+  --color-background: #0F1115;
+  --color-surface: #171A21;
+  --color-text: #E6E8EE;
+  --color-text-muted: #9AA3B2;
+  --color-primary: #6C7CFF;
+  --color-on-primary: #0F1115;
+  --color-correct: #4ADE80;
+  --color-mistake: #F5A524;
+  --color-error: #EF5B5B;
+  --color-border-control: #6A6C73;
+  --color-border: #E6E8EE14;
+  --color-border-strong: #E6E8EE24;
+  --color-hover: #E6E8EE0D;
+  --color-primary-subtle: #6C7CFF1F;
+  --color-primary-wash: #6C7CFF14;
+  --color-mistake-wash: #F5A5240F;
+  --color-mistake-edge: #F5A5248C;
+  --color-correct-wash: #4ADE800F;
+  --color-correct-edge: #4ADE808C;
+  --color-error-edge: #EF5B5B59;
+  --color-scrim: #08090CB8;
+
+  /* typography */
+  --type-wordmark-size: 17px;
+  --type-wordmark-weight: 650;
+  --type-wordmark-letter-spacing: -0.01em;
+  --type-wordmark-lg-size: 30px;
+  --type-wordmark-lg-weight: 650;
+  --type-wordmark-lg-letter-spacing: -0.02em;
+  --type-display-size: 44px;
+  --type-display-weight: 600;
+  --type-display-line-height: 1.1;
+  --type-display-letter-spacing: -0.03em;
+  --type-card-term-size: 32px;
+  --type-card-term-weight: 600;
+  --type-card-term-letter-spacing: -0.02em;
+  --type-title-lg-size: 24px;
+  --type-title-lg-weight: 600;
+  --type-title-lg-letter-spacing: -0.02em;
+  --type-title-size: 22px;
+  --type-title-weight: 600;
+  --type-title-letter-spacing: -0.015em;
+  --type-question-size: 20px;
+  --type-question-weight: 500;
+  --type-question-line-height: 1.45;
+  --type-question-letter-spacing: -0.01em;
+  --type-title-sm-size: 18px;
+  --type-title-sm-weight: 600;
+  --type-title-sm-letter-spacing: -0.01em;
+  --type-card-answer-size: 17px;
+  --type-card-answer-weight: 400;
+  --type-card-answer-line-height: 1.7;
+  --type-heading-size: 15px;
+  --type-heading-weight: 600;
+  --type-body-reading-size: 15px;
+  --type-body-reading-weight: 400;
+  --type-body-reading-line-height: 1.75;
+  --type-body-size: 14px;
+  --type-body-weight: 400;
+  --type-body-line-height: 1.55;
+  --type-ui-size: 13.5px;
+  --type-ui-weight: 400;
+  --type-button-size: 13.5px;
+  --type-button-weight: 600;
+  --type-caption-size: 12.5px;
+  --type-caption-weight: 400;
+  --type-overline-size: 11px;
+  --type-overline-weight: 600;
+  --type-overline-letter-spacing: 0.06em;
+  --type-key-hint-size: 11px;
+  --type-key-hint-weight: 600;
+  --type-mobile-title-size: 20px;
+  --type-mobile-title-weight: 600;
+  --type-mobile-title-letter-spacing: -0.015em;
+  --type-mobile-button-size: 15px;
+  --type-mobile-button-weight: 600;
+
+  /* rounded */
+  --radius-xs: 5px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-sidebar-width: 248px;
+  --space-sidebar-collapsed-width: 56px;
+  --space-files-panel-width: 340px;
+  --space-chat-width: 760px;
+  --space-reading-width: 860px;
+  --space-setup-width: 640px;
+  --space-auth-panel-width: 380px;
+  --space-content-x: 48px;
+  --space-input-height: 42px;
+  --space-auth-button-height: 44px;
+  --space-phone-gutter: 16px;
+  --space-touch-target-min: 44px;
+  --space-focus-ring-width: 2px;
+  --space-focus-ring-offset: 2px;
+  --space-accent-edge-width: 3px;
+  --space-avatar-sm: 30px;
+  --space-avatar-lg: 56px;
+}
