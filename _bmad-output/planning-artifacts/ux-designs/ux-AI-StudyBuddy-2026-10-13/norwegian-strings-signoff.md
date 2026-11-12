@@ -52,7 +52,7 @@ Each row points to the "Strings by surface" rows for that flow.
 | Mistake Review | Mistakes card and Start, progress, context, next mistake, Round done, All cleared, saved line, already starting, source file removed | [ ] | [ ] |
 | History | History link, filter, empty, loading, error, "Do it again", Unfinished, source removed | [ ] | [ ] |
 | Generation states | Progress steps (Quiz, Flashcards, Summary, Mistake Review), cancel, cancelled, finished-generation messages | [ ] | [ ] |
-| Errors and limits | Inline error (generic, reassurance, AI service down), too much material, read-only project, history error, remove failed | [ ] | [ ] |
+| Errors and limits | Inline error (generic, reassurance, AI service down), too much material, read-only project, history error, remove failed, API error codes (new 2026-11-12: not found, bad request, not signed in, no access, action not available, changed meanwhile, invalid details) | [ ] | [ ] |
 | Settings | Account menu, Settings sections, account actions, sign-in method, password changed | [ ] | [ ] |
 | Archive and deletion | Archived group, banner and Undo, Deleted projects group and days left, delete-project and delete-forever dialogs, Settings › Delete a project, delete-account entry and dialog, Account deleted | [ ] | [ ] |
 | Phone upload | QR dialog, batch name, phone page header, actions, countdown, expired, sent, over image limit, photo over 50 MB, project full | [ ] | [ ] |

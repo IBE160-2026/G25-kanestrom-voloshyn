@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -9,5 +9,11 @@ export default defineConfig({
     proxy: {
       '/api': 'http://127.0.0.1:8000',
     },
+  },
+  // Frontend tests (spine › Tests): Vitest + Testing Library in jsdom, no backend or network.
+  test: {
+    environment: 'jsdom',
+    globals: false,
+    setupFiles: ['./src/test/setup.js'],
   },
 })

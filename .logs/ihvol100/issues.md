@@ -16,3 +16,4 @@
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Open http://localhost:8000 in a real browser and check for console errors (Story 1.1 manual check).
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Add an automated smoke check that the Docker image serves the SPA at `/` (deferred from Story 1.1 review).
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Replace AGENTS.md's TODO "Running and verifying" with the verified commands via `bmad-project-context`.
+- [ ] 2026-11-12 [story-1-2-language-switch](997-2026-11-12-13-38-02-story-1-2-language-switch.md) — Manual browser check of Story 1.2 (Norwegian browser in a fresh profile, EN | NO toggle, reload, keyboard, console errors).

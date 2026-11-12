@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './i18n/index.js' // initialise the language before the first render (AD-26)
 import './styles/global.css'
 import App from './App.jsx'
 

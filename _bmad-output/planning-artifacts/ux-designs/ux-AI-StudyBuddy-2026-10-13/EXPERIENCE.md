@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-11-02
+updated: 2026-11-12
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -258,6 +258,13 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Phone page, project full | "This project already has 10 files, so these photos can't be added." [ASSUMPTION: copy] | Prosjektet har allerede 10 filer, så disse bildene kan ikke legges til. (proposed) |
 | Inline error, generic | "Something went wrong." · "Try again" [ASSUMPTION: copy] | Noe gikk galt. · Prøv igjen (proposed) |
 | Inline error, AI service down | "The AI service isn't responding right now." [ASSUMPTION: copy] | KI-tjenesten svarer ikke akkurat nå. (proposed) |
+| API error, not found (`not_found`) | "We couldn't find that." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Vi fant ikke det du lette etter. (proposed) |
+| API error, bad request (`bad_request`) | "That request didn't work. Try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Forespørselen fungerte ikke. Prøv igjen. (proposed) |
+| API error, not signed in (`unauthorized`) | "Log in to continue." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Logg inn for å fortsette. (proposed) |
+| API error, no access (`forbidden`) | "You don't have access to this." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Du har ikke tilgang til dette. (proposed) |
+| API error, action not available (`method_not_allowed`) | "That action isn't available." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Den handlingen er ikke tilgjengelig. (proposed) |
+| API error, changed meanwhile (`conflict`) | "This changed in the meantime. Reload and try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Dette ble endret i mellomtiden. Last inn på nytt og prøv igjen. (proposed) |
+| API error, invalid details (`invalid_request`) | "Some of the details aren't valid." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Noen av opplysningene er ikke gyldige. (proposed) |
 | Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye stoff. Velg færre emner eller én fil. (proposed) |
 | Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. (proposed) |
 

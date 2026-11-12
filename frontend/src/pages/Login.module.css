@@ -1,11 +1,24 @@
 .page {
+  position: relative;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+.corner {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-4);
+}
+
+.column {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-7) var(--space-5);
-  background: var(--color-background);
 }
 
 .wordmark {
@@ -13,5 +26,31 @@
   font-weight: var(--type-wordmark-lg-weight);
   letter-spacing: var(--type-wordmark-lg-letter-spacing);
   color: var(--color-text);
+  text-align: center;
+}
+
+.tagline {
+  margin-top: var(--space-2);
+  font-size: var(--type-body-reading-size);
+  font-weight: var(--type-body-reading-weight);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.privacy {
+  max-width: var(--space-auth-panel-width);
+  margin-top: var(--space-5);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Footer credit: 11px muted text at the bottom centre (DESIGN.md › Brand & Style). No dedicated
+   token exists, so it reuses the 11px overline size. */
+.credit {
+  padding: 0 var(--space-5) var(--space-4);
+  font-size: var(--type-overline-size);
+  color: var(--color-text-muted);
   text-align: center;
 }

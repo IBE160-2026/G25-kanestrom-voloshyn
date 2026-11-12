@@ -7,7 +7,7 @@ paradigm: 'layered modular monolith (single deployable: async FastAPI API + in-p
 scope: 'Whole V1 system: PRD §7.1 (FR-1 to FR-29), desktop web plus the FR-21 phone upload page'
 status: final
 created: '2026-10-13'
-updated: '2026-11-02'
+updated: '2026-11-12'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, SM-4]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-AI-StudyBuddy-2026-10-06/prd.md
@@ -653,7 +653,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | Config | All settings come from environment variables, read in one `backend/app/config.py` (Pydantic settings). Each variable name, with no value, goes into `.env.example`. There are no `VITE_*` secrets or build-time Supabase values (AD-17). App variables must not use the `SUPABASE_AUTH_*` prefix except the documented Google switch, because the CLI reads such variables as config overrides. |
 | Logging | Python `logging`. Never log passwords, tokens (including phone-link and verification tokens), API keys, or Study Material text. Log the task name, model, duration, and outcome for each gateway call and job. |
 | Limits | Every PRD limit is enforced in a backend service. SPA checks and the phone page's pre-send warnings are UX hints only. |
-| Tests | Backend `pytest`, always `LLM_MODE=mock`, against the local Supabase stack. Tests assert: no module outside `app/llm/` imports `openai`; every mutating route calls `require_active` or is allowlisted; a 7-character password sign-up fails. Sample files go only in `test-data/` (small, self-made samples, including own photos and a generated long text file). |
+| Tests | Backend `pytest`, always `LLM_MODE=mock`, against the local Supabase stack. Tests assert: no module outside `app/llm/` imports `openai`; every mutating route calls `require_active` or is allowlisted; a 7-character password sign-up fails. Frontend tests use Vitest with `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, and jsdom (`npm test` = `vitest run` in `frontend/`, configured in `vite.config.js`; `globals: false`; one setup file, `src/test/setup.js`). They need no backend, Supabase, or network. `api/client.js` and `auth/` are tested by stubbing `fetch` and `supabase-js`, and every other test mocks those two modules. Tests use the real i18n catalogues through a shared render helper and never mock `react-i18next`. Sample files go only in `test-data/` (small, self-made samples, including own photos and a generated long text file). |
 | Local run (grader) | `.env.example` → `.env` → `npx supabase start`, copying the printed local keys into `.env` (`npx supabase status` shows them again) → `npx supabase db reset` (migrations) → `docker compose up` → open the app. Auth emails arrive in Mailpit (`localhost:54324`). Google sign-in stays hidden unless its keys and switch are set. For the phone demo, set `APP_PUBLIC_URL` to the computer's LAN address. |
 
 ## Stack
@@ -668,7 +668,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | pdfplumber | 0.11 |
 | pillow-heif | 1.8 |
 | psycopg (+ `psycopg_pool`) | 3.3 |
-| Node.js (frontend tooling) | ≥ 22.22; 24 or 26 LTS, set in `engines` |
+| Node.js (frontend tooling) | ≥ 22.22.2; 24 (≥ 24.15) or 26 LTS, set in `engines` |
 | React / react-dom | 19.3 |
 | Vite (via `npm create vite@9`, `react` JavaScript template) | 8.3 |
 | react-router | 8.5 |
@@ -678,6 +678,11 @@ Arrows are the only allowed dependency directions. Adapters never import service
 | lucide-react | 1.66 |
 | qrcode | 1.5 |
 | @supabase/supabase-js | 2.118 |
+| Vitest (frontend tests, devDependency) | 5.1 |
+| @testing-library/react (+ @testing-library/dom) | 16.3 (+ 10.4) |
+| @testing-library/jest-dom | 7.0 |
+| @testing-library/user-event | 14.6 |
+| jsdom (test environment) | 31.0 |
 | Supabase CLI (local stack, migrations) | 2.122.0, pinned exactly |
 | Supabase Cloud | Free plan |
 | Docker + Docker Compose | Docker Desktop current |
@@ -802,6 +807,6 @@ erDiagram
   - Apply AD-2's auth settings to the Cloud project from `config.toml` (the CLI's config push), not by hand.
 - **Concrete OpenRouter model IDs and tuning values** (`LLM_CONTEXT_BUDGET_TOKENS`, `CAPACITY_WORDS_PER_ITEM`, `LLM_TIMEOUT_SECONDS`, `JOBS_MAX_CONCURRENT`): set in `.env` once tested. The models must support structured output (and, for vision, image input) under `zdr: true`. Use a cheap paid model with a spend limit on the key.
 - **Norwegian interface strings:** need team sign-off (PRD §9.3). This blocks FR-29 "done", not the architecture.
-- **CI pipeline and frontend test runner:** decided when the first stories land.
+- **CI pipeline:** decided when the first stories land. (The frontend test runner was decided on 2026-11-12: Tests convention and Stack.)
 - **Embeddings / pgvector retrieval:** a V2 candidate if full-text retrieval proves weak.
 - **Rate-limit backoff beyond AD-3's single schema retry:** add only if the demo hits `429`s.
