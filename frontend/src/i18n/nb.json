@@ -6,7 +6,28 @@
   "login": {
     "wordmark": "Study Buddy",
     "tagline": "Studer fra dine egne notater, med kilder",
-    "privacy": "Filene dine brukes bare til å lage studiemateriellet ditt."
+    "privacy": "Filene dine brukes bare til å lage studiemateriellet ditt.",
+    "createAccount": "Opprett konto"
+  },
+  "signup": {
+    "firstName": "Fornavn",
+    "email": "E-post",
+    "password": "Passord",
+    "submit": "Opprett konto",
+    "logIn": "Logg inn",
+    "errors": {
+      "duplicate": "Det finnes allerede en konto med denne e-postadressen. Vil du <login>logge inn</login> i stedet?",
+      "passwordTooShort": "Bruk minst 8 tegn.",
+      "firstNameRequired": "Skriv inn fornavnet ditt.",
+      "emailRequired": "Skriv inn e-postadressen din.",
+      "emailInvalid": "Skriv inn en gyldig e-postadresse."
+    }
+  },
+  "projects": {
+    "welcome": "Velkommen, {{firstName}}",
+    "empty": {
+      "heading": "Opprett ditt første prosjekt"
+    }
   },
   "language": {
     "label": "Språk",
@@ -37,6 +58,8 @@
     "file_too_large": "Filen er over 50 MB.",
     "invalid_request": "Noen av opplysningene er ikke gyldige.",
     "http_error": "Noe gikk galt.",
-    "internal_error": "Noe gikk galt."
+    "internal_error": "Noe gikk galt.",
+    "session_expired": "Du er logget ut. Logg inn for å fortsette.",
+    "auth_unavailable": "Noe gikk galt."
   }
 }

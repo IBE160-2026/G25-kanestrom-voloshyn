@@ -1,11 +1,13 @@
-// Login screen and the EN | NO toggle (Story 1.2 matrix rows 5-6).
+// Login screen and the EN | NO toggle (Story 1.2 matrix rows 5-6), plus the Create account link (Story 1.3).
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { i18n, renderWithI18n } from '../test/render.jsx'
+import { i18n, renderRoute } from '../test/render.jsx'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
-import Login from './Login.jsx'
+
+vi.mock('../auth/index.js', () => ({ signUp: vi.fn(), getAccessToken: vi.fn() }))
+vi.mock('../api/client.js', () => ({ apiFetch: vi.fn() }))
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -29,7 +31,7 @@ function toggle() {
 
 describe('Login', () => {
   it('shows the static parts in English by default, with EN pressed', () => {
-    renderWithI18n(<Login />)
+    renderRoute('/')
 
     expectStrings(en)
     const { en: enButton, nb: nbButton } = toggle()
@@ -41,7 +43,7 @@ describe('Login', () => {
 
   it('pressing NO switches every string at once, saves nb, and sets <html lang>', async () => {
     const user = userEvent.setup()
-    renderWithI18n(<Login />)
+    renderRoute('/')
 
     await user.click(toggle().nb)
 
@@ -55,7 +57,7 @@ describe('Login', () => {
 
   it('works from the keyboard: Tab to a segment, then Enter', async () => {
     const user = userEvent.setup()
-    renderWithI18n(<Login />)
+    renderRoute('/')
 
     await user.tab()
     expect(toggle().en).toHaveFocus()
@@ -76,11 +78,21 @@ describe('Login', () => {
       throw new DOMException('blocked', 'SecurityError')
     })
     const user = userEvent.setup()
-    renderWithI18n(<Login />)
+    renderRoute('/')
 
     await user.click(toggle().nb)
 
     expectStrings(nb)
     expect(i18n.language).toBe('nb')
+  })
+
+  it('links to Create account', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+
+    await user.click(screen.getByRole('link', { name: en.login.createAccount }))
+
+    expect(router.state.location.pathname).toBe('/signup')
+    expect(screen.getByRole('form', { name: en.signup.submit })).toBeInTheDocument()
   })
 })

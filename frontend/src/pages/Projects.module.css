@@ -1,0 +1,45 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+
+/* Top bar: the greeting sits top right, where the Account menu goes (Story 1.4). */
+.topBar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: var(--space-7);
+  padding: var(--space-3) var(--space-5);
+}
+
+.greeting {
+  font-size: var(--type-ui-size);
+  font-weight: var(--type-ui-weight);
+  color: var(--color-text);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-5);
+}
+
+/* Empty state (DESIGN.md › Empty state): centred title-sm heading. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.heading {
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  letter-spacing: var(--type-title-sm-letter-spacing);
+  color: var(--color-text);
+}

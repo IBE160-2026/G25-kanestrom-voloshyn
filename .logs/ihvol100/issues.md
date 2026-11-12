@@ -17,3 +17,6 @@
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Add an automated smoke check that the Docker image serves the SPA at `/` (deferred from Story 1.1 review).
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Replace AGENTS.md's TODO "Running and verifying" with the verified commands via `bmad-project-context`.
 - [ ] 2026-11-12 [story-1-2-language-switch](997-2026-11-12-13-38-02-story-1-2-language-switch.md) — Manual browser check of Story 1.2 (Norwegian browser in a fresh profile, EN | NO toggle, reload, keyboard, console errors).
+- [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Build Story 1.3 part 2: the verification email and link (deferred-work.md).
+- [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Manual browser check of Story 1.3 (sign up in Norwegian, duplicate email, 7-character password, console errors).
+- [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Add the two-account session-lookup test when Story 1.4 extends the user_auth tests (deferred-work.md).

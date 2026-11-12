@@ -3,7 +3,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach, beforeEach } from 'vitest'
-import { resetI18n } from './render.jsx'
+import { resetI18n } from './reset.js'
 
 beforeEach(resetI18n)
 

@@ -1,0 +1,57 @@
+/* Auth panel (DESIGN.md › Auth panel) with Text inputs and a full-width Button (primary). */
+.panel {
+  width: var(--space-auth-panel-width);
+  max-width: 100%;
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.field {
+  margin-bottom: var(--space-3);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  color: var(--color-text-muted);
+}
+
+.input {
+  width: 100%;
+  height: var(--space-input-height);
+  padding: 0 var(--space-3);
+  background: var(--color-background);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.primary {
+  width: 100%;
+  height: var(--space-auth-button-height);
+  margin-top: var(--space-1);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.primary:disabled {
+  /* Button (primary) disabled treatment (DESIGN.md) */
+  opacity: 0.38;
+  cursor: progress;
+}
+
+.input:read-only {
+  color: var(--color-text-muted);
+}

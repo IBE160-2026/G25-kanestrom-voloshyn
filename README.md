@@ -29,6 +29,8 @@ Appen kjører helt lokalt i mock-modus, uten API-nøkkel og uten betalte kall.
 6. Start appen: `docker compose up --build`
 7. Åpne <http://localhost:8000>
 
+Opprett en konto på <http://localhost:8000/signup> (fornavn, e-post og et passord på minst 8 tegn); du havner da på Prosjekter-siden. Lenken «Opprett konto» på startsiden går dit.
+
 `LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. E-poster fra appen havner i Mailpit på <http://localhost:54324>. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 
 ### Utvikling
