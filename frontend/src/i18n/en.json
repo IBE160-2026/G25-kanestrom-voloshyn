@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "source": "Strings by surface in EXPERIENCE.md (ux-AI-StudyBuddy-2026-10-13). Copy every new string from there; errors.* entries for codes EXPERIENCE.md has no row for are drafts (AD-26)."
+  },
+  "login": {
+    "wordmark": "Study Buddy",
+    "tagline": "Study from your own notes, with sources",
+    "privacy": "Your files are only used to create your study material."
+  },
+  "language": {
+    "label": "Language",
+    "toggle": {
+      "en": "EN",
+      "nb": "NO"
+    },
+    "name": {
+      "en": "English",
+      "nb": "Norsk"
+    }
+  },
+  "limits": {
+    "messagesLeft_one": "{{count}} message left today",
+    "messagesLeft_other": "{{count}} messages left today"
+  },
+  "footer": {
+    "credit": "© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved."
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "not_found": "We couldn't find that.",
+    "bad_request": "That request didn't work. Try again.",
+    "unauthorized": "Log in to continue.",
+    "forbidden": "You don't have access to this.",
+    "method_not_allowed": "That action isn't available.",
+    "conflict": "This changed in the meantime. Reload and try again.",
+    "file_too_large": "This file is over 50 MB.",
+    "invalid_request": "Some of the details aren't valid.",
+    "http_error": "Something went wrong.",
+    "internal_error": "Something went wrong."
+  }
+}

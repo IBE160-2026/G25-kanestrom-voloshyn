@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "status": "draft",
+    "note": "Every Norwegian string is a draft until the team signs off in norwegian-strings-signoff.md (UX-DR17, Story 7.5)."
+  },
+  "login": {
+    "wordmark": "Study Buddy",
+    "tagline": "Studer fra dine egne notater, med kilder",
+    "privacy": "Filene dine brukes bare til å lage studiemateriellet ditt."
+  },
+  "language": {
+    "label": "Språk",
+    "toggle": {
+      "en": "EN",
+      "nb": "NO"
+    },
+    "name": {
+      "en": "English",
+      "nb": "Norsk"
+    }
+  },
+  "limits": {
+    "messagesLeft_one": "{{count}} melding igjen i dag",
+    "messagesLeft_other": "{{count}} meldinger igjen i dag"
+  },
+  "footer": {
+    "credit": "© 2026 Sherlock and Watson Inc. · All mysteries solved, all rights reserved."
+  },
+  "errors": {
+    "generic": "Noe gikk galt.",
+    "not_found": "Vi fant ikke det du lette etter.",
+    "bad_request": "Forespørselen fungerte ikke. Prøv igjen.",
+    "unauthorized": "Logg inn for å fortsette.",
+    "forbidden": "Du har ikke tilgang til dette.",
+    "method_not_allowed": "Den handlingen er ikke tilgjengelig.",
+    "conflict": "Dette ble endret i mellomtiden. Last inn på nytt og prøv igjen.",
+    "file_too_large": "Filen er over 50 MB.",
+    "invalid_request": "Noen av opplysningene er ikke gyldige.",
+    "http_error": "Noe gikk galt.",
+    "internal_error": "Noe gikk galt."
+  }
+}

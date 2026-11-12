@@ -16,7 +16,7 @@ Appen kjører helt lokalt i mock-modus, uten API-nøkkel og uten betalte kall.
 ### Forutsetninger
 
 - Docker Desktop (kjørende)
-- Node.js ≥ 22.22 (for Supabase CLI via `npx`)
+- Node.js ≥ 22.22.2 (for Supabase CLI via `npx`)
 - [uv](https://docs.astral.sh/uv/) (bare for utvikling og tester; Python 3.14 hentes av uv)
 
 ### Starte appen (sensor)
@@ -56,3 +56,10 @@ uv run pytest
 ```
 
 Testene kjører alltid med `LLM_MODE=mock` og trenger ingen nøkkel.
+
+Frontend-testene (Vitest i jsdom) trenger verken backend, Supabase eller nettverk:
+
+```sh
+cd frontend
+npm test
+```
