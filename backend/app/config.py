@@ -5,7 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     supabase_public_url: str = "http://127.0.0.1:54321"
     supabase_publishable_key: str = ""
     supabase_secret_key: SecretStr | None = None
+
+    # Sessions end this many days after sign-in, whatever Supabase's refresh tokens allow (AD-2).
+    session_max_age_days: int = Field(30, ge=1, le=3650)
 
     # What the phone QR code encodes (AD-17, AD-24).
     app_public_url: str = "http://localhost:8000"

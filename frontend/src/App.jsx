@@ -1,6 +1,9 @@
-import Login from './pages/Login.jsx'
+import { createBrowserRouter } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
+import { routes } from './routes.jsx'
 
-// Story 1.1: every path shows the placeholder Login screen. Real routing arrives with the auth stories.
+const router = createBrowserRouter(routes)
+
 export default function App() {
-  return <Login />
+  return <RouterProvider router={router} />
 }

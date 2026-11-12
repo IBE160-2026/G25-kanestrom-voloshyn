@@ -200,6 +200,9 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Login, invalid email or password | "Wrong email or password." [ASSUMPTION: copy; generic, FR-2] | Feil e-post eller passord. (proposed) |
 | Sign-in failure or cancel | "Sign-in didn't work. Try again." | Innloggingen fungerte ikke. Prøv igjen. (proposed) |
 | Create account, password too short | "Use at least 8 characters." [ASSUMPTION: copy] | Bruk minst 8 tegn. (proposed) |
+| Create account, first name missing | "Enter your first name." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn fornavnet ditt. (proposed) |
+| Create account, email missing | "Enter your email." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn e-postadressen din. (proposed) |
+| Create account, email invalid | "Enter a valid email address." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn en gyldig e-postadresse. (proposed) |
 | Password reset, request screen | "Reset your password" · "Send link" [ASSUMPTION: copy] | Tilbakestill passordet · Send lenke (proposed) |
 | Password reset, new-password screen | "Choose a new password" · "Save password" [ASSUMPTION: copy] | Velg et nytt passord · Lagre passordet (proposed) |
 | Password reset saved | "Your password is changed. Log in with the new one." [ASSUMPTION: copy] | Passordet er endret. Logg inn med det nye. (proposed) |

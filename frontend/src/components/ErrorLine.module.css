@@ -1,0 +1,21 @@
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--type-ui-size);
+  color: var(--color-error);
+}
+
+.dot {
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-error);
+}
+
+.line a {
+  color: var(--color-primary);
+  font-weight: var(--type-button-weight);
+}

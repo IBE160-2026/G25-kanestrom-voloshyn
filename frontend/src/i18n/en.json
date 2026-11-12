@@ -5,7 +5,28 @@
   "login": {
     "wordmark": "Study Buddy",
     "tagline": "Study from your own notes, with sources",
-    "privacy": "Your files are only used to create your study material."
+    "privacy": "Your files are only used to create your study material.",
+    "createAccount": "Create account"
+  },
+  "signup": {
+    "firstName": "First name",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Create account",
+    "logIn": "Log in",
+    "errors": {
+      "duplicate": "An account with this email already exists. <login>Log in</login> instead?",
+      "passwordTooShort": "Use at least 8 characters.",
+      "firstNameRequired": "Enter your first name.",
+      "emailRequired": "Enter your email.",
+      "emailInvalid": "Enter a valid email address."
+    }
+  },
+  "projects": {
+    "welcome": "Welcome, {{firstName}}",
+    "empty": {
+      "heading": "Create your first project"
+    }
   },
   "language": {
     "label": "Language",
@@ -36,6 +57,8 @@
     "file_too_large": "This file is over 50 MB.",
     "invalid_request": "Some of the details aren't valid.",
     "http_error": "Something went wrong.",
-    "internal_error": "Something went wrong."
+    "internal_error": "Something went wrong.",
+    "session_expired": "You've been signed out. Log in to continue.",
+    "auth_unavailable": "Something went wrong."
   }
 }
