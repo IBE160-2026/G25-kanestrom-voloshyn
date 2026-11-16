@@ -108,6 +108,17 @@ describe('Login', () => {
     expect(router.state.location.pathname).toBe('/signup')
     expect(screen.getByRole('form', { name: en.signup.submit })).toBeInTheDocument()
   })
+
+  it('"Forgot password?" goes to the reset request, in Norwegian too', async () => {
+    await i18n.changeLanguage('nb')
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+
+    await user.click(screen.getByRole('link', { name: nb.login.forgotPassword }))
+
+    expect(router.state.location.pathname).toBe('/forgot-password')
+    expect(screen.getByRole('heading', { level: 2, name: nb.reset.request.title })).toBeInTheDocument()
+  })
 })
 
 function loginForm(catalogue = en) {
@@ -141,8 +152,8 @@ describe('Login form', () => {
     expect(f.email).toHaveAttribute('autocomplete', 'email')
     expect(f.password).toHaveAttribute('type', 'password')
     expect(f.password).toHaveAttribute('autocomplete', 'current-password')
-    // Forgot password (Story 1.5) and Google (Story 1.6) are not shown yet.
-    expect(screen.queryByText('Forgot password?')).not.toBeInTheDocument()
+    // "Forgot password?" is live since Story 1.5; Google (Story 1.6) is not shown yet.
+    expect(screen.getByRole('link', { name: en.login.forgotPassword })).toHaveAttribute('href', '/forgot-password')
     expect(screen.queryByText('Sign in with Google')).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     // The notice's live region is always there, empty unless a session ended.
@@ -364,6 +375,18 @@ describe('Signed out and return route', () => {
 
     expect(screen.getByRole('status')).toBeEmptyDOMElement()
     expect(screen.getByRole('alert')).toHaveTextContent(en.login.errors.credentials)
+  })
+
+  it('after a password reset: the password-changed notice, cleared from history', async () => {
+    const { router } = renderRoute('/')
+    const region = screen.getByRole('status')
+
+    await router.navigate('/', { replace: true, state: { passwordChanged: true } })
+
+    await expectNotice(en.reset.saved)
+    expect(screen.getByRole('status')).toBe(region)
+    await waitFor(() => expect(router.state.location.state).toBeNull())
+    expect(screen.queryByText(en.session.expired)).not.toBeInTheDocument()
   })
 
   it('the notice is in Norwegian too', async () => {

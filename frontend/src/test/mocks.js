@@ -10,6 +10,8 @@ export function authMock() {
     signUp: vi.fn(),
     signIn: vi.fn(),
     signOut: vi.fn(async () => ({ ended: Promise.resolve() })),
+    completeRecovery: vi.fn(async () => ({ ok: true })),
+    setNewPassword: vi.fn(async () => ({ ok: true })),
   }
 }
 

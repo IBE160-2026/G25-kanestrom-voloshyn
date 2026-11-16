@@ -55,17 +55,6 @@ class _ValidToken:
     providers: frozenset[str]
 
 
-def _providers(user: dict) -> frozenset[str]:
-    identities = user.get("identities")
-    if not isinstance(identities, list):
-        return frozenset()
-    return frozenset(
-        identity["provider"]
-        for identity in identities
-        if isinstance(identity, dict) and isinstance(identity.get("provider"), str)
-    )
-
-
 async def _validated_token(request: Request) -> _ValidToken:
     """Step 1: Supabase Auth validates the token. No database connection is held during the call."""
     token = _bearer_token(request)
@@ -78,7 +67,7 @@ async def _validated_token(request: Request) -> _ValidToken:
         account_id=account_id,
         session_id=_session_id(token),
         email=user.get("email"),
-        providers=_providers(user),
+        providers=supabase_auth.providers(user),
     )
 
 

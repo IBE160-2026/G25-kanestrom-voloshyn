@@ -1,4 +1,4 @@
-/* Shared by the auth forms (Login, Create account). Auth panel (DESIGN.md › Auth panel) with Text inputs and a full-width Button (primary). */
+/* Shared by the auth forms (Login, Create account, Password reset). Auth panel (DESIGN.md › Auth panel) with Text inputs and a full-width Button (primary). */
 .panel {
   width: var(--space-auth-panel-width);
   max-width: 100%;
@@ -54,4 +54,36 @@
 
 .input:read-only {
   color: var(--color-text-muted);
+}
+
+/* The step's title inside the Auth panel (Password reset screens): a title-sm line. */
+.title {
+  margin-bottom: var(--space-4);
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  letter-spacing: var(--type-title-sm-letter-spacing);
+  color: var(--color-text);
+}
+
+/* Muted text in place of a form, e.g. "If an account exists, we've sent a link" (DESIGN.md ›
+   Password reset screens). */
+.muted {
+  font-size: var(--type-ui-size);
+  color: var(--color-text-muted);
+}
+
+/* A link that looks like the full-width Button (primary), e.g. "Send a new link". */
+.primaryLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: var(--space-auth-button-height);
+  margin-top: var(--space-1);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-radius: var(--radius-md);
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  text-decoration: none;
 }

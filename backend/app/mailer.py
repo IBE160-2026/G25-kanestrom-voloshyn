@@ -43,12 +43,47 @@ _VERIFICATION = {
 }
 
 
-def verification_email(language: str | None, name: str | None, link: str) -> tuple[str, str]:
+# The password-reset email (FR-3), as approved for EXPERIENCE.md › Strings by surface (2026-11-16).
+_PASSWORD_RESET = {
+    "en": {
+        "subject": "Reset your Study Buddy password",
+        "greeting": "Hi {name},",
+        "greeting_no_name": "Hi,",
+        "lines": [
+            "Open this link to choose a new password:",
+            "{link}",
+            "The link works for 1 hour and only once.",
+            "If you didn't ask for this, you can ignore this email. Your password stays the same.",
+        ],
+    },
+    "nb": {
+        "subject": "Tilbakestill passordet ditt for Study Buddy",
+        "greeting": "Hei {name},",
+        "greeting_no_name": "Hei,",
+        "lines": [
+            "Åpne denne lenken for å velge et nytt passord:",
+            "{link}",
+            "Lenken gjelder i 1 time og bare én gang.",
+            "Hvis du ikke ba om dette, kan du se bort fra denne e-posten. Passordet ditt er uendret.",
+        ],
+    },
+}
+
+
+def _render(templates: dict, language: str | None, name: str | None, link: str) -> tuple[str, str]:
     """Return (subject, plain-text body) in `language`, falling back to English."""
-    text = _VERIFICATION.get(language or "en", _VERIFICATION["en"])
+    text = templates.get(language or "en", templates["en"])
     greeting = text["greeting"].format(name=name) if name else text["greeting_no_name"]
     paragraphs = [greeting, *(line.format(link=link) for line in text["lines"])]
     return text["subject"], "\n\n".join(paragraphs) + "\n"
+
+
+def verification_email(language: str | None, name: str | None, link: str) -> tuple[str, str]:
+    return _render(_VERIFICATION, language, name, link)
+
+
+def password_reset_email(language: str | None, name: str | None, link: str) -> tuple[str, str]:
+    return _render(_PASSWORD_RESET, language, name, link)
 
 
 def _from_header(value: str) -> Address:
