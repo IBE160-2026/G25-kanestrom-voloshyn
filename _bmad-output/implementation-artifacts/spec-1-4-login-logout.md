@@ -90,6 +90,41 @@ Decisions (Ihor, 2026-11-16):
 - Given the grader flow, when a student who signed up logs out and logs in again at `http://localhost:8000`, then they reach `/projects` with "Welcome, {first name}", and the language they picked in the Account menu is restored in a fresh browser profile.
 - Given the source, when it is searched, then Supabase is still used only in `frontend/src/auth/` and `fetch` only in `api/client.js` (the boundary test passes).
 
+### Review Findings
+
+Code review pass 2 (2026-11-16, run by Cristoffer: Blind Hunter, Edge Case Hunter, Verification Gap, Acceptance Auditor against `14a62b4`).
+
+- [x] [Review][Decision → Patch] Log out bypasses supabase-js — resolved 2026-11-16 (Cristoffer chose option 1): `signOut()` keeps the immediate storage clear, then in the background calls both `auth.admin.signOut(token, 'local')` and supabase-js's own `auth.signOut({ scope: 'local' })`, so an in-flight refresh is discarded and an in-memory session is removed; the 3 s limit now also covers the `/api/config` load. (c) is accepted: Log out never waits on the network. Original finding: `signOut()` clears `localStorage` by hand and calls `auth.admin.signOut`, while the Always section allows only `signOut` (AD-1). Verified consequences: (a) a token refresh already in flight when Log out runs can write the session back, because the manual clear skips supabase-js's `_sessionRemovalEpoch` guard (`@supabase/auth-js` GoTrueClient, commit guard after `_saveSession`); (b) with `localStorage` blocked, supabase-js keeps the session in memory, so Log out leaves it and Login sends the student straight back to `/projects` (which is refused, which signs out locally again, and so on); (c) the server call is fire-and-forget with a 3 s timeout, so if it fails the `auth.sessions` row and the old token stay valid. Sources: blind-hunter, acceptance-auditor, edge-case-hunter, verification-gap.
+- [x] [Review][Patch] Language switch items are 32 px tall, below the 44×44 px target in "Done for every story" [frontend/src/components/AccountMenu.module.css:88] — rejected by Cristoffer 2026-11-16: works fine in use; kept as is.
+- [x] [Review][Patch] Avatar initial takes the first code point, so a name typed in decomposed form (e.g. "A" + combining ring) shows a bare "A"; normalize to NFC first [frontend/src/components/Avatar.jsx:5] — rejected by Cristoffer 2026-11-16: "Å" names show correctly in the app.
+- [x] [Review][Patch] No test runs Log out against the real supabase-js storage layout; every test stubs `createClient` with the same format the code assumes [frontend/src/auth/supabase.test.jsx] — fixed: new test with the real library and only `fetch` stubbed; breaking the token read makes it fail (checked).
+- [x] [Review][Patch] (found in the manual check) An address Supabase refuses, such as "åså@gmail.com", showed "Something went wrong." on the first-name field — fixed: `signUp` maps `validation_failed` and `email_address_invalid` to `email_invalid`, and Create account shows "Enter a valid email address." on the email field [frontend/src/auth/index.js, frontend/src/pages/CreateAccount.jsx].
+- [x] [Review][Defer] No test covers Login's "already signed in" redirect resolving while a login is in flight (the `!inFlight.current` guard) [frontend/src/pages/Login.jsx:52] — deferred: narrow window (slow `/api/config`), single-condition guard; add when the Login tests are next touched.
+
+**Rejected (22):**
+- false: Login button `disabled` while busy breaks "Buttons stay active" — the rule is about the state after an error, and the button is enabled again then (same pattern as Create account and the reset pages).
+- false: `returnTo` lets control characters through — the path comes from `location.pathname` (percent-encoded), sessionStorage is same-origin, and `pushState` refuses another origin.
+- false: `set_language` ignores a missing profile row — `UserAuth` refuses a deleted Account before the update runs.
+- false: Login tests mock `signOut` with the wrong return value — Login never calls `signOut`.
+- false: `onSignedOut` drops an earlier listener — only one `RequireSession` is mounted, and its cleanup only removes its own listener.
+- false: `ended` can hang when `/api/config` hangs — nothing awaits `ended`.
+- low: a reload after a failed after-sign-in skips it, so the Account language isn't applied — needs after-sign-in to fail and a reload; fix adds a branch.
+- low: the locked Login form has no "use another account" action — only while after-sign-in keeps failing; reload or waiting works.
+- low: an `unauthorized` language save flashes the error before the redirect — session ending mid-switch is rare; fix adds a guard.
+- low: the language-save error doesn't say the language wasn't saved — matches the spec's "generic error"; a new string would need Norwegian sign-off.
+- low: other open tabs aren't signed out at once — their next request is refused and redirects (FR-2 holds).
+- low: two quick language saves can arrive out of order — latest-wins covers the UI; the server race needs two switches within one round trip.
+- low: a remembered route can survive a detour through Create account — needs a specific path through two pages.
+- low: no end-to-end test of the grader flow — the manual check passed on 2026-11-16.
+- low: a refused token whose refresh also fails skips the redirect — needs expiry inside the request round trip.
+- low: `Projects` stays `aria-busy` if the listener is skipped — follows from the previous item (and pass 1, #20).
+- low: a 401 without the JSON envelope doesn't sign out — the backend always sends the envelope; no proxy in V1.
+- low: the remembered route drops `location.hash` — no route uses a hash.
+- low: backend tests lack PATCH after logout and PATCH with a NULL language — the shared `UserAuth` and the UPDATE are already covered.
+- low: `z-index: 10` and `120ms` transitions are literals — DESIGN.md has no z-index or motion tokens to use.
+- low: `test/mocks.js` copies `SIGNED_OUT_CODES` — the module is mocked there, so it can't import the real set; a change would show in the client tests.
+- low: formatting nits in `Login.jsx` and `Login.module.css` — already gone in the current file, or whitespace only.
+
 ## Implementation Notes
 
 - Installed `radix-ui` 1.8.1 (`^1.8.1`). `lucide-react` is not installed; the menu chevron is a small inline SVG.

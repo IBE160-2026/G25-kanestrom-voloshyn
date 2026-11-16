@@ -16,3 +16,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-password-reset.md`
   summary: Test that a failing `accounts.find_for_reset` (DB lookup) in the reset background task still answers 202, logs "Password reset lookup failed" and logs no address.
   evidence: Review pass 1, finding #14. Removing the try/except, or logging the exception text, fails no test. Needs a failing-pool fixture.
+
+## Deferred from: code review of spec-1-4-login-logout.md (2026-11-16)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-4-login-logout.md`
+  summary: Test that Login's "already signed in" redirect does not fire while a login is in flight (hold `hasSession()` pending, submit, let `signIn` succeed with `after-sign-in` pending, then resolve `hasSession` true; the route must stay `/` until `after-sign-in` settles).
+  evidence: Code review pass 2, Verification Gap. Removing `&& !inFlight.current` in `Login.jsx` fails no test. Narrow window (slow `/api/config`); add when the Login tests are next touched.

@@ -57,6 +57,7 @@ export default function CreateAccount() {
       if (!signedUp) {
         const result = await signUp({ email: address, password })
         if (result.error === 'duplicate') return fail('duplicate', 'email')
+        if (result.error === 'email_invalid') return fail('emailInvalid', 'email')
         if (result.error === 'password_too_short') return fail('passwordTooShort', 'password')
         if (result.error) return fail('api', 'firstName')
         setSignedUp(true)

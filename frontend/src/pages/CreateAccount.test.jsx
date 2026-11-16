@@ -108,6 +108,20 @@ describe('Create account', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
+  it('an address Supabase refuses (e.g. "å" before the @) shows the invalid-email error on the email field', async () => {
+    vi.mocked(signUp).mockResolvedValue({ error: 'email_invalid' })
+    const user = userEvent.setup()
+    const { router } = renderRoute('/signup')
+
+    const f = await fillAndSubmit(user, { email: 'åså@gmail.com' })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(en.signup.errors.emailInvalid)
+    expect(router.state.location.pathname).toBe('/signup')
+    expect(f.email).toHaveValue('åså@gmail.com')
+    expect(f.email).toHaveFocus()
+    expect(apiFetch).not.toHaveBeenCalled()
+  })
+
   it('short password: refused in the SPA before any sign-up', async () => {
     const user = userEvent.setup()
     renderRoute('/signup')

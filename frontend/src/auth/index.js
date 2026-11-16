@@ -33,10 +33,13 @@ export async function getAccessToken() {
 }
 
 const DUPLICATE_CODES = new Set(['user_already_exists', 'email_exists'])
+// Supabase refusing the address itself, e.g. letters like "å" before the @, which it doesn't accept.
+const INVALID_EMAIL_CODES = new Set(['validation_failed', 'email_address_invalid'])
 
 /**
  * Create an email Account (FR-1). Email confirmations are off, so a new Account is signed in at once.
- * Resolves with `{ session }` or `{ error }`, where error is 'duplicate', 'password_too_short', or 'generic'.
+ * Resolves with `{ session }` or `{ error }`, where error is 'duplicate', 'email_invalid',
+ * 'password_too_short', or 'generic'.
  */
 export async function signUp({ email, password }) {
   const supabase = await getSupabase()
@@ -44,6 +47,7 @@ export async function signUp({ email, password }) {
   const { data, error } = await supabase.auth.signUp({ email, password })
   if (error) {
     if (DUPLICATE_CODES.has(error.code)) return { error: 'duplicate' }
+    if (INVALID_EMAIL_CODES.has(error.code)) return { error: 'email_invalid' }
     if (error.code === 'weak_password') return { error: 'password_too_short' }
     return { error: 'generic' }
   }
@@ -164,19 +168,35 @@ function clearStoredSession() {
   }
 }
 
-/** Ask Supabase to end this session (POST /logout?scope=local), giving up after a short wait. */
-async function endServerSession(token) {
+/**
+ * End the session in Supabase:
+ * - with the stored token, ask the server to end this session (POST /logout?scope=local);
+ * - let supabase-js drop its own copy (auth.signOut, scope 'local').
+ * The second step matters in two cases the storage clear alone misses. A token refresh in flight
+ * would otherwise write the session back, and supabase-js's sign-out discards that write. With
+ * localStorage blocked, supabase-js keeps the session in memory, and its sign-out removes it (and
+ * ends it on the server, since then there is no stored token).
+ */
+async function endSession(token) {
+  const supabase = await getSupabase()
+  await Promise.allSettled([
+    token ? supabase.auth.admin.signOut(token, 'local') : null,
+    supabase.auth.signOut({ scope: 'local' }),
+  ])
+}
+
+/** Wait for `work`, at most LOGOUT_TIMEOUT_MS; never throws. */
+async function settleWithin(work) {
   let timer
   try {
-    const supabase = await getSupabase()
     await Promise.race([
-      supabase.auth.admin.signOut(token, 'local'),
+      work,
       new Promise((resolve) => {
         timer = setTimeout(resolve, LOGOUT_TIMEOUT_MS)
       }),
     ])
   } catch {
-    // Supabase unreachable: the local session is gone anyway.
+    // Supabase or /api/config unreachable: the local session is gone anyway.
   } finally {
     clearTimeout(timer)
   }
@@ -184,14 +204,13 @@ async function endServerSession(token) {
 
 /**
  * Log out (FR-2). The stored session is removed at once, whatever happens next, so the caller can
- * move on without waiting for the network. In the background, Supabase is asked to end this
- * session's auth.sessions row (scope 'local': other devices stay signed in), so the old token is
- * refused. Resolves after the local clear; `ended` resolves when the server call settles or times
- * out. Never throws.
+ * move on without waiting for the network. In the background, Supabase ends this session's
+ * auth.sessions row (scope 'local': other devices stay signed in), so the old token is refused,
+ * and supabase-js drops its own copy. Resolves after the local clear; `ended` resolves when both
+ * settle or after 3 s (including the /api/config load). Never throws.
  */
 export async function signOut() {
   const token = storedAccessToken()
   clearStoredSession()
-  const ended = token ? endServerSession(token) : Promise.resolve()
-  return { ended }
+  return { ended: settleWithin(endSession(token)) }
 }

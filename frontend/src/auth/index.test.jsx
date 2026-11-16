@@ -1,14 +1,16 @@
 // auth/ sign-up, log in, log out, and password reset, with supabase-js and fetch stubbed (spine › Tests).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { signUpMock, signInMock, signOutMock, getSessionMock, verifyOtpMock, updateUserMock } = vi.hoisted(() => ({
-  verifyOtpMock: vi.fn(),
-  updateUserMock: vi.fn(),
-  signUpMock: vi.fn(),
-  signInMock: vi.fn(),
-  signOutMock: vi.fn(),
-  getSessionMock: vi.fn(),
-}))
+const { signUpMock, signInMock, signOutMock, clientSignOutMock, getSessionMock, verifyOtpMock, updateUserMock } =
+  vi.hoisted(() => ({
+    verifyOtpMock: vi.fn(),
+    updateUserMock: vi.fn(),
+    signUpMock: vi.fn(),
+    signInMock: vi.fn(),
+    signOutMock: vi.fn(),
+    clientSignOutMock: vi.fn(),
+    getSessionMock: vi.fn(),
+  }))
 vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({
     auth: {
@@ -17,6 +19,7 @@ vi.mock('@supabase/supabase-js', () => ({
       getSession: getSessionMock,
       verifyOtp: verifyOtpMock,
       updateUser: updateUserMock,
+      signOut: clientSignOutMock, // supabase-js drops its own copy of the session
       admin: { signOut: signOutMock }, // POST /logout with the session's own token
     },
   })),
@@ -32,6 +35,7 @@ beforeEach(async () => {
   verifyOtpMock.mockReset()
   updateUserMock.mockReset()
   signOutMock.mockReset().mockResolvedValue({ error: null })
+  clientSignOutMock.mockReset().mockResolvedValue({ error: null })
   // Like supabase-js: the stored session is the source of truth.
   getSessionMock.mockReset().mockImplementation(async () => {
     const raw = window.localStorage.getItem('studybuddy.auth')
@@ -64,6 +68,8 @@ describe('signUp', () => {
     ['user_already_exists', 'duplicate'],
     ['email_exists', 'duplicate'],
     ['weak_password', 'password_too_short'],
+    ['validation_failed', 'email_invalid'], // e.g. "åså@gmail.com"
+    ['email_address_invalid', 'email_invalid'],
     ['over_request_rate_limit', 'generic'],
     [undefined, 'generic'],
   ])('maps Supabase error %s to %s', async (code, expected) => {
@@ -144,6 +150,43 @@ describe('signOut and hasSession', () => {
     expect(signOutMock).toHaveBeenCalledWith('tok', 'local')
   })
 
+  it('also lets supabase-js drop its own copy, after the stored session is cleared', async () => {
+    storeSession('tok')
+    clientSignOutMock.mockImplementation(async () => {
+      // By now the stored session is gone, so supabase-js finds no token to end a second time.
+      expect(window.localStorage.getItem('studybuddy.auth')).toBeNull()
+      return { error: null }
+    })
+
+    const { ended } = await auth.signOut()
+    await ended
+
+    expect(clientSignOutMock).toHaveBeenCalledWith({ scope: 'local' })
+  })
+
+  it("a failing supabase-js sign-out still ends the server session and doesn't throw", async () => {
+    storeSession('tok')
+    clientSignOutMock.mockRejectedValue(new Error('lock'))
+
+    const { ended } = await auth.signOut()
+    await expect(ended).resolves.toBeUndefined()
+    expect(signOutMock).toHaveBeenCalledWith('tok', 'local')
+  })
+
+  it('stops waiting after 3 seconds when /api/config never loads', async () => {
+    storeSession()
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {}))) // the config load hangs
+    let settled = false
+
+    const { ended } = await auth.signOut()
+    ended.then(() => (settled = true))
+    expect(window.localStorage.getItem('studybuddy.auth')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(settled).toBe(true)
+  })
+
   it('a server error still leaves no session', async () => {
     storeSession()
     signOutMock.mockResolvedValue({ data: null, error: { status: 500, message: 'x' } })
@@ -179,10 +222,11 @@ describe('signOut and hasSession', () => {
     expect(settled).toBe(true)
   })
 
-  it('with no stored session it makes no server call', async () => {
+  it('with no stored session it sends no token of its own; supabase-js still clears its copy', async () => {
     const { ended } = await auth.signOut()
     await ended
     expect(signOutMock).not.toHaveBeenCalled()
+    expect(clientSignOutMock).toHaveBeenCalledWith({ scope: 'local' })
   })
 })
 
