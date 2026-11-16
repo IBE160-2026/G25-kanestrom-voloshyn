@@ -15,8 +15,9 @@ Pull fra GitHub og se status på prosjektet. Deretter gå gjennom `norwegian-str
 - **Beslutninger:** D1–D6 godkjent, men D2 endret til «materiale» (ikke «stoff»). Øvrige endringer: «studiematerialet»/«studiemateriale», «Lenken/Koden gjelder i …», «Gjør det igjen», «Valgene dine er lagret.», flertall «Sidene {pages} kunne ikke leses.», og entallsformer for alle tellinger. Beholdt etter Cristoffers valg: «Fjern en», «Logger inn med Google/e-post».
 - **Merge:** Ihor pushet Story 1.5 (passordtilbakestilling) underveis. Konflikt i sign-off-fila løst: min versjon + Ihors utvidede «Sign-in and account»-rad. Hans nye e-posttekst endret til «Lenken gjelder i 1 time og bare én gang» i EXPERIENCE.md, mailer.py, test_password_reset.py og README.
 - **Filer:** EXPERIENCE.md, norwegian-strings-signoff.md (alle 16 grupper, glossar og 7 kryssjekker avkrysset for Cristoffer; signert 2026-11-16), tre mockups, `frontend/src/i18n/nb.json`, `backend/app/mailer.py`, `backend/tests/test_verification.py`, README.md. Commit `639a9ea`.
-- **Tester:** frontend 161/162 grønne før merge; etter merge med Ihors Story 1.5-start (ee57c27) er alle 219 grønne. Backend-testene ble ikke kjørt: de krever lokal Supabase (`npx supabase start`).
+- **Tester:** frontend 161/162 grønne før merge; etter merge med Ihors Story 1.5-start (ee57c27) er alle 219 grønne.
+- **Ihors signatur:** Ihor godkjente muntlig overfor Cristoffer; Cristoffer ba om å signere på hans vegne. Ihors kolonne er avkrysset, raden signert med merknad, og `status: signed`. Alle 160 *(proposed)*-tagger fjernet i EXPERIENCE.md; glossaret er bindende (inkl. material = materiale). Åpent spørsmål lukket i EXPERIENCE.md, PRD §9.3 og SPEC.md.
+- **Lokalt oppsett:** manglende `module-manifest.toml` gjenopprettet. Docker Desktop startet, `.env` laget fra `.env.example` med lokale Supabase-nøkler (git-ignorert), `npx supabase start` kjørt. Backend: 158/158 grønne.
 
 ### Åpne punkter
-- Ihor må signere sin kolonne i `norwegian-strings-signoff.md`; FR-29 er ikke ferdig før begge har signert (deretter `status: signed` og fjerne *(proposed)*-taggene).
-- Kjør backend-testene (`test_verification.py`) med lokal Supabase for å bekrefte endringen i e-postteksten.
+Ingen.
