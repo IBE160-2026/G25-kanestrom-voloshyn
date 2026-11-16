@@ -24,3 +24,9 @@ async def get_profile(conn: AsyncConnection, account_id: UUID) -> dict[str, Any]
         # user_auth creates the profile first, so this means the Account was just deleted.
         raise AppError(401, "unauthorized", "No profile for this Account")
     return profile
+
+
+async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -> dict[str, Any]:
+    """Save the interface language chosen in the Account menu, so it follows the Account (FR-29)."""
+    await profiles.set_language(conn, account_id, language)
+    return await get_profile(conn, account_id)

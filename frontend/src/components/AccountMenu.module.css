@@ -1,0 +1,145 @@
+/* Account menu (DESIGN.md › Account menu; mock key-project-home.html › .acct, .menu). */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-touch-target-min);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-ui-size);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Open: surface fill and a border-strong pill outline. */
+.trigger[data-state='open'] {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+
+.chevron {
+  width: var(--space-2);
+  height: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+/* Below 1024px the trigger shows the avatar only; the greeting stays as its accessible name. */
+@media (max-width: 1023.98px) {
+  .trigger {
+    padding-right: var(--space-1);
+  }
+
+  .welcome {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .chevron {
+    display: none;
+  }
+}
+
+.menu {
+  min-width: calc(var(--space-7) * 5); /* 240px, as in the mock */
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  font-size: var(--type-ui-size);
+  z-index: 10;
+}
+
+.languageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-2);
+}
+
+.label {
+  font-size: var(--type-ui-size);
+  font-weight: var(--type-ui-weight);
+  color: var(--color-text);
+}
+
+/* Language switch (DESIGN.md › Language switch): two segments, the selected one primary-subtle. */
+.switch {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--space-touch-target-min) - var(--space-3));
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-xs);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segment[data-highlighted] {
+  background: var(--color-hover);
+}
+
+.segment[data-state='checked'] {
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+/* Keyboard focus inside the menu: the Focus ring, drawn inside so the panel doesn't clip it. */
+.segment:focus-visible,
+.item:focus-visible {
+  outline-offset: calc(var(--space-focus-ring-width) * -1);
+}
+
+.divider {
+  height: 1px;
+  margin: var(--space-1);
+  background: var(--color-border);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.item[data-highlighted] {
+  background: var(--color-hover);
+}
+
+/* Log out turns red on desktop hover only (DESIGN.md Color-role rule 3); touch has no hover. */
+@media (hover: hover) and (pointer: fine) {
+  .logOut:hover {
+    color: var(--color-error);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .trigger,
+  .item,
+  .segment {
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+}

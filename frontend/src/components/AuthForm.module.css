@@ -1,4 +1,4 @@
-/* Auth panel (DESIGN.md › Auth panel) with Text inputs and a full-width Button (primary). */
+/* Shared by the auth forms (Login, Create account). Auth panel (DESIGN.md › Auth panel) with Text inputs and a full-width Button (primary). */
 .panel {
   width: var(--space-auth-panel-width);
   max-width: 100%;

@@ -56,3 +56,8 @@ async def mark_email_verified(conn: AsyncConnection, account_id: UUID) -> None:
         "UPDATE profiles SET email_verified_at = COALESCE(email_verified_at, now()) WHERE account_id = %s",
         (account_id,),
     )
+
+
+async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -> None:
+    """Save the Account's interface language (FR-29), replacing any earlier choice."""
+    await conn.execute("UPDATE profiles SET language = %s WHERE account_id = %s", (language, account_id))

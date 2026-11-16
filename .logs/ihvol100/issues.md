@@ -23,3 +23,5 @@
 - [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Manual browser check of the email-verification flow (Norwegian email in Mailpit, link → verified screen, same link again).
 - [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Concurrency test for the first verification email (deferred-work.md).
 - [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Decide with Cristoffer whether to rank FRs into core and extension, per Bård's PRD feedback (tilbakemelding-prd.md).
+- [ ] 2026-11-16 [story-1-4-login-logout](994-2026-11-16-15-46-49-story-1-4-login-logout.md) — Manual browser check of Story 1.4 (Account menu by keyboard, language across browsers, wrong vs unknown login, Log out).
+- [ ] 2026-11-16 [story-1-4-login-logout](994-2026-11-16-15-46-49-story-1-4-login-logout.md) — Check whether a supabase-js token refresh in flight during Log out can restore the session (untested, small window).

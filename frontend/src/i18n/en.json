@@ -6,7 +6,14 @@
     "wordmark": "Study Buddy",
     "tagline": "Study from your own notes, with sources",
     "privacy": "Your files are only used to create your study material.",
-    "createAccount": "Create account"
+    "createAccount": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "errors": {
+      "credentials": "Wrong email or password.",
+      "failed": "Sign-in didn't work. Try again."
+    }
   },
   "signup": {
     "firstName": "First name",
@@ -22,11 +29,19 @@
       "emailInvalid": "Enter a valid email address."
     }
   },
+  "session": {
+    "expired": "You've been signed out. Log in to continue."
+  },
   "projects": {
-    "welcome": "Welcome, {{firstName}}",
     "empty": {
       "heading": "Create your first project"
     }
+  },
+  "account": {
+    "welcome": "Welcome, {{firstName}}",
+    "menu": "Account menu",
+    "language": "Language",
+    "logOut": "Log out"
   },
   "verify": {
     "success": "Your email is verified.",

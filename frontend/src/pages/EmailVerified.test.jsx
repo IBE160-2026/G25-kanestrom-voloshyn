@@ -8,8 +8,8 @@ import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { i18n, renderRoute } from '../test/render.jsx'
 
-vi.mock('../auth/index.js', () => ({ signUp: vi.fn(), getAccessToken: vi.fn() }))
-vi.mock('../api/client.js', () => ({ apiFetch: vi.fn() }))
+vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
+vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
 
 afterEach(async () => {
   await i18n.changeLanguage('en')

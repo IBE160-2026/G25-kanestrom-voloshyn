@@ -1,0 +1,8 @@
+/* The signed-out notice above the form (EXPERIENCE.md › Session expired): plain text, not
+   the red Error line, since nothing failed. */
+.notice {
+  margin-bottom: var(--space-4);
+  font-size: var(--type-ui-size);
+  color: var(--color-text);
+}
+

@@ -6,7 +6,7 @@ import { signUp } from '../auth/index.js'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
 import { errorText } from '../i18n/errors.js'
-import styles from './CreateAccount.module.css'
+import styles from '../components/AuthForm.module.css'
 
 const MIN_PASSWORD = 8 // FR-1; Supabase enforces the same minimum (config.toml)
 const MAX_FIRST_NAME = 100 // the API's limit for first_name
