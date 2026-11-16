@@ -39,6 +39,29 @@ Har du glemt passordet, velg «Forgot password?» («Glemt passordet?» på nors
 
 `LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. SMTP-verdiene i `.env` kan stå tomme lokalt; standardverdiene sender til Mailpit. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 
+### Mobil på lokalnettet (opplasting fra telefon)
+
+QR-koden for opplasting fra telefon (FR-21) peker på `APP_PUBLIC_URL`. Standardverdien er `http://localhost:8000`, og på telefonen betyr «localhost» telefonen selv. For å demonstrere med en ekte telefon må appen derfor nås på datamaskinens adresse i lokalnettet:
+
+1. Koble datamaskinen og telefonen til samme Wi-Fi. Gjestenett og skolenett som skiller enhetene fra hverandre virker ikke; bruk da en mobil hotspot.
+2. Finn datamaskinens IPv4-adresse i Wi-Fi-nettet: `ipconfig` på Windows (linjen «IPv4 Address» under Wi-Fi-adapteren, for eksempel `192.168.10.109`), `ipconfig getifaddr en0` på macOS. Ignorer adresser fra Docker, WSL og VPN (ofte `172.x` eller `100.x`).
+3. Sett adressen i `.env`:
+   ```sh
+   APP_PUBLIC_URL=http://192.168.10.109:8000
+   SUPABASE_PUBLIC_URL=http://192.168.10.109:54321
+   ```
+   `APP_PUBLIC_URL` er det QR-koden og e-postlenkene peker på. `SUPABASE_PUBLIC_URL` trengs bare hvis noen skal logge inn fra telefonen eller en annen maskin; selve opplastingssiden på telefonen bruker ikke innlogging.
+4. Start appen på nytt slik at `.env` leses: `docker compose up --build`. Datamaskinen kan fortsatt bruke <http://localhost:8000>.
+5. Sjekk fra telefonens nettleser at <http://192.168.10.109:8000> (med din adresse) viser innloggingssiden. Gjør den ikke det:
+   - Windows: Wi-Fi-nettet må være satt som **Privat** nettverk (Innstillinger → Nettverk og Internett → Wi-Fi → nettverket). Docker Desktop legger selv inn brannmurregler for portene sine.
+   - Adressen kan ha endret seg etter omstart av ruteren; sjekk `ipconfig` på nytt og oppdater `.env`.
+
+Bare for Google-innlogging fra en annen enhet: legg i tillegg `http://<adresse>:8000/auth/callback` til `additional_redirect_urls` i `supabase/config.toml`, og start Supabase på nytt (`npx supabase stop && npx supabase start`). Ikke commit den lokale adressen.
+
+I utviklingsmodus (uvicorn og Vite hver for seg) lytter begge bare på maskinen selv. Start dem med `uv run uvicorn app.main:app --reload --host 0.0.0.0` og `npm run dev -- --host`, og bruk Vite-porten i `APP_PUBLIC_URL` (`http://<adresse>:5173`).
+
+Når demoen er ferdig, tøm `APP_PUBLIC_URL` og `SUPABASE_PUBLIC_URL` i `.env` igjen, ellers peker e-postlenkene på en adresse som kan være borte neste gang.
+
 ### Utvikling
 
 Backend og frontend kjøres hver for seg; Vite videresender `/api` til uvicorn. Samme `.env` brukes som for Docker.

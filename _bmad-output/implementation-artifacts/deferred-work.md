@@ -34,3 +34,4 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-runnable-app-skeleton.md`
   summary: A phone demo on the LAN needs `SUPABASE_PUBLIC_URL` and the Supabase redirect allow-list (`site_url`, `additional_redirect_urls` in `supabase/config.toml`) set to the LAN address as well as `APP_PUBLIC_URL`; `.env.example` and the README mention only `APP_PUBLIC_URL`.
   evidence: Code review pass 2, Blind Hunter, Edge Case Hunter and Verification Gap. `/api/config` hands the browser `SUPABASE_PUBLIC_URL` (default `127.0.0.1:54321`), which on a phone is the phone itself. Epic 6 (phone upload) is the first flow that needs it.
+  resolved: 2026-11-16. README › «Mobil på lokalnettet» documents `APP_PUBLIC_URL`, `SUPABASE_PUBLIC_URL`, the Google-only redirect entry, the Windows network profile, and `--host` for dev mode; `.env.example` points there. Checked: the app (8000) and Supabase (54321) answer on the computer's LAN address with Docker Desktop's own firewall rules.
