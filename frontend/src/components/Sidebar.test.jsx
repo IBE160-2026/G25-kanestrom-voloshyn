@@ -121,7 +121,7 @@ describe('Sidebar', () => {
     expect(await screen.findByRole('button', { name: en.projects.hide })).toBeInTheDocument()
   })
 
-  it('the strip\'s "New project" button creates and opens a Project', async () => {
+  it('the strip\'s "New project" button creates and opens a Project, and shows it in the expanded Sidebar', async () => {
     fakeApi({ me: { ...PROFILE, ui_prefs: { sidebar_collapsed: true } } })
     const user = userEvent.setup()
     const { router } = renderRoute('/projects')
@@ -129,6 +129,24 @@ describe('Sidebar', () => {
     await user.click(await screen.findByRole('button', { name: en.projects.newShort }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects/new-1'))
+    // The Sidebar opens so the new Project is visible (Cristoffer, 2026-11-17)...
+    const link = await screen.findByRole('link', { name: en.projects.placeholder })
+    expect(link).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: en.projects.hide })).toBeInTheDocument()
+    // ...but that isn't saved as the student's collapse choice.
+    expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([])
+  })
+
+  it('"+ New project" in the expanded Sidebar keeps it expanded and saves nothing', async () => {
+    fakeApi()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/projects')
+
+    await user.click(await screen.findByRole('button', { name: en.projects.new }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/new-1'))
+    expect(screen.getByRole('button', { name: en.projects.hide })).toBeInTheDocument()
+    expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([])
   })
 
   it('the strip buttons work from the keyboard', async () => {

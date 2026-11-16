@@ -38,7 +38,7 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
           className={`${styles.stripButton} ${styles.stripNew}`}
           aria-label={t('projects.newShort')}
           aria-busy={creating}
-          onClick={onCreate}
+          onClick={() => onCreate({ revealSidebar: true })}
         >
           <Plus />
           <span className={styles.tip} aria-hidden="true">
