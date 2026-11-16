@@ -11,6 +11,7 @@ from app import supabase_auth
 from app.api import auth as auth_api
 from app.api import config as config_api
 from app.api import me as me_api
+from app.api import projects as projects_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
@@ -51,6 +52,7 @@ def _api_router() -> APIRouter:
     api.include_router(config_api.router)
     api.include_router(auth_api.router)
     api.include_router(me_api.router)
+    api.include_router(projects_api.router)
 
     # Registered last, so it only catches paths no real API route matched.
     @api.api_route("", methods=ALL_METHODS, include_in_schema=False)

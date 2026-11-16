@@ -1,0 +1,91 @@
+/* Project home (DESIGN.md › Layout & Spacing › Project home; mock key-project-home.html › .work). */
+.home {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* Chat column, centred at chat-width at most. */
+.chat {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-6);
+}
+
+.chatInner {
+  flex: 1;
+  width: 100%;
+  max-width: var(--space-chat-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Upload drop zone (DESIGN.md › Upload drop zone): dashed box filling the chat area. */
+.dropZone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: calc(var(--space-7) * 6);
+  padding: var(--space-6);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  text-align: center;
+}
+
+.dropHeading {
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  letter-spacing: var(--type-title-sm-letter-spacing);
+}
+
+/* Tool buttons row: empty until Quiz, Flashcards, and Summarize arrive. */
+.tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-touch-target-min);
+  margin-top: var(--space-2);
+}
+
+/* Files panel (DESIGN.md › Files panel). */
+.files {
+  flex: none;
+  width: var(--space-files-panel-width);
+  padding: var(--space-5) var(--space-4);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+}
+
+.filesHeading {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-weight: var(--type-body-weight);
+}
+
+/* Skeleton (DESIGN.md › Skeleton): static border-coloured blocks, no shimmer. */
+.skeleton {
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+}
+
+.skeletonChat {
+  flex: 1;
+  min-height: calc(var(--space-7) * 6);
+  border-radius: var(--radius-xl);
+}
+
+.skeletonRow {
+  height: var(--space-7);
+  margin-top: var(--space-4);
+  border-radius: var(--radius-lg);
+}

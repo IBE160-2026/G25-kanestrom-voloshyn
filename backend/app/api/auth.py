@@ -14,7 +14,7 @@ from fastapi import APIRouter, BackgroundTasks, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, StringConstraints
 
-from app.api.deps import Conn
+from app.api.conn import Conn
 from app.api.me import Me, to_me
 from app.auth import UserAuth
 from app.services import identity, password_reset, verification

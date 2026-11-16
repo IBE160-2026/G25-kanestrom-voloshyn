@@ -20,6 +20,8 @@ from app.config import Settings
 from app.main import create_app
 
 PASSWORD = "correct-horse-1"
+# The /api/me fields a new Account starts with (Story 2.1): no saved prefs, no last Project.
+NO_PREFS = {"ui_prefs": {}, "last_project_id": None}
 # psycopg's async mode cannot use Windows' default ProactorEventLoop.
 LOOP = {"loop_factory": asyncio.SelectorEventLoop} if sys.platform == "win32" else {}
 
@@ -126,12 +128,13 @@ def test_happy_sign_up_creates_profile_with_name_and_language(client, gotrue, db
         "/api/auth/after-sign-in", headers=bearer(token), json={"first_name": "  Emma ", "language": "nb"}
     )
     assert response.status_code == 200, response.text
-    assert response.json() == {"first_name": "Emma", "language": "nb", "email_verified": False}
+    assert response.json() == {"first_name": "Emma", "language": "nb", "email_verified": False, **NO_PREFS}
 
     assert client.get("/api/me", headers=bearer(token)).json() == {
         "first_name": "Emma",
         "language": "nb",
         "email_verified": False,
+        **NO_PREFS,
     }
     row = db.execute(
         "SELECT first_name, language, ui_prefs, notice_google_takeover FROM profiles WHERE account_id = %s",
@@ -146,7 +149,7 @@ def test_after_sign_in_twice_leaves_profile_unchanged(client, gotrue, created):
     assert first.status_code == 200
     again = client.post("/api/auth/after-sign-in", headers=bearer(token), json={"first_name": "Other", "language": "nb"})
     assert again.status_code == 200
-    assert again.json() == first.json() == {"first_name": "Emma", "language": "en", "email_verified": False}
+    assert again.json() == first.json() == {"first_name": "Emma", "language": "en", "email_verified": False, **NO_PREFS}
 
 
 @pytest.mark.parametrize("payload", [{}, {"language": "nb"}])
@@ -155,7 +158,7 @@ def test_later_after_sign_in_without_name_leaves_profile_unchanged(client, gotru
     first = client.post("/api/auth/after-sign-in", headers=bearer(token), json={"first_name": "Emma", "language": "en"})
     again = client.post("/api/auth/after-sign-in", headers=bearer(token), json=payload)
     assert again.status_code == 200, again.text
-    assert again.json() == first.json() == {"first_name": "Emma", "language": "en", "email_verified": False}
+    assert again.json() == first.json() == {"first_name": "Emma", "language": "en", "email_verified": False, **NO_PREFS}
 
 
 def test_after_sign_in_without_token_is_unauthorized(client):
@@ -178,7 +181,7 @@ def test_data_api_cannot_read_profiles(client, settings, gotrue, created):
 def test_me_creates_profile_without_after_sign_in(client, gotrue, db, created):
     body = sign_up(gotrue, created)
     response = client.get("/api/me", headers=bearer(body["access_token"]))
-    assert response.json() == {"first_name": None, "language": None, "email_verified": False}
+    assert response.json() == {"first_name": None, "language": None, "email_verified": False, **NO_PREFS}
     count = db.execute("SELECT count(*) FROM profiles WHERE account_id = %s", (body["user"]["id"],))
     assert count.fetchone()[0] == 1
 

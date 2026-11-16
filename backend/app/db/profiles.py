@@ -5,8 +5,9 @@ from uuid import UUID
 
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
-_COLUMNS = "account_id, first_name, language, email_verified_at"
+_COLUMNS = "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id"
 
 
 async def ensure(conn: AsyncConnection, account_id: UUID) -> None:
@@ -61,3 +62,15 @@ async def mark_email_verified(conn: AsyncConnection, account_id: UUID) -> None:
 async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -> None:
     """Save the Account's interface language (FR-29), replacing any earlier choice."""
     await conn.execute("UPDATE profiles SET language = %s WHERE account_id = %s", (language, account_id))
+
+
+async def set_last_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> None:
+    """Remember the Project the Account opened last, where the next login lands (FR-8)."""
+    await conn.execute("UPDATE profiles SET last_project_id = %s WHERE account_id = %s", (project_id, account_id))
+
+
+async def merge_ui_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, Any]) -> None:
+    """Merge `prefs` into ui_prefs, keeping the keys it doesn't name (AD-19)."""
+    await conn.execute(
+        "UPDATE profiles SET ui_prefs = ui_prefs || %s WHERE account_id = %s", (Jsonb(prefs), account_id)
+    )

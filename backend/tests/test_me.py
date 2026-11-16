@@ -7,6 +7,7 @@ import httpx2
 import pytest
 
 from tests.test_auth import (  # noqa: F401 -- shared fixtures
+    NO_PREFS,
     PASSWORD,
     assert_error,
     bearer,
@@ -41,7 +42,7 @@ def test_patch_me_saves_language_and_returns_profile(client, gotrue, db, created
     response = client.patch("/api/me", headers=bearer(token), json={"language": "nb"})
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"first_name": "Emma", "language": "nb", "email_verified": False}
+    assert response.json() == {"first_name": "Emma", "language": "nb", "email_verified": False, **NO_PREFS}
     row = db.execute("SELECT language FROM profiles WHERE account_id = %s", (body["user"]["id"],)).fetchone()
     assert row == ("nb",)
     assert client.get("/api/me", headers=bearer(token)).json()["language"] == "nb"

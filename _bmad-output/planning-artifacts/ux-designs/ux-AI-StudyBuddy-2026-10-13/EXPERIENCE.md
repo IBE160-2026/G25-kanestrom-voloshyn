@@ -212,6 +212,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Verification email, subject | "Confirm your email for Study Buddy" [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Bekreft e-postadressen din for Study Buddy |
 | Verification email, body ({name} = first name, {link} = verify link) | "Hi {name}," · "Confirm your email address by opening this link:" · "{link}" · "The link works for 24 hours. You can use Study Buddy without confirming; you only need it to link a Google account." · "If you didn't create an account, you can ignore this email." [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Hei {name}, · Bekreft e-postadressen din ved å åpne denne lenken: · {link} · Lenken gjelder i 24 timer. Du kan bruke Study Buddy uten å bekrefte; du trenger det bare for å koble til en Google-konto. · Hvis du ikke har opprettet en konto, kan du se bort fra denne e-posten. |
 | Projects page (empty) | "Create your first project" | Opprett ditt første prosjekt |
+| Projects page (empty), sentence | "A project holds the notes for one course." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Et prosjekt samler notatene for ett emne. |
 | Sidebar, new project | "+ New project" | + Nytt prosjekt |
 | Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt |
 | Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} |
@@ -273,6 +274,8 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | API error, action not available (`method_not_allowed`) | "That action isn't available." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Den handlingen er ikke tilgjengelig. |
 | API error, changed meanwhile (`conflict`) | "This changed in the meantime. Reload and try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Dette ble endret i mellomtiden. Last inn på nytt og prøv igjen. |
 | API error, invalid details (`invalid_request`) | "Some of the details aren't valid." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Noen av opplysningene er ikke gyldige. |
+| API error, blank project name (`invalid_name`) | "Give the project a name." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Gi prosjektet et navn. |
+| API error, read-only project (`project_read_only`) | "This project is read-only." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Dette prosjektet kan bare leses. |
 | Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye materiale. Velg færre emner eller én fil. |
 | Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. |
 

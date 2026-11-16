@@ -322,6 +322,65 @@ describe('Login form', () => {
   })
 })
 
+describe('Landing on the last Project (Story 2.1, FR-8)', () => {
+  /** after-sign-in reports `last`; the Project itself opens through GET /api/projects/{id}. */
+  function answerWithLastProject(last, others = []) {
+    const project = { id: last, name: 'Biology', name_source: 'student', archived_at: null, deleted_at: null }
+    const all = [project, ...others]
+    vi.mocked(apiFetch).mockImplementation(async (path) => {
+      if (path === '/api/auth/after-sign-in' || path === '/api/me') return { ...PROFILE, ui_prefs: {}, last_project_id: last }
+      if (path === '/api/projects') return all
+      const found = all.find((p) => path === `/api/projects/${p.id}`)
+      if (found) return found
+      throw new Error(`unexpected ${path}`)
+    })
+  }
+
+  it('login lands on the last opened active Project', async () => {
+    answerWithLastProject('p1')
+    signedInAfterLogin()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+
+    await logIn(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/p1'))
+    expect(await screen.findByRole('heading', { level: 1, name: 'Biology' })).toBeInTheDocument()
+  })
+
+  it('a remembered route still wins over the last Project', async () => {
+    const physics = { id: 'p2', name: 'Physics', name_source: 'student', archived_at: null, deleted_at: null }
+    answerWithLastProject('p1', [physics])
+    window.sessionStorage.setItem(RETURN_TO_KEY, '/projects/p2')
+    signedInAfterLogin()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+
+    await logIn(user)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Physics' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/projects/p2')
+  })
+
+  it('without a last Project, login lands on the Projects page', async () => {
+    signedInAfterLogin()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/')
+
+    await logIn(user)
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
+  })
+
+  it('already signed in: the Projects page forwards to the last Project', async () => {
+    answerWithLastProject('p1')
+    vi.mocked(hasSession).mockResolvedValue(true)
+    const { router } = renderRoute('/')
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/p1'))
+  })
+})
+
 describe('Signed out and return route', () => {
   it('signed-out visit to /projects goes to Login, and the next login returns there once', async () => {
     const user = userEvent.setup()

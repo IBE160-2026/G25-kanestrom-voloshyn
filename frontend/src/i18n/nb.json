@@ -50,8 +50,24 @@
   },
   "projects": {
     "empty": {
-      "heading": "Opprett ditt første prosjekt"
+      "body": "Et prosjekt samler notatene for ett emne.",
+      "create": "Opprett ditt første prosjekt"
+    },
+    "new": "+ Nytt prosjekt",
+    "newShort": "Nytt prosjekt",
+    "placeholder": "Nytt prosjekt",
+    "rename": "Gi nytt navn",
+    "more": "Flere valg for {{name}}",
+    "hide": "Skjul prosjekter",
+    "show": "Vis prosjekter"
+  },
+  "projectHome": {
+    "dropZone": {
+      "heading": "Last opp notatene dine for å starte"
     }
+  },
+  "files": {
+    "header": "Filer <muted>· {{n}} av 10</muted>"
   },
   "account": {
     "welcome": "Velkommen, {{firstName}}",
@@ -95,6 +111,8 @@
     "http_error": "Noe gikk galt.",
     "internal_error": "Noe gikk galt.",
     "session_expired": "Du er logget ut. Logg inn for å fortsette.",
-    "auth_unavailable": "Noe gikk galt."
+    "auth_unavailable": "Noe gikk galt.",
+    "invalid_name": "Gi prosjektet et navn.",
+    "project_read_only": "Dette prosjektet kan bare leses."
   }
 }

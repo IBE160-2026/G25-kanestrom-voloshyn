@@ -1,23 +1,24 @@
 """Request-scoped dependencies shared by the routers."""
 
-from collections.abc import AsyncIterator
-from typing import Annotated
+from typing import Annotated, Any
+from uuid import UUID
 
-from fastapi import Depends, Request
-from psycopg import AsyncConnection
+from fastapi import Depends
+
+from app.api.conn import Conn, request_conn
+from app.auth import UserAuth
+from app.services import projects
+
+__all__ = ["ActiveProject", "Conn", "active_project", "request_conn"]
 
 
-async def request_conn(request: Request) -> AsyncIterator[AsyncConnection]:
-    """One pooled connection and one transaction per request (AD-18).
+async def active_project(project_id: UUID, user: UserAuth, conn: Conn) -> dict[str, Any]:
+    """The URL's Project, owned by the caller and neither archived nor deleted (AD-22).
 
-    Commits when the handler returns, rolls back when it raises. Services take this `conn`
-    and never commit themselves.
+    Every Project content route takes this dependency, so `require_active` runs before the
+    handler: `404 not_found` for a missing or foreign id, `409 project_read_only` otherwise.
     """
-    async with request.app.state.pool.connection() as conn:
-        async with conn.transaction():
-            yield conn
+    return await projects.require_active(conn, user.account_id, project_id)
 
 
-# scope="function": the transaction ends (commit or rollback) before the response starts, so a
-# failed commit becomes an error response instead of a 200 for work that was never saved.
-Conn = Annotated[AsyncConnection, Depends(request_conn, scope="function")]
+ActiveProject = Annotated[dict[str, Any], Depends(active_project)]
