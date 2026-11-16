@@ -7,5 +7,5 @@
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Opprett `test-data/` med testfilene FR-7, FR-16, SM-4 og AD-4 forutsetter.
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Ihor ser over PRD-endringene etter Bårds tilbakemelding.
 - [x] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Kodegjennomgang av story 1.1–1.4 (`bmad-code-review`). (delvis løst 2026-11-16: 1.4 gjennomgått i [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md); resten videreført der)
-- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Kodegjennomgang av story 1.3 (del 1), 1.2 og 1.1 (1.3b ferdig 2026-11-16).
-- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — `ResetPassword.test.jsx` › «another link starts from a clean screen…» er ustabil (story 1.5, si fra til Ihor).
+- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Kodegjennomgang av story 1.2 og 1.1 (1.4, 1.3b og 1.3 ferdig 2026-11-16).
+- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — `ResetPassword.test.jsx` › «another link starts from a clean screen…» er ustabil (story 1.5, si fra til Ihor): `getByLabelText` på linje 279 før skjemaet er rendret; bør være `findByLabelText`.
