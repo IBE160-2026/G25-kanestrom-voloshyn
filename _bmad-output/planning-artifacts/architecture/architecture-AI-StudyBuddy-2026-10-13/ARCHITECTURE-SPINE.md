@@ -4,11 +4,11 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: 'layered modular monolith (single deployable: async FastAPI API + in-process background jobs + React SPA; Supabase for auth/Postgres/storage)'
-scope: 'Whole V1 system: PRD §7.1 (FR-1 to FR-29), desktop web plus the FR-21 phone upload page'
+scope: 'Whole V1 system: PRD §7.1 (FR-1 to FR-30), desktop web plus the FR-21 phone upload page'
 status: final
 created: '2026-10-13'
-updated: '2026-11-12'
-binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, SM-4]
+updated: '2026-11-16'
+binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30, SM-4]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - _bmad-output/planning-artifacts/ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md
@@ -154,7 +154,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
 
 ### AD-4 — Mock mode is part of the gateway, deterministic, and never a silent fallback in production [ADOPTED]
 
-- **Binds:** AD-3, all tests, AGENTS.md policy
+- **Binds:** FR-30, AD-3, all tests, AGENTS.md policy
 - **Prevents:** The grader needing a key; mocks drifting from the real response shape; untestable warn, reject, count, progress, and cancel paths; a production deploy quietly serving fake content.
 - **Rule:**
   - `LLM_MODE` is `mock` or `live`. In mock mode every task returns deterministic output from template fixtures in `llm/fixtures/`, parsed through the same schemas and citation mapping as live output.
@@ -813,7 +813,7 @@ erDiagram
   - Set up a real SMTP provider for `mailer.py` in the cloud.
   - Apply AD-2's auth settings to the Cloud project from `config.toml` (the CLI's config push), not by hand.
 - **Concrete OpenRouter model IDs and tuning values** (`LLM_CONTEXT_BUDGET_TOKENS`, `CAPACITY_WORDS_PER_ITEM`, `LLM_TIMEOUT_SECONDS`, `JOBS_MAX_CONCURRENT`): set in `.env` once tested. The models must support structured output (and, for vision, image input) under `zdr: true`. Use a cheap paid model with a spend limit on the key.
-- **Norwegian interface strings:** need team sign-off (PRD §9.3). This blocks FR-29 "done", not the architecture.
+- **Norwegian interface strings:** resolved 2026-11-16; Ihor and Cristoffer signed off (PRD §9.3).
 - **CI pipeline:** decided when the first stories land. (The frontend test runner was decided on 2026-11-12: Tests convention and Stack.)
 - **Embeddings / pgvector retrieval:** a V2 candidate if full-text retrieval proves weak.
 - **Rate-limit backoff beyond AD-3's single schema retry:** add only if the demo hits `429`s.
