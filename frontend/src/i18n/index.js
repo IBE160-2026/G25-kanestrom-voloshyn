@@ -1,9 +1,13 @@
 // Interface language (FR-29, AD-26). Every interface string lives in en.json / nb.json and is read
 // through react-i18next. Before sign-in the language is: a saved choice, else the browser, else English.
-import i18n from 'i18next'
+import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import en from './en.json'
 import nb from './nb.json'
+
+// The app's own instance, created with this module: a fresh module (a page load, or a test's
+// vi.resetModules) gets a fresh instance, with no listeners or language left from an earlier one.
+const i18n = i18next.createInstance()
 
 export const LANGUAGES = ['en', 'nb']
 export const STORAGE_KEY = 'studybuddy.language'

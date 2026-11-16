@@ -17,8 +17,8 @@ describe('catalogues', () => {
     expect(keys(nb).sort()).toEqual(keys(en).sort())
   })
 
-  it('nb.json is marked as draft', () => {
-    expect(nb._meta.status).toBe('draft')
+  it('nb.json is marked as signed off (2026-11-16)', () => {
+    expect(nb._meta.status).toBe('signed')
   })
 
   it('the footer credit is verbatim in both languages', () => {

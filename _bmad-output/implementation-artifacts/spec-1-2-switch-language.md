@@ -82,6 +82,33 @@ context:
 - Given the source, when `frontend/src` is searched, then no user-facing literal string appears in JSX outside the i18n catalogues (the wordmark "Study Buddy" included).
 - Given both catalogues, when their keys are compared, then they are identical.
 
+### Review Findings
+
+Code review pass 2 (2026-11-16, run by Cristoffer: Blind Hunter, Edge Case Hunter, Verification Gap, Acceptance Auditor against `d6a40d3`, triaged against the current code).
+
+- [x] [Review][Patch] The i18n tests share one i18next instance across "page loads": `vi.resetModules()` re-runs `index.js` but not i18next, so listeners pile up and `<html lang>` on first load is never really tested (moving the listener below `init()` failed no test); the "survives a reload" test could pass without storage [frontend/src/i18n/index.js:3] — fixed: `index.js` creates its own instance (`i18next.createInstance()`), so each module load is fresh; moving the listener below `init()` now fails 7 tests (checked).
+- [x] [Review][Patch] `nb.json` was still marked `draft` after the sign-off [frontend/src/i18n/nb.json:3] — fixed: `status: "signed"` with the sign-off note; every `nb.json` value was checked against the signed EXPERIENCE.md (all match).
+
+**Rejected (18):**
+- false: `package-lock.json` is missing from the change — the review diff left lock files out on purpose; it is in commit `d6a40d3`.
+- false: the toggle's accessible names break WCAG 2.5.3 — "English" contains "EN" and "Norsk" contains "NO" (pass 1, #17).
+- false: the Norwegian privacy line differs from EXPERIENCE.md — fixed with the sign-off in `639a9ea`.
+- false: a non-object `params` reaches i18next — `ApiError` turns any non-object `params` into `{}`.
+- low: server `params` could carry i18next option names — the backend sends none (pass 1, #7).
+- low: `errorText` checks the module's instance, not the caller's `t` — the app has one instance.
+- low: `opacity: 0.5` on the toggle divider is a literal — DESIGN.md has no opacity token.
+- low: the toggle has a hover fill DESIGN.md doesn't mention — harmless.
+- low: `react/jsx-no-literals` misses attribute and `{'…'}` literals — recorded in Implementation Notes.
+- low: the backend error codes in `errors.test.jsx` are copied by hand — a contract file is new scope.
+- low: `errors.file_too_large` hard-codes 50 MB — the limit is fixed in PRD §5.2.
+- low: the catalogue test checks keys, not values — the sign-off checked the values.
+- low: no plural test for count 0 — i18next's plural rules are the library's.
+- low: no `document.title` sync or announcement on a language switch — out of scope for 1.2.
+- low: the README doesn't explain the Node version bump — the `engines` field states it.
+- low: the `CODE` regex in `errors.js` has no test that needs it — defensive only.
+- low: no CI runs the tests — the course project runs them by hand (README).
+- low: listeners pile up under Vite HMR — development only, and the patch above gives each module load its own instance.
+
 ## Implementation Notes
 
 - Installed versions: `i18next` 26.7.2, `react-i18next` 17.1.13, `vitest` 5.1.0, `@testing-library/react` 16.3.3, `@testing-library/dom` 10.4.2, `@testing-library/jest-dom` 7.0.1, `@testing-library/user-event` 14.6.10, `jsdom` 31.0.0. jsdom 31 worked, so there was no fallback to 30.1. `defineConfig` now comes from `vitest/config`.

@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "status": "draft",
-    "note": "Every Norwegian string is a draft until the team signs off in norwegian-strings-signoff.md (UX-DR17, Story 7.5)."
+    "status": "signed",
+    "note": "Signed off by Ihor and Cristoffer on 2026-11-16 (norwegian-strings-signoff.md, UX-DR17). A new string follows the glossary in EXPERIENCE.md › Voice and Tone and needs both reviewers' approval."
   },
   "login": {
     "wordmark": "Study Buddy",
