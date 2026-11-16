@@ -1,6 +1,7 @@
 """Routing and error envelope (AD-17, spine: API shape)."""
 
 import asyncio
+from pathlib import Path
 import sys
 import time
 
@@ -150,3 +151,17 @@ def test_lifespan_starts_without_a_reachable_database():
         assert client.get("/api/config").status_code == 200
         assert app.state.pool is not None
         assert app.state.llm_mode == "mock"
+    # Shutdown closes the pool, so no connection or worker outlives the app.
+    assert app.state.pool.closed is True
+
+
+def test_default_paths_point_at_the_repo_root():
+    # The Dockerfile copies the SPA to /app/frontend/dist and every SPA test overrides the path,
+    # so this pins the defaults: <repo>/frontend/dist and <repo>/.env (computed from this file).
+    from app.config import REPO_ROOT
+
+    repo = Path(__file__).resolve().parents[2]
+    assert (repo / "backend").is_dir() and (repo / "frontend").is_dir()
+    assert REPO_ROOT == repo
+    assert Settings.model_fields["frontend_dist"].default == repo / "frontend" / "dist"
+    assert Path(Settings.model_config["env_file"]) == repo / ".env"

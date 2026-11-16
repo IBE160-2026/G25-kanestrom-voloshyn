@@ -28,3 +28,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-create-account.md`
   summary: A half-finished sign-up loses the first name: `signUp` succeeds, `after-sign-in` fails, the page is reloaded, and a resubmit says "duplicate"; no later step sends the name. Story 7.3 must let the student set it (FR-27), or Create account must treat "duplicate with a live session" as signed up.
   evidence: Code review pass 2, Blind Hunter and Edge Case Hunter. `signedUp` lives only in React state.
+
+## Deferred from: code review of spec-1-1-runnable-app-skeleton.md (2026-11-16)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-1-runnable-app-skeleton.md`
+  summary: A phone demo on the LAN needs `SUPABASE_PUBLIC_URL` and the Supabase redirect allow-list (`site_url`, `additional_redirect_urls` in `supabase/config.toml`) set to the LAN address as well as `APP_PUBLIC_URL`; `.env.example` and the README mention only `APP_PUBLIC_URL`.
+  evidence: Code review pass 2, Blind Hunter, Edge Case Hunter and Verification Gap. `/api/config` hands the browser `SUPABASE_PUBLIC_URL` (default `127.0.0.1:54321`), which on a phone is the phone itself. Epic 6 (phone upload) is the first flow that needs it.

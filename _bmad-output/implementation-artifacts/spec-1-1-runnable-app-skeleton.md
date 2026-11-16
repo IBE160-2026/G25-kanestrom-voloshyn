@@ -81,6 +81,40 @@ context:
 - Given the repo, when it is inspected, then it matches the Structural Seed for every path this story creates.
 - Given local Supabase running, when `uv run pytest` runs in `backend/` with no key, then every test passes.
 
+### Review Findings
+
+Code review pass 2 (2026-11-16, run by Cristoffer: Blind Hunter, Edge Case Hunter, Verification Gap, Acceptance Auditor against `0720687`, triaged against the current code).
+
+- [x] [Review][Patch] Nothing checks the default SPA and `.env` locations: every SPA test overrides `frontend_dist` and passes `_env_file=None`, so a wrong `parents[2]` or default would ship an API-only app with all tests green [backend/app/config.py:14] — fixed: `test_default_paths_point_at_the_repo_root`; it fails when the default changes (checked).
+- [x] [Review][Patch] Closing the pool at shutdown is untested [backend/app/main.py:86] — fixed: the lifespan test asserts `app.state.pool.closed` after the client exits; it fails without `pool.close()` (checked).
+- [x] [Review][Defer] A phone demo on the LAN needs `SUPABASE_PUBLIC_URL` (and the Supabase redirect allow-list) set to the LAN address too, not only `APP_PUBLIC_URL`; neither `.env.example` nor the README says so — deferred: the phone page (Epic 6) is the first flow that needs it.
+
+**Rejected (24):**
+- false: Mailpit's SMTP port is not enabled — enabled in Story 1.3 part 2 (`[local_smtp]`).
+- false: `package-lock.json`, `uv.lock` and the root lockfile are missing — tracked in git; the review diff left lock files out on purpose.
+- false: later `/api` routers are shadowed by the catch-all — every router is included inside `_api_router()` before it (Stories 1.3–1.5 work).
+- low: a wrong method on a real route (e.g. `POST /api/config`) gives `404 not_found`, not `405` — confirmed on the running app; the SPA never sends one, and a fix needs route matching inside the catch-all.
+- low: the deep-link fallback answers only `Accept: text/html` — browsers send it; recorded in Implementation Notes.
+- low: the catch-all omits TRACE and CONNECT — pass 1, #13.
+- low: `google_enabled` may accept `1`/`yes` that the Supabase CLI rejects — use `true`/`false` as `.env.example` shows.
+- low: a whitespace-only Google client id turns `google_enabled` on — Story 1.6 owns Google.
+- low: enabling Google without credentials may break `supabase start` — Story 1.6 owns Google.
+- low: `tokens.css` has no `components:` tokens — recorded in Implementation Note 8.
+- low: `engines` says `>=22.22`, the epic context says `>=22.22.2` — now `>=22.22.2` (Story 1.2).
+- low: `test-data/` isn't created — Story 2.2 creates it (pass 1, #28).
+- low: importing `app.main` builds an app from the real `.env` — the `.env` is copied from the example.
+- low: tests read shell environment variables despite `_env_file=None` — a clean shell runs them.
+- low: no health endpoint or Docker `HEALTHCHECK` — new scope.
+- low: `test_db_pool.py` fails without local Supabase — deliberate, as documented in the README.
+- low: a leftover `OPENROUTER_API_KEY` switches development to live mode silently — by design (AD-4); the README says to leave the key empty.
+- low: `seed.sql` is listed but missing — `db reset` only notes it.
+- low: a detached comment and `skip_nonce_check` in `config.toml` — Story 1.6 owns Google.
+- low: `_HTTP_CODES` lacks 415, 429 and 503 — they render the generic error.
+- low: base images are tags, not digests — fine for a course project.
+- low: `min-height: 100vh` on the Login page — a desktop app.
+- low: Windows needs `--reload` (selector loop) for uvicorn — already deferred (pass 1, #22, AGENTS.md).
+- low: production starts with an empty publishable key or localhost URLs — V1 runs locally.
+
 ## Implementation Notes
 
 - `app.frontend("/", directory=..., fallback="index.html")` exists in the installed FastAPI 0.162.0 and is used as written. It falls back to `index.html` only for navigation requests (`Accept: text/html`, as browsers send), so a missing asset stays a 404. A plain `curl -i localhost:8000/projects/x` (Accept `*/*`) therefore gets the JSON 404; `curl -i -H "Accept: text/html" localhost:8000/projects/x` gets `index.html`. Tests send the browser header.
