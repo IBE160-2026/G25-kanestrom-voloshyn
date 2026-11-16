@@ -14,25 +14,29 @@ from app.api import me as me_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
+from app.services import password_reset
 
 logger = logging.getLogger(__name__)
 
 ALL_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
-_TOKEN_QUERY = re.compile(r"(?<=token=)[^&\s]*")
+# Any query parameter named `...token` or `token_hash`: the email links (`token=`, `token_hash=`)
+# and Supabase session values (`access_token=`, `refresh_token=`).
+_TOKEN_QUERY = re.compile(r"(?<=[?&])([A-Za-z_]*token(?:_hash)?=)[^&\s]*")
 _REDACTED = "[redacted]"
+_REPLACEMENT = r"\1" + _REDACTED
 
 
 class _RedactTokens(logging.Filter):
-    """Blanks `token=` query values in access-log lines, e.g. the email verification link (AD-19)."""
+    """Blanks token query values (`token=`, `token_hash=`, `access_token=`, ...) in access-log lines (AD-19)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.args, tuple):
             record.args = tuple(
-                _TOKEN_QUERY.sub(_REDACTED, arg) if isinstance(arg, str) else arg for arg in record.args
+                _TOKEN_QUERY.sub(_REPLACEMENT, arg) if isinstance(arg, str) else arg for arg in record.args
             )
         if isinstance(record.msg, str):
-            record.msg = _TOKEN_QUERY.sub(_REDACTED, record.msg)
+            record.msg = _TOKEN_QUERY.sub(_REPLACEMENT, record.msg)
         return True
 
 
@@ -76,6 +80,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            # Let running reset emails finish before their pool and client close.
+            await password_reset.drain()
             await http.aclose()
             await pool.close()
 

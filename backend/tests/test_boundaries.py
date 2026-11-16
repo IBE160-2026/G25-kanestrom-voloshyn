@@ -33,3 +33,15 @@ def test_no_openai_import_outside_llm_package():
         if LLM_DIR not in path.parents and imports_openai(path.read_text(encoding="utf-8"))
     ]
     assert offenders == []
+
+
+def test_only_supabase_auth_calls_supabase_auth_or_uses_the_secret_key():
+    # AD-2, Story 1.5: Supabase Auth over HTTP (token check, admin generate_link, ...) and the
+    # secret key appear only in app/supabase_auth.py (config.py only declares the setting).
+    offenders = sorted(
+        str(path.relative_to(APP_DIR))
+        for path in APP_DIR.rglob("*.py")
+        if path.name not in ("supabase_auth.py", "config.py")
+        and any(marker in path.read_text(encoding="utf-8") for marker in ("/auth/v1", "/admin/", "supabase_secret_key"))
+    )
+    assert offenders == []

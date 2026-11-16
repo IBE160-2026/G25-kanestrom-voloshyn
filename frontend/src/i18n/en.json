@@ -10,6 +10,7 @@
     "email": "Email",
     "password": "Password",
     "submit": "Log in",
+    "forgotPassword": "Forgot password?",
     "errors": {
       "credentials": "Wrong email or password.",
       "failed": "Sign-in didn't work. Try again."
@@ -31,6 +32,20 @@
   },
   "session": {
     "expired": "You've been signed out. Log in to continue."
+  },
+  "reset": {
+    "request": {
+      "title": "Reset your password",
+      "submit": "Send link",
+      "sent": "If an account exists, we've sent a link"
+    },
+    "newPassword": {
+      "title": "Choose a new password",
+      "submit": "Save password"
+    },
+    "saved": "Your password is changed. Log in with the new one.",
+    "expired": "This link has expired",
+    "sendNewLink": "Send a new link"
   },
   "projects": {
     "empty": {

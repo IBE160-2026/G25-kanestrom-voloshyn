@@ -84,6 +84,66 @@ export async function signIn({ email, password }) {
   return { session: data.session }
 }
 
+// Checks in flight, by token hash: a second call while one runs (React StrictMode's double effect)
+// shares it instead of spending the single-use link again. Removed once settled, so a retry after a
+// network failure checks the link again.
+const recoveries = new Map()
+
+async function verifyRecovery(tokenHash) {
+  if (typeof tokenHash !== 'string' || !tokenHash) return { error: 'expired' }
+  let supabase
+  try {
+    supabase = await getSupabase()
+  } catch {
+    return { error: 'failed' } // /api/config didn't load
+  }
+  let result
+  try {
+    result = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+  } catch {
+    return { error: 'failed' }
+  }
+  const { data, error } = result
+  if (error) {
+    const status = typeof error.status === 'number' ? error.status : 0
+    // Only Supabase refusing the token is 'expired'; no answer, a rate limit, or a 5xx is a
+    // failure to retry, and the link stays usable.
+    return { error: status === 0 || status === 429 || status >= 500 ? 'failed' : 'expired' }
+  }
+  return data?.session ? { ok: true } : { error: 'expired' }
+}
+
+/**
+ * Open a password-reset link (FR-3): verify its token hash with Supabase (type recovery), which
+ * signs this browser in with a recovery session. Resolves with `{ ok: true }` or `{ error }`:
+ * 'expired' when Supabase refuses the token (expired, used, replaced, malformed, or missing), the
+ * one state that asks for a new link; 'failed' when Supabase or /api/config couldn't be reached
+ * (retry the same link). Never throws.
+ */
+export function completeRecovery(tokenHash) {
+  if (!recoveries.has(tokenHash)) {
+    const check = verifyRecovery(tokenHash).finally(() => recoveries.delete(tokenHash))
+    recoveries.set(tokenHash, check)
+  }
+  return recoveries.get(tokenHash)
+}
+
+/**
+ * Save a new password for the signed-in (recovery) session (FR-3). Resolves with `{ ok: true }`
+ * or `{ error }`: 'password_too_short' when Supabase finds it too weak, otherwise 'failed'.
+ * Never throws; the password is never stored or logged.
+ */
+export async function setNewPassword(password) {
+  try {
+    const supabase = await getSupabase()
+    const { error } = await supabase.auth.updateUser({ password })
+    if (!error) return { ok: true }
+    return { error: error.code === 'weak_password' ? 'password_too_short' : 'failed' }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
 /** The stored session's access token, read straight from storage (no refresh, no network). */
 function storedAccessToken() {
   try {

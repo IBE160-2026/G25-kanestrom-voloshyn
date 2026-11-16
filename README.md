@@ -35,6 +35,8 @@ Opprett en konto på <http://localhost:8000/signup> (fornavn, e-post og et passo
 
 Etter at kontoen er opprettet, sender appen en e-post med en bekreftelseslenke som virker i 24 timer. Lokalt havner den i Mailpit på <http://localhost:54324>; åpne lenken der for å bekrefte e-postadressen. Du kan bruke appen uten å bekrefte; bekreftelsen trengs bare for å koble til en Google-konto.
 
+Har du glemt passordet, velg «Forgot password?» («Glemt passordet?» på norsk) på innloggingssiden. E-posten med lenken for å velge nytt passord havner også i Mailpit. Lenken virker i 1 time og bare én gang, og en ny lenke erstatter de eldre. Etter at du har lagret det nye passordet, blir du logget ut på alle andre enheter. En konto som bare logger inn med Google, får den samme meldingen om at lenken er sendt, men ingen e-post.
+
 `LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. SMTP-verdiene i `.env` kan stå tomme lokalt; standardverdiene sender til Mailpit. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 
 ### Utvikling

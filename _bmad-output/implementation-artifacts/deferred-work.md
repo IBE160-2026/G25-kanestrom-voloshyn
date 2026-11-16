@@ -13,3 +13,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3b-email-verification.md`
   summary: The expired-verification screen offers no way forward until Story 7.3 adds "Resend verification email" in Settings (EXPERIENCE.md › Email verification).
   evidence: Review pass 1, finding #12. The final UX doc expects a resend path; the epics place resend in Story 7.3. Make sure Story 7.3 links the expired screen to it.
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-5-password-reset.md`
+  summary: Test that a failing `accounts.find_for_reset` (DB lookup) in the reset background task still answers 202, logs "Password reset lookup failed" and logs no address.
+  evidence: Review pass 1, finding #14. Removing the try/except, or logging the exception text, fails no test. Needs a failing-pool fixture.

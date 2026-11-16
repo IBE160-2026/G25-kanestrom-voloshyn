@@ -11,6 +11,7 @@
     "email": "E-post",
     "password": "Passord",
     "submit": "Logg inn",
+    "forgotPassword": "Glemt passordet?",
     "errors": {
       "credentials": "Feil e-post eller passord.",
       "failed": "Innloggingen fungerte ikke. Prøv igjen."
@@ -32,6 +33,20 @@
   },
   "session": {
     "expired": "Du er logget ut. Logg inn for å fortsette."
+  },
+  "reset": {
+    "request": {
+      "title": "Tilbakestill passordet",
+      "submit": "Send lenke",
+      "sent": "Hvis kontoen finnes, har vi sendt en lenke"
+    },
+    "newPassword": {
+      "title": "Velg et nytt passord",
+      "submit": "Lagre passordet"
+    },
+    "saved": "Passordet er endret. Logg inn med det nye.",
+    "expired": "Denne lenken er utløpt",
+    "sendNewLink": "Send en ny lenke"
   },
   "projects": {
     "empty": {

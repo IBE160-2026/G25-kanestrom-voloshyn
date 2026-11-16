@@ -1,7 +1,9 @@
-// auth/ sign-up, log in, and log out, with supabase-js and fetch stubbed (spine › Tests).
+// auth/ sign-up, log in, log out, and password reset, with supabase-js and fetch stubbed (spine › Tests).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { signUpMock, signInMock, signOutMock, getSessionMock } = vi.hoisted(() => ({
+const { signUpMock, signInMock, signOutMock, getSessionMock, verifyOtpMock, updateUserMock } = vi.hoisted(() => ({
+  verifyOtpMock: vi.fn(),
+  updateUserMock: vi.fn(),
   signUpMock: vi.fn(),
   signInMock: vi.fn(),
   signOutMock: vi.fn(),
@@ -13,6 +15,8 @@ vi.mock('@supabase/supabase-js', () => ({
       signUp: signUpMock,
       signInWithPassword: signInMock,
       getSession: getSessionMock,
+      verifyOtp: verifyOtpMock,
+      updateUser: updateUserMock,
       admin: { signOut: signOutMock }, // POST /logout with the session's own token
     },
   })),
@@ -25,6 +29,8 @@ beforeEach(async () => {
   vi.resetModules()
   signUpMock.mockReset()
   signInMock.mockReset()
+  verifyOtpMock.mockReset()
+  updateUserMock.mockReset()
   signOutMock.mockReset().mockResolvedValue({ error: null })
   // Like supabase-js: the stored session is the source of truth.
   getSessionMock.mockReset().mockImplementation(async () => {
@@ -177,5 +183,80 @@ describe('signOut and hasSession', () => {
     const { ended } = await auth.signOut()
     await ended
     expect(signOutMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('completeRecovery', () => {
+  const OK = { data: { session: { access_token: 'rec' } }, error: null }
+
+  it('verifies the token hash as a recovery link', async () => {
+    verifyOtpMock.mockResolvedValue(OK)
+    await expect(auth.completeRecovery('abc123')).resolves.toEqual({ ok: true })
+    expect(verifyOtpMock).toHaveBeenCalledWith({ token_hash: 'abc123', type: 'recovery' })
+  })
+
+  it.each([
+    ['refused (expired, used, replaced)', async () => ({ data: { session: null }, error: { status: 403, code: 'otp_expired' } })],
+    ['refused as malformed', async () => ({ data: { session: null }, error: { status: 400 } })],
+    ['answered without a session', async () => ({ data: { session: null }, error: null })],
+  ])('%s is expired', async (_, answer) => {
+    verifyOtpMock.mockImplementation(answer)
+    await expect(auth.completeRecovery('abc123')).resolves.toEqual({ error: 'expired' })
+  })
+
+  it.each([
+    ['a network error', async () => ({ data: { session: null }, error: { name: 'AuthRetryableFetchError', status: 0 } })],
+    ['no status', async () => ({ data: { session: null }, error: { message: 'x' } })],
+    ['a 5xx', async () => ({ data: { session: null }, error: { status: 502 } })],
+    ['a rate limit', async () => ({ data: { session: null }, error: { status: 429 } })],
+    ['a throw', async () => Promise.reject(new TypeError('Failed to fetch'))],
+  ])('%s is failed, not expired', async (_, answer) => {
+    verifyOtpMock.mockImplementation(answer)
+    await expect(auth.completeRecovery('abc123')).resolves.toEqual({ error: 'failed' })
+  })
+
+  it('a failed /api/config load is failed', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    await expect(auth.completeRecovery('abc123')).resolves.toEqual({ error: 'failed' })
+    expect(verifyOtpMock).not.toHaveBeenCalled()
+  })
+
+  it.each([null, ''])('a missing token hash (%j) is expired, with no Supabase call', async (tokenHash) => {
+    await expect(auth.completeRecovery(tokenHash)).resolves.toEqual({ error: 'expired' })
+    expect(verifyOtpMock).not.toHaveBeenCalled()
+  })
+
+  it('shares a check in flight (React StrictMode), but checks again once it settled', async () => {
+    verifyOtpMock.mockRejectedValueOnce(new TypeError('Failed to fetch')).mockResolvedValue(OK)
+    const [first, second] = await Promise.all([auth.completeRecovery('once'), auth.completeRecovery('once')])
+    expect(first).toEqual({ error: 'failed' })
+    expect(second).toEqual({ error: 'failed' })
+    expect(verifyOtpMock).toHaveBeenCalledTimes(1)
+
+    // The retry after a network failure reaches Supabase again, and works.
+    await expect(auth.completeRecovery('once')).resolves.toEqual({ ok: true })
+    expect(verifyOtpMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('setNewPassword', () => {
+  it('updates the password of the recovery session', async () => {
+    updateUserMock.mockResolvedValue({ data: { user: {} }, error: null })
+    await expect(auth.setNewPassword('brand-new-pass')).resolves.toEqual({ ok: true })
+    expect(updateUserMock).toHaveBeenCalledWith({ password: 'brand-new-pass' })
+  })
+
+  it.each([
+    ['weak_password', 'password_too_short'],
+    ['same_password', 'failed'],
+    [undefined, 'failed'],
+  ])('maps Supabase error %s to %s', async (code, expected) => {
+    updateUserMock.mockResolvedValue({ data: { user: null }, error: { code, status: 422 } })
+    await expect(auth.setNewPassword('whatever1')).resolves.toEqual({ error: expected })
+  })
+
+  it('a thrown error is a failure, never a throw', async () => {
+    updateUserMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await expect(auth.setNewPassword('whatever1')).resolves.toEqual({ error: 'failed' })
   })
 })

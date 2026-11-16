@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { apiFetch } from '../api/client.js'
+import { isEmail } from '../auth/email.js'
 import { signUp } from '../auth/index.js'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
@@ -10,8 +11,6 @@ import styles from '../components/AuthForm.module.css'
 
 const MIN_PASSWORD = 8 // FR-1; Supabase enforces the same minimum (config.toml)
 const MAX_FIRST_NAME = 100 // the API's limit for first_name
-// A light check before Supabase sees the address: something@something, no spaces.
-const EMAIL = /^[^\s@]+@[^\s@]+$/
 
 // Create account screen (FR-1, DESIGN.md › Create account screen). Signs up through supabase-js,
 // then tells the backend the first name and language (POST /api/auth/after-sign-in, AD-19).
@@ -48,7 +47,7 @@ export default function CreateAccount() {
     const address = email.trim()
     if (!name) return fail('firstNameRequired', 'firstName')
     if (!address) return fail('emailRequired', 'email')
-    if (!EMAIL.test(address)) return fail('emailInvalid', 'email')
+    if (!isEmail(address)) return fail('emailInvalid', 'email')
     if (password.length < MIN_PASSWORD) return fail('passwordTooShort', 'password')
 
     inFlight.current = true

@@ -6,3 +6,38 @@
   color: var(--color-text);
 }
 
+/* A field whose label shares its line with a link ("Forgot password?", mock: key-login.html).
+   The link comes after the input in the DOM, for the Tab order. */
+.field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'label aside'
+    'input input';
+  align-items: baseline;
+  column-gap: var(--space-2);
+}
+
+.field > input {
+  grid-area: input;
+}
+
+.label {
+  grid-area: label;
+}
+
+/* Padded, so the target is taller than the caption text, without moving the label row. */
+.inlineLink {
+  grid-area: aside;
+  justify-self: end;
+  padding: var(--space-1) 0;
+  margin: calc(-1 * var(--space-1)) 0 var(--space-1);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
