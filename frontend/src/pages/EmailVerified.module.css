@@ -1,0 +1,18 @@
+/* Auth panel (DESIGN.md › Auth panel) holding the result as a centred title-sm line. */
+.panel {
+  width: var(--space-auth-panel-width);
+  max-width: 100%;
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.message {
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  letter-spacing: var(--type-title-sm-letter-spacing);
+  color: var(--color-text);
+  text-align: center;
+}

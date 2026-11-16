@@ -21,6 +21,8 @@ class CurrentUser:
     account_id: UUID
     session_id: UUID
     email: str | None
+    # Sign-in providers of the Supabase user's identities, e.g. {"email"}, {"email", "google"}.
+    providers: frozenset[str] = frozenset()
 
 
 def _unauthorized(message: str) -> AppError:
@@ -50,6 +52,18 @@ class _ValidToken:
     account_id: UUID
     session_id: UUID
     email: str | None
+    providers: frozenset[str]
+
+
+def _providers(user: dict) -> frozenset[str]:
+    identities = user.get("identities")
+    if not isinstance(identities, list):
+        return frozenset()
+    return frozenset(
+        identity["provider"]
+        for identity in identities
+        if isinstance(identity, dict) and isinstance(identity.get("provider"), str)
+    )
 
 
 async def _validated_token(request: Request) -> _ValidToken:
@@ -60,7 +74,12 @@ async def _validated_token(request: Request) -> _ValidToken:
         account_id = UUID(user["id"])
     except ValueError:
         raise _unauthorized("The token has no valid user") from None
-    return _ValidToken(account_id=account_id, session_id=_session_id(token), email=user.get("email"))
+    return _ValidToken(
+        account_id=account_id,
+        session_id=_session_id(token),
+        email=user.get("email"),
+        providers=_providers(user),
+    )
 
 
 async def user_auth(
@@ -83,7 +102,9 @@ async def user_auth(
     # 3. Every signed-in Account has a profile.
     await profiles.ensure(conn, valid.account_id)
 
-    return CurrentUser(account_id=valid.account_id, session_id=valid.session_id, email=valid.email)
+    return CurrentUser(
+        account_id=valid.account_id, session_id=valid.session_id, email=valid.email, providers=valid.providers
+    )
 
 
 UserAuth = Annotated[CurrentUser, Depends(user_auth)]

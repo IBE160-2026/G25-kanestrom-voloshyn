@@ -1,6 +1,7 @@
 """FastAPI app: /api/* routes, the /api catch-all, and the built SPA on one origin (AD-17)."""
 
 import logging
+import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -17,6 +18,28 @@ from app.errors import error_response, install_error_handlers
 logger = logging.getLogger(__name__)
 
 ALL_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
+
+_TOKEN_QUERY = re.compile(r"(?<=token=)[^&\s]*")
+_REDACTED = "[redacted]"
+
+
+class _RedactTokens(logging.Filter):
+    """Blanks `token=` query values in access-log lines, e.g. the email verification link (AD-19)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(
+                _TOKEN_QUERY.sub(_REDACTED, arg) if isinstance(arg, str) else arg for arg in record.args
+            )
+        if isinstance(record.msg, str):
+            record.msg = _TOKEN_QUERY.sub(_REDACTED, record.msg)
+        return True
+
+
+def _redact_access_log() -> None:
+    access = logging.getLogger("uvicorn.access")
+    if not any(isinstance(f, _RedactTokens) for f in access.filters):
+        access.addFilter(_RedactTokens())
 
 
 def _api_router() -> APIRouter:
@@ -39,6 +62,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # After uvicorn has configured its loggers, so the filter stays attached.
+        _redact_access_log()
         app.state.llm_mode = resolve_llm_mode(settings)
         logger.info("Starting (APP_ENV=%s, LLM mode=%s)", settings.app_env, app.state.llm_mode)
         pool = create_pool(settings)

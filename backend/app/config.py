@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     # What the phone QR code encodes (AD-17, AD-24).
     app_public_url: str = "http://localhost:8000"
 
+    # Outgoing SMTP for auth emails, used only by mailer.py (AD-19). Locally: Mailpit from
+    # `npx supabase start`. docker-compose.yml sets the container's host (host.docker.internal).
+    smtp_host: str = "127.0.0.1"
+    smtp_port: int = Field(54325, ge=1, le=65535)
+    smtp_from: str = "Study Buddy <no-reply@studybuddy.local>"
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    # none: plain SMTP (Mailpit); starttls: upgrade after connecting; tls: TLS from the start.
+    smtp_tls: Literal["none", "starttls", "tls"] = "none"
+
     # Google sign-in switch, shared with supabase/config.toml (AD-2).
     supabase_auth_external_google_enabled: bool = False
     supabase_auth_external_google_client_id: str = ""
