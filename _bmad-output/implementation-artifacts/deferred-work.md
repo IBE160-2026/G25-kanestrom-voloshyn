@@ -39,3 +39,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-1-create-open-and-rename-projects.md`
   summary: When archive and delete exist (Epic 7), show the state-specific read-only messages EXPERIENCE.md already has ("This project is archived/deleted. Restore it to make changes.") by sending `params: {state}` with `project_read_only`, instead of the generic "This project is read-only."
   evidence: Story 2.1 review pass 1, Blind Hunter. `ProjectReadOnly` sends empty params, and EXPERIENCE.md › Read-only project, blocked action has separate archived and deleted copy; the generic text can't be reached until Epic 7.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-2-upload-documents-and-watch-them-get-processed.md`
+  summary: Story 2.2b — the Files panel collapses to the Files strip ("Show files"/"Hide files", "{n} of 10", warning icon when a file is partly unreadable or rejected), the collapse is saved per Project in `ui_prefs`, and it starts collapsed below 1024 px (UX-DR5, EXPERIENCE.md › Files strip).
+  evidence: Split from Story 2.2 by Cristoffer on 2026-11-17 to keep the spec near the size limit; it is a separate shippable UI part on top of 2.2's Files panel.
