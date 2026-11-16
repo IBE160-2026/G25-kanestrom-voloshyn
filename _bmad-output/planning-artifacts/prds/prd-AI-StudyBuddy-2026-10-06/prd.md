@@ -586,7 +586,7 @@ No product decision is outstanding. These items remain open for other owners:
 
 1. **Content Integrity thresholds (architecture).** The numeric confidence thresholds behind the three outcomes (accept, warn and continue, reject) are deliberately unset in this PRD (§5.1, FR-7); whoever builds the extraction pipeline must define and document them.
 2. **AI provider data handling (architecture).** Confirm that the chosen AI provider lets the team honor the data-use promise (§5.3) and that permanent deletion (§5.4) reaches any copies the provider keeps.
-3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision, tracked in `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`.
+3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision, tracked in `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`. **Resolved 2026-11-16:** Ihor and Cristoffer signed off the strings.
 
 §10 lists the inferences made while applying product decisions.
 

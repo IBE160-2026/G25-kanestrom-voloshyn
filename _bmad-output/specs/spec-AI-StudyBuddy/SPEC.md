@@ -214,4 +214,4 @@ All of the following must also hold:
 
 ## Open Questions
 
-- **Norwegian strings:** FR-29 is done only once Ihor and Cristoffer sign off the drafted Norwegian strings in EXPERIENCE.md, using `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md` (PRD §9.3).
+- **Norwegian strings:** FR-29 is done only once Ihor and Cristoffer sign off the drafted Norwegian strings in EXPERIENCE.md, using `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md` (PRD §9.3). **Resolved 2026-11-16:** both signed; the strings are binding.

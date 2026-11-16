@@ -99,7 +99,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Say what stays when something is removed: generated material stays, mistakes stay unless the student opts out | Remove data silently or without saying what is kept |
 | Keep password-reset replies the same whether or not the email has an account | Reveal whether an email is registered |
 
-**Bilingual terms (confirmed).** This table becomes the binding glossary once the team signs off the (proposed) strings (see Open Questions). Use these terms consistently in buttons, headings, and Settings. Every V1 surface now has a drafted Norwegian string (Strings by surface); the team reviews them with [norwegian-strings-signoff.md](norwegian-strings-signoff.md).
+**Bilingual terms (binding).** Signed off by Ihor and Cristoffer on 2026-11-16 ([norwegian-strings-signoff.md](norwegian-strings-signoff.md)); this table is the binding glossary. Use these terms consistently in buttons, headings, and Settings.
 
 | English | Norwegian (bokmål) |
 |---|---|
@@ -114,167 +114,167 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Language labels | "English" and "Norsk", each in its own name, in every UI language |
 | Login toggle | EN \| NO |
 
-**Strings by surface.** English labels marked [ASSUMPTION] are not yet confirmed; every Norwegian string marked (proposed) still needs the team's check against the glossary and sign-off in [norwegian-strings-signoff.md](norwegian-strings-signoff.md). Counts with `{n}` need singular and plural forms in both languages (the sign-off checklist lists them). The app copies this table into `frontend/src/i18n/en.json` and `nb.json` (architecture AD-26).
+**Strings by surface.** English labels marked [ASSUMPTION] are not yet confirmed; the Norwegian strings are signed off (2026-11-16, [norwegian-strings-signoff.md](norwegian-strings-signoff.md)); a new string follows the glossary and needs both reviewers' approval. Counts with `{n}` need singular and plural forms in both languages (the sign-off checklist lists them). The app copies this table into `frontend/src/i18n/en.json` and `nb.json` (architecture AD-26).
 
 | Surface | English | Norwegian (bokmål) |
 |---|---|---|
-| Count picker, Quiz | "How many questions?" · "Make {n} questions" [ASSUMPTION: from mock] | Hvor mange spørsmål? · Lag {n} spørsmål (proposed) |
-| Count picker, Flashcards | "How many cards?" · "Make {n} cards" [ASSUMPTION: from mock] | Hvor mange treningskort? · Lag {n} treningskort (proposed) |
-| Too-little-material note, Quiz | "There's only enough material for {n} questions." + "Make {n} instead" [ASSUMPTION: copy not confirmed] | Det er bare nok materiale til {n} spørsmål. · Lag {n} i stedet (proposed) |
-| Too-little-material note, Flashcards | "There's only enough material for {n} cards." + "Make {n} instead" [ASSUMPTION: mirrors the Quiz note] | Det er bare nok materiale til {n} treningskort. · Lag {n} i stedet (proposed) |
-| Quiz feedback, next | "Next question" · Mistake Review: "Next mistake" | Neste spørsmål · Neste feil (proposed) |
-| Quiz feedback, last question | "See results" | Se resultatet (proposed) |
-| Progress steps, Quiz | "Reading your material → Writing questions → Checking answers" | Leser materialet ditt → Skriver spørsmål → Sjekker svarene (proposed) |
-| Progress steps, Flashcards | "Reading your material → Writing cards → Checking sources" | Leser materialet ditt → Skriver treningskort → Sjekker kildene (proposed) |
-| Progress steps, Summary | "Reading your material → Writing the summary → Checking sources" | Leser materialet ditt → Skriver sammendraget → Sjekker kildene (proposed) |
-| Progress steps, Mistake Review start | "Looking at your mistakes → Writing practice questions" | Ser på feilene dine → Skriver øvingsspørsmål (proposed) |
-| Summarize setup | "Make a summary" · "Which file?" · "Narrow to one topic (optional)" · "Whole file" · "Make summary" [ASSUMPTION: from mock] | Lag et sammendrag · Hvilken fil? · Begrens til ett emne (valgfritt) · Hele filen · Lag sammendrag (proposed) |
-| Summary view, end | "Saved to History" [ASSUMPTION: from mock] | Lagret i historikken (proposed) |
-| History, reopened quiz or flashcard set | "Do it again" | Gjør det igjen (proposed) |
-| History, unfinished quiz | "Unfinished · {n} of {total}" | Ikke fullført · {n} av {total} (proposed) |
-| History, source file removed (beside the disabled "Do it again") | "The file this came from was removed." | Filen dette kom fra, er fjernet. (proposed) |
-| Mistake Review, source file removed (context card) | "The file this came from was removed." [ASSUMPTION: reuses the History string] | Filen dette kom fra, er fjernet. (proposed) |
-| Files panel header | "Files · {n} of 10" | Filer · {n} av 10 (proposed) |
-| Files strip count | "{n} of 10" | {n} av 10 (proposed) |
-| History link and title | "History" | Historikk (proposed) |
-| New chat button | "New chat" | Ny samtale (proposed) |
-| New chat, empty thread | "Ask anything about your material." [ASSUMPTION: copy not confirmed] | Spør om hva som helst i materialet ditt. (proposed) |
-| Topic count | "{n} topics" ("1 topic" for one) | {n} emner ("1 emne") (proposed) |
-| Grouped-topics note | "Large file, some topics are grouped." | Stor fil, noen emner er gruppert. (proposed) |
-| Topic list, merge | "Merge" [ASSUMPTION: label] | Slå sammen (proposed) |
-| Topic list, group row (screen reader) | "{chapter}, {n} topics" ("{chapter}, 1 topic") [ASSUMPTION] | {chapter}, {n} emner ("{chapter}, 1 emne") (proposed) |
-| History filter | "All" · "Chats" · "Quizzes" · "Flashcards" · "Summaries" [ASSUMPTION: from mock] | Alle · Samtaler · Quizer · Treningskort · Sammendrag (proposed) |
-| History, empty | "Nothing here yet" | Ingenting her ennå (proposed) |
-| History, loading (screen reader) | "Loading history" [ASSUMPTION: from mock] | Laster historikk (proposed) |
-| History, error | "We couldn't load your history." + "Try again" [ASSUMPTION: follows the network-error pattern] | Vi fikk ikke lastet historikken din. · Prøv igjen (proposed) |
-| Inline error, reassurance | "Nothing you've made is lost." [ASSUMPTION: from mock] | Ingenting du har laget, er borte. (proposed) |
-| Chat, pending answer (until the first words appear) | "Study Buddy is thinking…" | Study Buddy tenker … (proposed) |
-| Chat, answer complete (screen reader only) | "Answer ready" [ASSUMPTION: copy] | Svaret er klart (proposed) |
-| Finished-generation message | "Your quiz on {topic} is ready · Open" | Quizen din om {topic} er klar · Åpne (proposed) |
-| Finished-generation message, Mistake Review | "Your practice questions are ready · Open" [ASSUMPTION: copy] | Øvingsspørsmålene dine er klare · Åpne (proposed) |
-| File menu trigger, accessible name | "More options for {file name}" [ASSUMPTION] | Flere valg for {file name} (proposed) |
-| File menu item | "Remove" | Fjern (proposed) |
-| Remove file dialog, title | "Remove {file name}?" [ASSUMPTION] | Vil du fjerne {file name}? (proposed) |
-| Remove file dialog, body | "Quizzes, flashcards, and summaries made from this file stay. Its mistakes stay in your review." [ASSUMPTION: wording; meaning confirmed] | Quizer, treningskort og sammendrag laget fra denne filen blir liggende. Feilene fra den ligger fortsatt i repetisjonen din. (proposed) |
-| Remove file dialog, checkbox | "Also remove its mistakes from my review" [ASSUMPTION: wording; meaning confirmed] | Fjern også feilene fra repetisjonen min (proposed) |
-| Remove file dialog, Reading… | "Reading stops and the file won't be added." [ASSUMPTION] | Lesingen stopper, og filen blir ikke lagt til. (proposed) |
-| Remove file dialog, buttons | "Cancel" · "Remove" | Avbryt · Fjern (proposed) |
-| Remove failed | "We couldn't remove the file." + "Try again" [ASSUMPTION: follows the network-error pattern] | Vi fikk ikke fjernet filen. · Prøv igjen (proposed) |
-| Sidebar project menu | "Rename" · "Archive" · "Delete project" | Gi nytt navn · Arkiver · Slett prosjekt (proposed) |
-| Archived project menu | "Restore" · "Delete project" | Gjenopprett · Slett prosjekt (proposed) |
-| Archived group | "Archived ({n})" | Arkivert ({n}) (proposed) |
-| Undo message, archive | "{project} archived · Undo" | {project} er arkivert · Angre (proposed) |
-| Archived banner | "Archived · Restore" | Arkivert · Gjenopprett (proposed) |
-| Deleted projects group | "Deleted projects ({n})" | Slettede prosjekter ({n}) (proposed) |
-| Deleted project, days left (sidebar row and Deleted banner) | "Deleted · {n} days left" ("1 day left" for one) | Slettet · {n} dager igjen ("1 dag igjen") (proposed) |
-| Deleted project menu and Deleted banner | "Restore" · "Delete forever" | Gjenopprett · Slett for godt (proposed) |
-| Confirm dialog (delete project), title | "Delete {project}?" | Vil du slette {project}? (proposed) |
-| Confirm dialog (delete project), body | "{project} moves to Deleted projects and is permanently deleted after 30 days. You can restore it until then." [ASSUMPTION: wording; meaning confirmed] | {project} flyttes til Slettede prosjekter og slettes for godt etter 30 dager. Du kan gjenopprette det frem til da. (proposed) |
-| Confirm dialog (delete project), buttons | "Cancel" · "Delete project" | Avbryt · Slett prosjekt (proposed) |
-| Confirm dialog (delete forever), title | "Delete {project} forever?" [ASSUMPTION: wording] | Vil du slette {project} for godt? (proposed) |
-| Confirm dialog (delete forever), body | "Its files, mistakes, and generated material are deleted. This can't be undone." [ASSUMPTION: wording; meaning confirmed] | Filene, feilene og det genererte innholdet slettes. Dette kan ikke angres. (proposed) |
-| Confirm dialog (delete forever), buttons | "Cancel" · "Delete forever" | Avbryt · Slett for godt (proposed) |
-| Sidebar, collapse and expand | "Hide projects" · "Show projects" [ASSUMPTION: accessible names and tooltips mirror the Files strip] | Skjul prosjekter · Vis prosjekter (proposed) |
-| Sidebar strip, new project tooltip | "New project" [ASSUMPTION] | Nytt prosjekt (proposed) |
-| Settings, Delete a project | "Delete a project" · "Delete" | Slett et prosjekt · Slett (proposed) |
-| Files strip, expand and collapse | "Show files" · "Hide files" [ASSUMPTION: accessible names from mock] | Vis filer · Skjul filer (proposed) |
-| Files strip, warning icon | "A file needs your attention" [ASSUMPTION] | En fil trenger oppmerksomheten din (proposed) |
-| All cleared, actions | "Make a new quiz" · "← Back to chat" | Lag en ny quiz · ← Tilbake til samtalen (proposed) |
-| Round done panel | "Round done. {n} mistakes still to review." ("1 mistake" for one) · "Review mistakes" · "← Back to chat" | Runden er ferdig. {n} feil igjen å repetere. · Repeter feil · ← Tilbake til samtalen (proposed) |
-| Mistake Review, saved line | "Your progress is saved." | Fremgangen din er lagret. (proposed) |
-| Create account, duplicate email | "An account with this email already exists. Log in instead?" | Det finnes allerede en konto med denne e-postadressen. Vil du logge inn i stedet? (proposed) |
-| Password reset, requested | "If an account exists, we've sent a link" | Hvis kontoen finnes, har vi sendt en lenke (proposed) |
-| Password reset, expired, used, or replaced link | "This link has expired" · "Send a new link" | Denne lenken er utløpt · Send en ny lenke (proposed) |
-| Session expired, login screen | "You've been signed out. Log in to continue." | Du er logget ut. Logg inn for å fortsette. (proposed) |
-| Link Google account, already linked elsewhere | "This Google account is already linked to another Study Buddy account." | Denne Google-kontoen er allerede koblet til en annen Study Buddy-konto. (proposed) |
-| Link Google account, email not verified | "Verify your email first" · "Resend verification email" | Bekreft e-postadressen din først · Send bekreftelseslenken på nytt (proposed) |
-| Verification email resent | "We've sent a new link. It works for 24 hours." [ASSUMPTION: copy] | Vi har sendt en ny lenke. Den gjelder i 24 timer. (proposed) |
-| Google takeover, one-time notice | "Your account now signs in with Google." | Kontoen din logger nå inn med Google. (proposed) |
-| Phone page, over image limit | "You can send {k} more photos today. {n} photos won't be sent." ("1 more photo", "1 photo won't be sent" for one) [ASSUMPTION: copy not confirmed] | Du kan sende {k} bilder til i dag. {n} bilder blir ikke sendt. ("1 bilde til", "1 bilde blir ikke sendt") (proposed) |
-| Phone page, photo over 50 MB | "This photo is over 50 MB and won't be sent." [ASSUMPTION: copy not confirmed] | Dette bildet er over 50 MB og blir ikke sendt. (proposed) |
-| Account deleted, login screen | "Your account and files have been deleted." | Kontoen din og filene dine er slettet. (proposed) |
-| Login, tagline | "Study from your own notes, with sources" | Studer fra dine egne notater, med kilder (proposed) |
-| Login, privacy line | "Your files are only used to create your study material." | Filene dine brukes bare til å lage studiematerialet ditt. (proposed) |
-| Login, actions | "Sign in with Google" · "Log in" · "Forgot password?" · "Create account" | Logg inn med Google · Logg inn · Glemt passordet? · Opprett konto (proposed) |
-| Login and Create account, fields | "First name" · "Email" · "Password" [ASSUMPTION: labels] | Fornavn · E-post · Passord (proposed) |
-| Login, invalid email or password | "Wrong email or password." [ASSUMPTION: copy; generic, FR-2] | Feil e-post eller passord. (proposed) |
-| Sign-in failure or cancel | "Sign-in didn't work. Try again." | Innloggingen fungerte ikke. Prøv igjen. (proposed) |
-| Create account, password too short | "Use at least 8 characters." [ASSUMPTION: copy] | Bruk minst 8 tegn. (proposed) |
-| Create account, first name missing | "Enter your first name." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn fornavnet ditt. (proposed) |
-| Create account, email missing | "Enter your email." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn e-postadressen din. (proposed) |
-| Create account, email invalid | "Enter a valid email address." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn en gyldig e-postadresse. (proposed) |
-| Password reset, request screen | "Reset your password" · "Send link" [ASSUMPTION: copy] | Tilbakestill passordet · Send lenke (proposed) |
-| Password reset, new-password screen | "Choose a new password" · "Save password" [ASSUMPTION: copy] | Velg et nytt passord · Lagre passordet (proposed) |
-| Password reset saved | "Your password is changed. Log in with the new one." [ASSUMPTION: copy] | Passordet er endret. Logg inn med det nye. (proposed) |
-| Password reset email, subject | "Reset your Study Buddy password" [ASSUMPTION: copy, approved 2026-11-16 with Story 1.5] | Tilbakestill passordet ditt for Study Buddy (proposed) |
-| Password reset email, body ({name} = first name, or "Hi," / "Hei," alone when there is none; {link} = reset link) | "Hi {name}," · "Open this link to choose a new password:" · "{link}" · "The link works for 1 hour and only once." · "If you didn't ask for this, you can ignore this email. Your password stays the same." [ASSUMPTION: copy, approved 2026-11-16 with Story 1.5] | Hei {name}, · Åpne denne lenken for å velge et nytt passord: · {link} · Lenken gjelder i 1 time og bare én gang. · Hvis du ikke ba om dette, kan du se bort fra denne e-posten. Passordet ditt er uendret. (proposed) |
-| Email verified | "Your email is verified." [ASSUMPTION: copy] | E-postadressen din er bekreftet. (proposed) |
-| Verification email, subject | "Confirm your email for Study Buddy" [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Bekreft e-postadressen din for Study Buddy (proposed) |
-| Verification email, body ({name} = first name, {link} = verify link) | "Hi {name}," · "Confirm your email address by opening this link:" · "{link}" · "The link works for 24 hours. You can use Study Buddy without confirming; you only need it to link a Google account." · "If you didn't create an account, you can ignore this email." [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Hei {name}, · Bekreft e-postadressen din ved å åpne denne lenken: · {link} · Lenken gjelder i 24 timer. Du kan bruke Study Buddy uten å bekrefte; du trenger det bare for å koble til en Google-konto. · Hvis du ikke har opprettet en konto, kan du se bort fra denne e-posten. (proposed) |
-| Projects page (empty) | "Create your first project" | Opprett ditt første prosjekt (proposed) |
-| Sidebar, new project | "+ New project" | + Nytt prosjekt (proposed) |
-| Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt (proposed) |
-| Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} (proposed) |
-| Upload drop zone | "Upload your notes to start" · "Upload from phone" | Last opp notatene dine for å starte · Last opp fra mobilen (proposed) |
-| Upload buttons | "Upload" · "Upload from phone" | Last opp · Last opp fra mobilen (proposed) |
-| Privacy notice, title | "Before your first upload" [ASSUMPTION: copy] | Før du laster opp første gang (proposed) |
-| Privacy notice, body | "Study Buddy sends your files to an external AI service (through OpenRouter) to make your quizzes, flashcards, summaries, and answers. Your files are used only for your own study material, aren't shared with other users, and aren't kept by the AI service." [ASSUMPTION: copy; claims limited to architecture AD-3] | Study Buddy sender filene dine til en ekstern KI-tjeneste (via OpenRouter) for å lage quizer, treningskort, sammendrag og svar til deg. Filene dine brukes bare til ditt eget studiemateriale, deles ikke med andre brukere og lagres ikke av KI-tjenesten. (proposed) |
-| Privacy notice, buttons and link | "Cancel" · "Got it, upload" · "How your files are used" · "Close" [ASSUMPTION: copy] | Avbryt · Forstått, last opp · Slik brukes filene dine · Lukk (proposed) |
-| File status | "Reading…" · "Ready" · "Ready, partly unreadable" · "Rejected" | Leser … · Klar · Klar, delvis uleselig · Avvist (proposed) |
-| File, partly unreadable note | "Everything we could read is ready to study." | Alt vi klarte å lese, er klart til bruk. (proposed) |
-| File, phone batch with unreadable pages | "Page {page} couldn't be read." (one page) · "Pages {pages} couldn't be read." (several) [ASSUMPTION: copy] | Side {page} kunne ikke leses. · Sidene {pages} kunne ikke leses. (proposed) |
-| File, unreadable image | "This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick." | Bildet er for uskarpt til å leses, så vi kan ikke studere fra det. Et skarpere bilde i godt lys pleier å hjelpe. (proposed) |
-| Upload, unsupported type | "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC." [ASSUMPTION: copy] | Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC. (proposed) |
-| Upload, over 50 MB | "This file is over 50 MB." [ASSUMPTION: copy] | Filen er over 50 MB. (proposed) |
-| Upload, 11th file | "A project can hold 10 files. Remove one to add another." [ASSUMPTION: copy] | Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny. (proposed) |
-| Upload, image limit reached | "You've used today's 25 images. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 25 bilder. Prøv igjen i morgen. (proposed) |
-| Topic list, add | "+ Add topic" | + Legg til emne (proposed) |
-| Chat, scope control | "All materials" · "One file" | Alt materiale · Én fil (proposed) |
-| Chat, composer | "Ask about your material" · "Send" [ASSUMPTION: placeholder] | Spør om materialet ditt · Send (proposed) |
-| Tool buttons | "Quiz" · "Flashcards" · "Summarize" | Quiz · Treningskort · Oppsummer (proposed) |
-| Limit notice | "{n} messages left today" · "{n} images left today" ("1 message", "1 image" for one) | {n} meldinger igjen i dag · {n} bilder igjen i dag ("1 melding igjen i dag", "1 bilde igjen i dag") (proposed) |
-| Chat, message limit reached | "You've used today's 50 messages. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 50 meldinger. Prøv igjen i morgen. (proposed) |
-| Mistakes card, action | "Start" | Start (proposed) |
-| Quiz setup | "Make a quiz" · "Which topics?" · "All topics" [ASSUMPTION: copy] | Lag en quiz · Hvilke emner? · Alle emner (proposed) |
-| Answer option labels | "Your answer" · "Correct answer" | Ditt svar · Riktig svar (proposed) |
-| Feedback, correct | "Correct" [ASSUMPTION: copy] | Riktig (proposed) |
-| Score summary | "{correct} of {total} correct" · "Missed questions stay in your review." · "New quiz" [ASSUMPTION: copy] | {correct} av {total} riktige · Spørsmål du bommet på, ligger i repetisjonen din. · Ny quiz (proposed) |
-| Progress steps, cancel | "Cancel" | Avbryt (proposed) |
-| Generation cancelled | "Cancelled. Your choices are kept." [ASSUMPTION: copy] | Avbrutt. Valgene dine er lagret. (proposed) |
-| Flashcards, actions | "Got it" · "Not yet" · "Stop for now" | Kan det · Ikke ennå · Stopp for nå (proposed) |
-| Flashcards, progress | "{n} of {total}" | {n} av {total} (proposed) |
-| Flashcard end screen | "{n} cards done. {m} needed a second try" ("1 card done") · "Make more cards" | {n} treningskort ferdige. {m} trengte et nytt forsøk ("1 treningskort ferdig") · Lag flere treningskort (proposed) |
-| Activity header, every activity | "← Back to chat" | ← Tilbake til samtalen (proposed) |
-| Mistake Review, progress | "{n} of {m} cleared" | {n} av {m} repetert (proposed) |
-| Mistake Review, context | "Your earlier answer" [ASSUMPTION: copy] | Det tidligere svaret ditt (proposed) |
-| Mistake Review, already starting | "Your practice questions are already being made." [ASSUMPTION: copy] | Øvingsspørsmålene dine lages allerede. (proposed) |
-| Account menu | "Settings" · "Language" · "Log out" | Innstillinger · Språk · Logg ut (proposed) |
-| Account menu, accessible name without a first name | "Account menu" [ASSUMPTION: copy, added 2026-11-16 with Story 1.4] | Kontomeny (proposed) |
-| Settings, sections | "Account" · "Language" · "Your data" | Konto · Språk · Dataene dine (proposed) |
-| Settings, account actions | "Change password" · "Link Google account" | Endre passord · Koble til Google-konto (proposed) |
-| Settings, sign-in method | "Signs in with Google" · "Signs in with email" [ASSUMPTION: copy] | Logger inn med Google · Logger inn med e-post (proposed) |
-| Settings, password changed | "Your password is changed." [ASSUMPTION: copy] | Passordet er endret. (proposed) |
-| Settings, delete account entry | "Delete my account and all my files" | Slett kontoen min og alle filene mine (proposed) |
-| Confirm dialog (delete account) | "Delete your account?" · "Your projects, including those in Deleted projects, and their files, mistakes, and generated material are deleted now. This can't be undone." · "Type DELETE to confirm" · "Cancel" · "Delete account" [ASSUMPTION: wording; meaning confirmed] | Vil du slette kontoen din? · Prosjektene dine, også de i Slettede prosjekter, med filer, feil og generert innhold, slettes nå. Dette kan ikke angres. · Skriv SLETT for å bekrefte · Avbryt · Slett kontoen (proposed) |
-| QR dialog | "Upload from phone" · "Waiting for photos…" · "This code works for 10 minutes and stops when you close this window." | Last opp fra mobilen · Venter på bilder … · Koden gjelder i 10 minutter og slutter å virke når du lukker dette vinduet. (proposed) |
-| Phone batch name | "Handwritten notes, {n} pages" ("1 page" for one) | Håndskrevne notater, {n} sider ("Håndskrevne notater, 1 side") (proposed) |
-| Phone page, header | "Uploading to {project}" [ASSUMPTION: copy] | Laster opp til {project} (proposed) |
-| Phone page, actions | "Take photos" · "Choose from gallery" · "Send {n} photos" ("Send 1 photo") | Ta bilder · Velg fra galleriet · Send {n} bilder ("Send 1 bilde") (proposed) |
-| Phone page, countdown | "Link expires in {n} min" · last minute "Link expires in {m}:{ss}" | Lenken utløper om {n} min · Lenken utløper om {m}:{ss} (proposed) |
-| Phone page, expired | "This link has expired. Scan a new code on your computer." | Lenken er utløpt. Skann en ny kode på datamaskinen. (proposed) |
-| Phone page, sent | "Your photos are in {project}. Your computer shows when they're ready." · "Send more" [ASSUMPTION: copy] | Bildene er i {project}. Datamaskinen viser når de er klare. · Send flere (proposed) |
-| Phone page, project full | "This project already has 10 files, so these photos can't be added." [ASSUMPTION: copy] | Prosjektet har allerede 10 filer, så disse bildene kan ikke legges til. (proposed) |
-| Inline error, generic | "Something went wrong." · "Try again" [ASSUMPTION: copy] | Noe gikk galt. · Prøv igjen (proposed) |
-| Inline error, AI service down | "The AI service isn't responding right now." [ASSUMPTION: copy] | KI-tjenesten svarer ikke akkurat nå. (proposed) |
-| API error, not found (`not_found`) | "We couldn't find that." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Vi fant ikke det du lette etter. (proposed) |
-| API error, bad request (`bad_request`) | "That request didn't work. Try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Forespørselen fungerte ikke. Prøv igjen. (proposed) |
-| API error, not signed in (`unauthorized`) | "Log in to continue." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Logg inn for å fortsette. (proposed) |
-| API error, no access (`forbidden`) | "You don't have access to this." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Du har ikke tilgang til dette. (proposed) |
-| API error, action not available (`method_not_allowed`) | "That action isn't available." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Den handlingen er ikke tilgjengelig. (proposed) |
-| API error, changed meanwhile (`conflict`) | "This changed in the meantime. Reload and try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Dette ble endret i mellomtiden. Last inn på nytt og prøv igjen. (proposed) |
-| API error, invalid details (`invalid_request`) | "Some of the details aren't valid." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Noen av opplysningene er ikke gyldige. (proposed) |
-| Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye materiale. Velg færre emner eller én fil. (proposed) |
-| Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. (proposed) |
+| Count picker, Quiz | "How many questions?" · "Make {n} questions" [ASSUMPTION: from mock] | Hvor mange spørsmål? · Lag {n} spørsmål |
+| Count picker, Flashcards | "How many cards?" · "Make {n} cards" [ASSUMPTION: from mock] | Hvor mange treningskort? · Lag {n} treningskort |
+| Too-little-material note, Quiz | "There's only enough material for {n} questions." + "Make {n} instead" [ASSUMPTION: copy not confirmed] | Det er bare nok materiale til {n} spørsmål. · Lag {n} i stedet |
+| Too-little-material note, Flashcards | "There's only enough material for {n} cards." + "Make {n} instead" [ASSUMPTION: mirrors the Quiz note] | Det er bare nok materiale til {n} treningskort. · Lag {n} i stedet |
+| Quiz feedback, next | "Next question" · Mistake Review: "Next mistake" | Neste spørsmål · Neste feil |
+| Quiz feedback, last question | "See results" | Se resultatet |
+| Progress steps, Quiz | "Reading your material → Writing questions → Checking answers" | Leser materialet ditt → Skriver spørsmål → Sjekker svarene |
+| Progress steps, Flashcards | "Reading your material → Writing cards → Checking sources" | Leser materialet ditt → Skriver treningskort → Sjekker kildene |
+| Progress steps, Summary | "Reading your material → Writing the summary → Checking sources" | Leser materialet ditt → Skriver sammendraget → Sjekker kildene |
+| Progress steps, Mistake Review start | "Looking at your mistakes → Writing practice questions" | Ser på feilene dine → Skriver øvingsspørsmål |
+| Summarize setup | "Make a summary" · "Which file?" · "Narrow to one topic (optional)" · "Whole file" · "Make summary" [ASSUMPTION: from mock] | Lag et sammendrag · Hvilken fil? · Begrens til ett emne (valgfritt) · Hele filen · Lag sammendrag |
+| Summary view, end | "Saved to History" [ASSUMPTION: from mock] | Lagret i historikken |
+| History, reopened quiz or flashcard set | "Do it again" | Gjør det igjen |
+| History, unfinished quiz | "Unfinished · {n} of {total}" | Ikke fullført · {n} av {total} |
+| History, source file removed (beside the disabled "Do it again") | "The file this came from was removed." | Filen dette kom fra, er fjernet. |
+| Mistake Review, source file removed (context card) | "The file this came from was removed." [ASSUMPTION: reuses the History string] | Filen dette kom fra, er fjernet. |
+| Files panel header | "Files · {n} of 10" | Filer · {n} av 10 |
+| Files strip count | "{n} of 10" | {n} av 10 |
+| History link and title | "History" | Historikk |
+| New chat button | "New chat" | Ny samtale |
+| New chat, empty thread | "Ask anything about your material." [ASSUMPTION: copy not confirmed] | Spør om hva som helst i materialet ditt. |
+| Topic count | "{n} topics" ("1 topic" for one) | {n} emner ("1 emne") |
+| Grouped-topics note | "Large file, some topics are grouped." | Stor fil, noen emner er gruppert. |
+| Topic list, merge | "Merge" [ASSUMPTION: label] | Slå sammen |
+| Topic list, group row (screen reader) | "{chapter}, {n} topics" ("{chapter}, 1 topic") [ASSUMPTION] | {chapter}, {n} emner ("{chapter}, 1 emne") |
+| History filter | "All" · "Chats" · "Quizzes" · "Flashcards" · "Summaries" [ASSUMPTION: from mock] | Alle · Samtaler · Quizer · Treningskort · Sammendrag |
+| History, empty | "Nothing here yet" | Ingenting her ennå |
+| History, loading (screen reader) | "Loading history" [ASSUMPTION: from mock] | Laster historikk |
+| History, error | "We couldn't load your history." + "Try again" [ASSUMPTION: follows the network-error pattern] | Vi fikk ikke lastet historikken din. · Prøv igjen |
+| Inline error, reassurance | "Nothing you've made is lost." [ASSUMPTION: from mock] | Ingenting du har laget, er borte. |
+| Chat, pending answer (until the first words appear) | "Study Buddy is thinking…" | Study Buddy tenker … |
+| Chat, answer complete (screen reader only) | "Answer ready" [ASSUMPTION: copy] | Svaret er klart |
+| Finished-generation message | "Your quiz on {topic} is ready · Open" | Quizen din om {topic} er klar · Åpne |
+| Finished-generation message, Mistake Review | "Your practice questions are ready · Open" [ASSUMPTION: copy] | Øvingsspørsmålene dine er klare · Åpne |
+| File menu trigger, accessible name | "More options for {file name}" [ASSUMPTION] | Flere valg for {file name} |
+| File menu item | "Remove" | Fjern |
+| Remove file dialog, title | "Remove {file name}?" [ASSUMPTION] | Vil du fjerne {file name}? |
+| Remove file dialog, body | "Quizzes, flashcards, and summaries made from this file stay. Its mistakes stay in your review." [ASSUMPTION: wording; meaning confirmed] | Quizer, treningskort og sammendrag laget fra denne filen blir liggende. Feilene fra den ligger fortsatt i repetisjonen din. |
+| Remove file dialog, checkbox | "Also remove its mistakes from my review" [ASSUMPTION: wording; meaning confirmed] | Fjern også feilene fra repetisjonen min |
+| Remove file dialog, Reading… | "Reading stops and the file won't be added." [ASSUMPTION] | Lesingen stopper, og filen blir ikke lagt til. |
+| Remove file dialog, buttons | "Cancel" · "Remove" | Avbryt · Fjern |
+| Remove failed | "We couldn't remove the file." + "Try again" [ASSUMPTION: follows the network-error pattern] | Vi fikk ikke fjernet filen. · Prøv igjen |
+| Sidebar project menu | "Rename" · "Archive" · "Delete project" | Gi nytt navn · Arkiver · Slett prosjekt |
+| Archived project menu | "Restore" · "Delete project" | Gjenopprett · Slett prosjekt |
+| Archived group | "Archived ({n})" | Arkivert ({n}) |
+| Undo message, archive | "{project} archived · Undo" | {project} er arkivert · Angre |
+| Archived banner | "Archived · Restore" | Arkivert · Gjenopprett |
+| Deleted projects group | "Deleted projects ({n})" | Slettede prosjekter ({n}) |
+| Deleted project, days left (sidebar row and Deleted banner) | "Deleted · {n} days left" ("1 day left" for one) | Slettet · {n} dager igjen ("1 dag igjen") |
+| Deleted project menu and Deleted banner | "Restore" · "Delete forever" | Gjenopprett · Slett for godt |
+| Confirm dialog (delete project), title | "Delete {project}?" | Vil du slette {project}? |
+| Confirm dialog (delete project), body | "{project} moves to Deleted projects and is permanently deleted after 30 days. You can restore it until then." [ASSUMPTION: wording; meaning confirmed] | {project} flyttes til Slettede prosjekter og slettes for godt etter 30 dager. Du kan gjenopprette det frem til da. |
+| Confirm dialog (delete project), buttons | "Cancel" · "Delete project" | Avbryt · Slett prosjekt |
+| Confirm dialog (delete forever), title | "Delete {project} forever?" [ASSUMPTION: wording] | Vil du slette {project} for godt? |
+| Confirm dialog (delete forever), body | "Its files, mistakes, and generated material are deleted. This can't be undone." [ASSUMPTION: wording; meaning confirmed] | Filene, feilene og det genererte innholdet slettes. Dette kan ikke angres. |
+| Confirm dialog (delete forever), buttons | "Cancel" · "Delete forever" | Avbryt · Slett for godt |
+| Sidebar, collapse and expand | "Hide projects" · "Show projects" [ASSUMPTION: accessible names and tooltips mirror the Files strip] | Skjul prosjekter · Vis prosjekter |
+| Sidebar strip, new project tooltip | "New project" [ASSUMPTION] | Nytt prosjekt |
+| Settings, Delete a project | "Delete a project" · "Delete" | Slett et prosjekt · Slett |
+| Files strip, expand and collapse | "Show files" · "Hide files" [ASSUMPTION: accessible names from mock] | Vis filer · Skjul filer |
+| Files strip, warning icon | "A file needs your attention" [ASSUMPTION] | En fil trenger oppmerksomheten din |
+| All cleared, actions | "Make a new quiz" · "← Back to chat" | Lag en ny quiz · ← Tilbake til samtalen |
+| Round done panel | "Round done. {n} mistakes still to review." ("1 mistake" for one) · "Review mistakes" · "← Back to chat" | Runden er ferdig. {n} feil igjen å repetere. · Repeter feil · ← Tilbake til samtalen |
+| Mistake Review, saved line | "Your progress is saved." | Fremgangen din er lagret. |
+| Create account, duplicate email | "An account with this email already exists. Log in instead?" | Det finnes allerede en konto med denne e-postadressen. Vil du logge inn i stedet? |
+| Password reset, requested | "If an account exists, we've sent a link" | Hvis kontoen finnes, har vi sendt en lenke |
+| Password reset, expired, used, or replaced link | "This link has expired" · "Send a new link" | Denne lenken er utløpt · Send en ny lenke |
+| Session expired, login screen | "You've been signed out. Log in to continue." | Du er logget ut. Logg inn for å fortsette. |
+| Link Google account, already linked elsewhere | "This Google account is already linked to another Study Buddy account." | Denne Google-kontoen er allerede koblet til en annen Study Buddy-konto. |
+| Link Google account, email not verified | "Verify your email first" · "Resend verification email" | Bekreft e-postadressen din først · Send bekreftelseslenken på nytt |
+| Verification email resent | "We've sent a new link. It works for 24 hours." [ASSUMPTION: copy] | Vi har sendt en ny lenke. Den gjelder i 24 timer. |
+| Google takeover, one-time notice | "Your account now signs in with Google." | Kontoen din logger nå inn med Google. |
+| Phone page, over image limit | "You can send {k} more photos today. {n} photos won't be sent." ("1 more photo", "1 photo won't be sent" for one) [ASSUMPTION: copy not confirmed] | Du kan sende {k} bilder til i dag. {n} bilder blir ikke sendt. ("1 bilde til", "1 bilde blir ikke sendt") |
+| Phone page, photo over 50 MB | "This photo is over 50 MB and won't be sent." [ASSUMPTION: copy not confirmed] | Dette bildet er over 50 MB og blir ikke sendt. |
+| Account deleted, login screen | "Your account and files have been deleted." | Kontoen din og filene dine er slettet. |
+| Login, tagline | "Study from your own notes, with sources" | Studer fra dine egne notater, med kilder |
+| Login, privacy line | "Your files are only used to create your study material." | Filene dine brukes bare til å lage studiematerialet ditt. |
+| Login, actions | "Sign in with Google" · "Log in" · "Forgot password?" · "Create account" | Logg inn med Google · Logg inn · Glemt passordet? · Opprett konto |
+| Login and Create account, fields | "First name" · "Email" · "Password" [ASSUMPTION: labels] | Fornavn · E-post · Passord |
+| Login, invalid email or password | "Wrong email or password." [ASSUMPTION: copy; generic, FR-2] | Feil e-post eller passord. |
+| Sign-in failure or cancel | "Sign-in didn't work. Try again." | Innloggingen fungerte ikke. Prøv igjen. |
+| Create account, password too short | "Use at least 8 characters." [ASSUMPTION: copy] | Bruk minst 8 tegn. |
+| Create account, first name missing | "Enter your first name." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn fornavnet ditt. |
+| Create account, email missing | "Enter your email." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn e-postadressen din. |
+| Create account, email invalid | "Enter a valid email address." [ASSUMPTION: copy, added 2026-11-12 with Story 1.3] | Skriv inn en gyldig e-postadresse. |
+| Password reset, request screen | "Reset your password" · "Send link" [ASSUMPTION: copy] | Tilbakestill passordet · Send lenke |
+| Password reset, new-password screen | "Choose a new password" · "Save password" [ASSUMPTION: copy] | Velg et nytt passord · Lagre passordet |
+| Password reset saved | "Your password is changed. Log in with the new one." [ASSUMPTION: copy] | Passordet er endret. Logg inn med det nye. |
+| Password reset email, subject | "Reset your Study Buddy password" [ASSUMPTION: copy, approved 2026-11-16 with Story 1.5] | Tilbakestill passordet ditt for Study Buddy |
+| Password reset email, body ({name} = first name, or "Hi," / "Hei," alone when there is none; {link} = reset link) | "Hi {name}," · "Open this link to choose a new password:" · "{link}" · "The link works for 1 hour and only once." · "If you didn't ask for this, you can ignore this email. Your password stays the same." [ASSUMPTION: copy, approved 2026-11-16 with Story 1.5] | Hei {name}, · Åpne denne lenken for å velge et nytt passord: · {link} · Lenken gjelder i 1 time og bare én gang. · Hvis du ikke ba om dette, kan du se bort fra denne e-posten. Passordet ditt er uendret. |
+| Email verified | "Your email is verified." [ASSUMPTION: copy] | E-postadressen din er bekreftet. |
+| Verification email, subject | "Confirm your email for Study Buddy" [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Bekreft e-postadressen din for Study Buddy |
+| Verification email, body ({name} = first name, {link} = verify link) | "Hi {name}," · "Confirm your email address by opening this link:" · "{link}" · "The link works for 24 hours. You can use Study Buddy without confirming; you only need it to link a Google account." · "If you didn't create an account, you can ignore this email." [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Hei {name}, · Bekreft e-postadressen din ved å åpne denne lenken: · {link} · Lenken gjelder i 24 timer. Du kan bruke Study Buddy uten å bekrefte; du trenger det bare for å koble til en Google-konto. · Hvis du ikke har opprettet en konto, kan du se bort fra denne e-posten. |
+| Projects page (empty) | "Create your first project" | Opprett ditt første prosjekt |
+| Sidebar, new project | "+ New project" | + Nytt prosjekt |
+| Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt |
+| Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} |
+| Upload drop zone | "Upload your notes to start" · "Upload from phone" | Last opp notatene dine for å starte · Last opp fra mobilen |
+| Upload buttons | "Upload" · "Upload from phone" | Last opp · Last opp fra mobilen |
+| Privacy notice, title | "Before your first upload" [ASSUMPTION: copy] | Før du laster opp første gang |
+| Privacy notice, body | "Study Buddy sends your files to an external AI service (through OpenRouter) to make your quizzes, flashcards, summaries, and answers. Your files are used only for your own study material, aren't shared with other users, and aren't kept by the AI service." [ASSUMPTION: copy; claims limited to architecture AD-3] | Study Buddy sender filene dine til en ekstern KI-tjeneste (via OpenRouter) for å lage quizer, treningskort, sammendrag og svar til deg. Filene dine brukes bare til ditt eget studiemateriale, deles ikke med andre brukere og lagres ikke av KI-tjenesten. |
+| Privacy notice, buttons and link | "Cancel" · "Got it, upload" · "How your files are used" · "Close" [ASSUMPTION: copy] | Avbryt · Forstått, last opp · Slik brukes filene dine · Lukk |
+| File status | "Reading…" · "Ready" · "Ready, partly unreadable" · "Rejected" | Leser … · Klar · Klar, delvis uleselig · Avvist |
+| File, partly unreadable note | "Everything we could read is ready to study." | Alt vi klarte å lese, er klart til bruk. |
+| File, phone batch with unreadable pages | "Page {page} couldn't be read." (one page) · "Pages {pages} couldn't be read." (several) [ASSUMPTION: copy] | Side {page} kunne ikke leses. · Sidene {pages} kunne ikke leses. |
+| File, unreadable image | "This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick." | Bildet er for uskarpt til å leses, så vi kan ikke studere fra det. Et skarpere bilde i godt lys pleier å hjelpe. |
+| Upload, unsupported type | "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC." [ASSUMPTION: copy] | Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC. |
+| Upload, over 50 MB | "This file is over 50 MB." [ASSUMPTION: copy] | Filen er over 50 MB. |
+| Upload, 11th file | "A project can hold 10 files. Remove one to add another." [ASSUMPTION: copy] | Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny. |
+| Upload, image limit reached | "You've used today's 25 images. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 25 bilder. Prøv igjen i morgen. |
+| Topic list, add | "+ Add topic" | + Legg til emne |
+| Chat, scope control | "All materials" · "One file" | Alt materiale · Én fil |
+| Chat, composer | "Ask about your material" · "Send" [ASSUMPTION: placeholder] | Spør om materialet ditt · Send |
+| Tool buttons | "Quiz" · "Flashcards" · "Summarize" | Quiz · Treningskort · Oppsummer |
+| Limit notice | "{n} messages left today" · "{n} images left today" ("1 message", "1 image" for one) | {n} meldinger igjen i dag · {n} bilder igjen i dag ("1 melding igjen i dag", "1 bilde igjen i dag") |
+| Chat, message limit reached | "You've used today's 50 messages. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 50 meldinger. Prøv igjen i morgen. |
+| Mistakes card, action | "Start" | Start |
+| Quiz setup | "Make a quiz" · "Which topics?" · "All topics" [ASSUMPTION: copy] | Lag en quiz · Hvilke emner? · Alle emner |
+| Answer option labels | "Your answer" · "Correct answer" | Ditt svar · Riktig svar |
+| Feedback, correct | "Correct" [ASSUMPTION: copy] | Riktig |
+| Score summary | "{correct} of {total} correct" · "Missed questions stay in your review." · "New quiz" [ASSUMPTION: copy] | {correct} av {total} riktige · Spørsmål du bommet på, ligger i repetisjonen din. · Ny quiz |
+| Progress steps, cancel | "Cancel" | Avbryt |
+| Generation cancelled | "Cancelled. Your choices are kept." [ASSUMPTION: copy] | Avbrutt. Valgene dine er lagret. |
+| Flashcards, actions | "Got it" · "Not yet" · "Stop for now" | Kan det · Ikke ennå · Stopp for nå |
+| Flashcards, progress | "{n} of {total}" | {n} av {total} |
+| Flashcard end screen | "{n} cards done. {m} needed a second try" ("1 card done") · "Make more cards" | {n} treningskort ferdige. {m} trengte et nytt forsøk ("1 treningskort ferdig") · Lag flere treningskort |
+| Activity header, every activity | "← Back to chat" | ← Tilbake til samtalen |
+| Mistake Review, progress | "{n} of {m} cleared" | {n} av {m} repetert |
+| Mistake Review, context | "Your earlier answer" [ASSUMPTION: copy] | Det tidligere svaret ditt |
+| Mistake Review, already starting | "Your practice questions are already being made." [ASSUMPTION: copy] | Øvingsspørsmålene dine lages allerede. |
+| Account menu | "Settings" · "Language" · "Log out" | Innstillinger · Språk · Logg ut |
+| Account menu, accessible name without a first name | "Account menu" [ASSUMPTION: copy, added 2026-11-16 with Story 1.4] | Kontomeny |
+| Settings, sections | "Account" · "Language" · "Your data" | Konto · Språk · Dataene dine |
+| Settings, account actions | "Change password" · "Link Google account" | Endre passord · Koble til Google-konto |
+| Settings, sign-in method | "Signs in with Google" · "Signs in with email" [ASSUMPTION: copy] | Logger inn med Google · Logger inn med e-post |
+| Settings, password changed | "Your password is changed." [ASSUMPTION: copy] | Passordet er endret. |
+| Settings, delete account entry | "Delete my account and all my files" | Slett kontoen min og alle filene mine |
+| Confirm dialog (delete account) | "Delete your account?" · "Your projects, including those in Deleted projects, and their files, mistakes, and generated material are deleted now. This can't be undone." · "Type DELETE to confirm" · "Cancel" · "Delete account" [ASSUMPTION: wording; meaning confirmed] | Vil du slette kontoen din? · Prosjektene dine, også de i Slettede prosjekter, med filer, feil og generert innhold, slettes nå. Dette kan ikke angres. · Skriv SLETT for å bekrefte · Avbryt · Slett kontoen |
+| QR dialog | "Upload from phone" · "Waiting for photos…" · "This code works for 10 minutes and stops when you close this window." | Last opp fra mobilen · Venter på bilder … · Koden gjelder i 10 minutter og slutter å virke når du lukker dette vinduet. |
+| Phone batch name | "Handwritten notes, {n} pages" ("1 page" for one) | Håndskrevne notater, {n} sider ("Håndskrevne notater, 1 side") |
+| Phone page, header | "Uploading to {project}" [ASSUMPTION: copy] | Laster opp til {project} |
+| Phone page, actions | "Take photos" · "Choose from gallery" · "Send {n} photos" ("Send 1 photo") | Ta bilder · Velg fra galleriet · Send {n} bilder ("Send 1 bilde") |
+| Phone page, countdown | "Link expires in {n} min" · last minute "Link expires in {m}:{ss}" | Lenken utløper om {n} min · Lenken utløper om {m}:{ss} |
+| Phone page, expired | "This link has expired. Scan a new code on your computer." | Lenken er utløpt. Skann en ny kode på datamaskinen. |
+| Phone page, sent | "Your photos are in {project}. Your computer shows when they're ready." · "Send more" [ASSUMPTION: copy] | Bildene er i {project}. Datamaskinen viser når de er klare. · Send flere |
+| Phone page, project full | "This project already has 10 files, so these photos can't be added." [ASSUMPTION: copy] | Prosjektet har allerede 10 filer, så disse bildene kan ikke legges til. |
+| Inline error, generic | "Something went wrong." · "Try again" [ASSUMPTION: copy] | Noe gikk galt. · Prøv igjen |
+| Inline error, AI service down | "The AI service isn't responding right now." [ASSUMPTION: copy] | KI-tjenesten svarer ikke akkurat nå. |
+| API error, not found (`not_found`) | "We couldn't find that." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Vi fant ikke det du lette etter. |
+| API error, bad request (`bad_request`) | "That request didn't work. Try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Forespørselen fungerte ikke. Prøv igjen. |
+| API error, not signed in (`unauthorized`) | "Log in to continue." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Logg inn for å fortsette. |
+| API error, no access (`forbidden`) | "You don't have access to this." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Du har ikke tilgang til dette. |
+| API error, action not available (`method_not_allowed`) | "That action isn't available." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Den handlingen er ikke tilgjengelig. |
+| API error, changed meanwhile (`conflict`) | "This changed in the meantime. Reload and try again." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Dette ble endret i mellomtiden. Last inn på nytt og prøv igjen. |
+| API error, invalid details (`invalid_request`) | "Some of the details aren't valid." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Noen av opplysningene er ikke gyldige. |
+| Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye materiale. Velg færre emner eller én fil. |
+| Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. |
 
 ## Component Patterns
 
@@ -835,7 +835,7 @@ Every scope change this spine made against the original PRD is now absorbed into
 
 ## Open Questions
 
-1. **Norwegian strings (pending team sign-off):** Every V1 surface now has a drafted Norwegian string, tagged (proposed). Ihor and Cristoffer review and sign them off in [norwegian-strings-signoff.md](norwegian-strings-signoff.md); until both have signed, FR-29 is not complete. The Voice and Tone term table (including Chat = samtale and Flashcards = Treningskort) becomes the binding glossary on sign-off.
+1. **Norwegian strings (resolved 2026-11-16):** Ihor and Cristoffer signed off every Norwegian string in [norwegian-strings-signoff.md](norwegian-strings-signoff.md), and the (proposed) tags are removed. The Voice and Tone term table (including Chat = samtale, Flashcards = Treningskort and material = materiale) is the binding glossary.
 2. **2026-11-02 changes need Cristoffer's review:** the Google-linking state now follows the approved FR-19 amendment (verified Account linked at once, no password step), and the Privacy notice before the first upload is new (FR-6, §5.3). Ihor approved both; Cristoffer owns this spine and should confirm the wording.
 
 Content Integrity thresholds and the AI provider's data-use terms are routed to architecture (Notes for Architecture; PRD §9).
