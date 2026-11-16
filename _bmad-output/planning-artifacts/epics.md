@@ -20,11 +20,12 @@ This document provides the complete epic and story breakdown for AI-StudyBuddy, 
 **Standing decisions for this breakdown:**
 - **Privacy notice (FR-6, §5.3, AD-19):** resolved; not to be reopened.
 - **Google linking (FR-19 as amended, AD-19):** resolved; a verified Account is linked at once. Not to be reopened.
-- **Norwegian strings (FR-29):** the team's sign-off (`norwegian-strings-signoff.md`) is an **acceptance dependency** of the FR-29 story. It does not block building or testing the language system or the draft Bokmål strings, but that story isn't fully done until the wording is approved.
+- **Norwegian strings (FR-29):** the team's sign-off (`norwegian-strings-signoff.md`) was an **acceptance dependency** of the FR-29 story. Resolved 2026-11-16: Ihor and Cristoffer both signed, so the Norwegian strings in EXPERIENCE.md are binding.
+- **Scope tiers (PRD §7.1, added 2026-11-16):** **Core**, never cut: FR-1, FR-2, FR-4, FR-6, FR-10, FR-11, FR-12, FR-17, FR-18, FR-25, FR-30. Every other FR is an **Extension**. If time runs out, Extensions are cut in this order: FR-21 (Epic 6), FR-7 (Story 2.5), FR-19 (Story 1.6), FR-23 and FR-24 (Stories 7.1–7.2), FR-29 completion (Story 7.5); any other Extension only by team decision. Cutting an FR also removes the consequences that depend on it in other stories.
 
 **Done for every story** (applies in addition to its own acceptance criteria):
 - The EXPERIENCE.md state patterns for its surfaces are implemented (UX-DR13): empty, loading, error, and narrow-window states. The same goes for keyboard and motion rules (UX-DR14), the Accessibility Floor (UX-DR15), and responsive behaviour (UX-DR16).
-- Its interface strings live in `en.json` and `nb.json`, with draft Norwegian until sign-off (UX-DR17, AD-26). Styles use only token variables (UX-DR1, AD-28).
+- Its interface strings live in `en.json` and `nb.json`, with the signed-off Norwegian from EXPERIENCE.md (UX-DR17, AD-26). Styles use only token variables (UX-DR1, AD-28).
 - Its tests pass with `uv run pytest` in mock mode against local Supabase, with no key (AD-4).
 - Generated output stays grounded and names its sources (NFR-3, SM-4), and every limit it touches is enforced server-side (NFR-5).
 
@@ -50,12 +51,12 @@ This document provides the complete epic and story breakdown for AI-StudyBuddy, 
 | FR-23 | Archive and restore a Project: read-only while archived, no confirmation, undoable, Mistakes kept, running generation finishes, phone link revoked | CAP-9 |
 | FR-24 | Delete a Project to Deleted projects for 30 days (read-only, days left, restorable), delete forever, automatic purge; deleting cancels generation and revokes the phone link; landing rules | CAP-9 |
 | FR-10 | Generate a Quiz of 5/10/20 questions (default 10) from all or chosen Topics; traceable; ≤ 20; too-thin scope offers the largest supported count | CAP-4 |
-| FR-11 | Answer one at a time with immediate grounded, sourced explanation; end score equals correct answers; missed questions listed | CAP-4 |
+| FR-11 | Four options, exactly one correct, scored without an AI call (AD-9); answer one at a time with immediate grounded, sourced explanation; end score equals correct answers; missed questions listed | CAP-4 |
 | FR-12 | Every wrong Quiz answer becomes a Mistake at answer time, recording its Study Material and the question and explanation as shown | CAP-4 |
 | FR-13 | Generate 5/10/20 flashcards (default 10) from all or chosen Topics; traceable; ≤ 20; too-thin scope offers the largest supported count | CAP-5 |
 | FR-14 | Step through cards, reveal on demand, mark known / not yet known; not-yet-known cards return in the set; no Mistakes, no schedule; sourced answers; end shows done and "needed more than one attempt", no score | CAP-5 |
 | FR-15 | Summarize one ready Material, whole or one Topic; no unsupported claims; each section names its source | CAP-6 |
-| FR-16 | Grounded chat as the Project home; several chats per Project; per-chat narrowing to one Material; persistent; 50 messages per Account per day across all chats; sourced answers | CAP-7 |
+| FR-16 | Grounded chat as the Project home; several chats per Project; per-chat narrowing to one Material; persistent; 50 messages per Account per day across all chats; sourced answers; says so, with no factual claim, when the material lacks the answer | CAP-7 |
 | FR-17 | Start Mistake Review only by the student's choice, from an active Project with outstanding Mistakes | CAP-8 |
 | FR-18 | Targeted practice from wrong Quiz answers; ≤ 20 per round, oldest first; removed-material Mistakes use the saved question; a clear happens only after save; rounds repeatable; history kept until permanent deletion | CAP-8 |
 | FR-25 | History per Project, newest first, filterable by type; read-only results; run again as a new generation; Unfinished Quiz resumes; a part-way Flashcard set is saved as ended; read-only while archived or deleted | CAP-12 |
@@ -63,6 +64,7 @@ This document provides the complete epic and story breakdown for AI-StudyBuddy, 
 | FR-27 | Settings: name (email Accounts), email, picture, sign-in methods; change password without verification; resend verification; link Google once verified; Google name and picture read-only | CAP-13 |
 | FR-28 | Delete the Account after a deliberate confirmation; immediate and permanent, including Deleted projects and Mistake history; the session ends; the email is freed | CAP-13 |
 | FR-29 | English and Norwegian (bokmål) interface, including errors and limits; switchable before sign-in; browser default with English fallback; saved to the Account; generated content follows the material's language | CAP-14 |
+| FR-30 | Test mode: with no AI key the app starts and every AI-backed feature returns prepared, deterministic answers; no external AI request; §5.2 limits still apply; a production start without a key fails clearly | CAP-15 |
 
 ### NonFunctional Requirements
 
@@ -198,7 +200,7 @@ From DESIGN.md (visual) and EXPERIENCE.md (behaviour). Copy comes from EXPERIENC
 - **UX-DR14: Interaction primitives.** Keyboard shortcuts per activity (shown as Key hints, desktop only, off in text inputs); Tab order; subtle motion only; reduced motion makes transitions instant, keeps a static Reading… dot, stops the thinking dots, and removes skeleton shimmer.
 - **UX-DR15: Accessibility floor.** Everything in EXPERIENCE.md › Accessibility Floor, including non-colour-only status labels, mistakes in amber not red, live regions, `aria-expanded` on groups and collapses, and 44×44 px targets.
 - **UX-DR16: Responsive.** Below 1024 px: avatar-only Account menu, collapsed Sidebar and Files panel, and every listed surface stays usable. No full mobile layout beyond the phone page.
-- **UX-DR17: Bilingual copy.** Every string in EXPERIENCE.md › Strings by surface is moved into `en.json`/`nb.json`, with singular and plural forms. Norwegian is draft until signed off (FR-29 acceptance dependency).
+- **UX-DR17: Bilingual copy.** Every string in EXPERIENCE.md › Strings by surface is moved into `en.json`/`nb.json`, with singular and plural forms. The Norwegian strings were signed off on 2026-11-16 (FR-29).
 
 ### FR Coverage Map
 
@@ -208,7 +210,8 @@ From DESIGN.md (visual) and EXPERIENCE.md (behaviour). Copy comes from EXPERIENC
 | FR-2 | Epic 1 | Login, 30-day session, logout, return after expiry |
 | FR-3 | Epic 1 | Password reset |
 | FR-19 | Epic 1 | Google sign-in, auto-link verified, takeover unverified |
-| FR-29 | Epic 1 (language system) + Epic 7 (completion, sign-off dependency) | EN/NB interface |
+| FR-29 | Epic 1 (language system) + Epic 7 (completion; sign-off done 2026-11-16) | EN/NB interface |
+| FR-30 | Epic 1 (Story 1.1, mock mode) + every story with an AI call (its mock fixtures) | Test mode |
 | FR-4 | Epic 2 | Project creation and auto-naming |
 | FR-5 | Epic 2 | Project rename |
 | FR-6 | Epic 2 | Upload, limits, privacy notice |
@@ -238,7 +241,7 @@ From DESIGN.md (visual) and EXPERIENCE.md (behaviour). Copy comes from EXPERIENC
 
 ### Epic 1: Get in: accounts, sign-in, and a runnable app
 A student can create an Account with email or Google, log in and out, reset a forgotten password, and switch the interface between English and Norwegian. The grader can clone the repo and run the app locally in mock mode. Story 1 is the scaffold (create-vite React JS, uv FastAPI, `supabase init` with CLI 2.122.0, one Docker image, `/api/config`, mock-mode test setup).
-**FRs covered:** FR-1, FR-2, FR-3, FR-19, FR-29 (language system). **CAPs:** CAP-1, CAP-14. **Key ADs:** AD-1, AD-2, AD-16, AD-17, AD-19, AD-26, AD-28, AD-29.
+**FRs covered:** FR-1, FR-2, FR-3, FR-19, FR-29 (language system), FR-30 (test mode switch). **CAPs:** CAP-1, CAP-14, CAP-15. **Key ADs:** AD-1, AD-2, AD-16, AD-17, AD-19, AD-26, AD-28, AD-29.
 
 ### Epic 2: Projects and study material
 A student can create Projects, accept the one-time privacy notice, upload and remove files (with integrity outcomes and limits), get Projects auto-named, see and edit detected Topics, and find everything as left on return. Builds the LLM gateway with mock mode, the extraction pipeline, and the job runner (first used for `material_processing`).
@@ -268,7 +271,7 @@ A student can archive, restore, and delete Projects (30-day Deleted projects, au
 
 ## Epic 1: Get in: accounts, sign-in, and a runnable app
 
-A student can create an Account with email or Google, log in and out, reset a forgotten password, and switch the interface between English and Norwegian. The grader can clone the repo and run the app locally in mock mode. FRs: FR-1, FR-2, FR-3, FR-19, FR-29 (language system). CAPs: CAP-1, CAP-14.
+A student can create an Account with email or Google, log in and out, reset a forgotten password, and switch the interface between English and Norwegian. The grader can clone the repo and run the app locally in mock mode. FRs: FR-1, FR-2, FR-3, FR-19, FR-29 (language system), FR-30 (test mode switch). CAPs: CAP-1, CAP-14, CAP-15.
 
 ### Story 1.1: Runnable app skeleton the grader can start locally
 
@@ -294,7 +297,7 @@ So that I can run and test AI Study Buddy without any paid key (NFR-12).
 
 **Given** no `OPENROUTER_API_KEY` and `APP_ENV=development`
 **When** the backend starts
-**Then** `LLM_MODE` resolves to `mock` with a logged warning; with `APP_ENV=production` and `LLM_MODE` unset, startup fails (AD-4)
+**Then** `LLM_MODE` resolves to `mock` with a logged warning; with `APP_ENV=production` and `LLM_MODE` unset, startup fails with a clear message (AD-4, FR-30)
 **And** `uv run pytest` runs green in mock mode and includes the test that no module outside `app/llm/` imports `openai` (AD-3).
 
 **Given** the Supabase settings
@@ -955,6 +958,10 @@ So that I get answers grounded in my own notes.
 **When** I keep asking
 **Then** later answers in that chat use only that file until I broaden the scope again (FR-16).
 
+**Given** a question the material in the chat's scope doesn't answer
+**When** I ask it
+**Then** the chat says the material doesn't cover it and makes no factual claim, and the answer still counts as one message. A test asks a question outside the test document in `test-data/`, and mock mode has a deterministic fixture for this case, so it runs with no key (FR-16, AD-4).
+
 **Given** the daily limit
 **When** I send
 **Then** one message unit is reserved atomically. With 10 or fewer left I see "{n} messages left today"; the 51st message today, across all chats and Projects, is declined clearly. A failed or abandoned answer (disconnect, provider error, or a mid-stream error chunk) costs nothing and stores nothing (FR-16, AD-12, AD-25).
@@ -1264,6 +1271,6 @@ So that the whole app reads naturally in English or Norwegian.
 
 **Given** this story is built and tested
 **When** it is reviewed for "done"
-**Then** it **is not done until Ihor and Cristoffer have both signed `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`**, deciding D1–D6 and ticking every flow. The (proposed) tags are then removed and the signed wording is in `nb.json`.
+**Then** every Norwegian string in `nb.json` matches the signed wording in EXPERIENCE.md. Ihor and Cristoffer both signed `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md` on 2026-11-16, deciding D1–D6, and the (proposed) tags are removed.
 
-*Acceptance dependency:* the Norwegian sign-off. It does not block building or testing this story, or any earlier story that uses the draft strings.
+*Acceptance dependency:* the Norwegian sign-off, met on 2026-11-16.

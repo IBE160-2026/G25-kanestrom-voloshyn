@@ -34,4 +34,4 @@ The terms every capability, story, and test uses (PRD §3, plus architecture ter
 - **Phone upload link:** a one-time, upload-only, short-lived link, shown as a QR code, that lets a phone send photos into one Project without logging in.
 - **Interface language:** English or Norwegian (bokmål) for the app's own text. It never changes the language of generated content.
 - **Settings:** where a student manages their Account, interface language, and data.
-- **Mock mode:** `LLM_MODE=mock`, in which the LLM module returns deterministic, schema-valid output, so the app and tests run with no key (AD-4).
+- **Mock mode:** `LLM_MODE=mock`, in which the LLM module returns deterministic, schema-valid output, so the app and tests run with no key (AD-4). The PRD calls it **Test mode** (FR-30).

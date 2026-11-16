@@ -94,6 +94,7 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
   - A scope over the context budget asks the student to narrow it. A normal whole Project of 10 lecture-sized Materials always fits (AD-7).
 - **FR-11 Taking** (UJ-1).
   - Questions are answered one at a time.
+  - Every question is multiple choice with four options and exactly one correct answer. An answer is scored by comparing the chosen option with the stored correct one, without an AI call (AD-9).
   - Each answer immediately shows correct or incorrect, plus an explanation that reflects only the scope and names its source. The explanation is hidden until the question is answered (AD-9).
   - At the end, the score equals the number of correct answers, and the wrong ones are listed.
 - **FR-12 Mistake capture** (UJ-1 → UJ-2).
@@ -125,6 +126,7 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
 
 - **FR-16 Project-grounded chat** (UJ-3), in an active Project with at least one ready Material.
   - Answers never introduce facts absent from the chat's scope, and they name their source.
+  - When the material in the chat's scope doesn't contain the answer, the chat says so and makes no factual claim. Tested with a question outside the test document in `test-data/`.
   - Narrowing to one Material applies to that chat's later answers until it is broadened.
   - A new chat can start at any time. Earlier chats stay unchanged and are listed in History.
   - Each chat persists across sessions and can be continued while the Project is active.
@@ -240,7 +242,16 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
   - With no saved choice, the interface follows the browser language, with English as the fallback.
   - A chosen language is saved to the Account and persists.
   - Generated Study Content, practice, and chat answers follow the main language of the selected material, whatever the interface language.
-  - FR-29 is done only after Ihor and Cristoffer both sign `norwegian-strings-signoff.md` (PRD §9.3); the drafted strings are tagged *(proposed)* until then.
+  - FR-29 is done only after Ihor and Cristoffer both sign `norwegian-strings-signoff.md` (PRD §9.3). Both signed on 2026-11-16, so the Norwegian strings in EXPERIENCE.md are binding.
+
+## CAP-15 — Test mode
+
+- **FR-30 Test mode** (SM-1, SM-5).
+  - With no API key configured, the app starts in test mode instead of failing (AD-4).
+  - In test mode, Quiz, Flashcards, Summarize, Ask AI, Mistake Review, Project naming, Topic detection, and image text extraction return prepared, deterministic answers.
+  - In test mode, no request is sent to an external AI service.
+  - The §5.2 limits still apply in test mode.
+  - A production start without a key fails with a clear message; test mode is never used silently in production (AD-4).
 
 ## Cross-cutting
 
@@ -248,7 +259,9 @@ These are the testable consequences of each PRD requirement, keyed by FR id and 
 - **§5.2 Limits:** the server enforces every limit, each with a clear message in the interface language. No other daily limit exists.
 - **§5.3 Data use:** uploaded material serves only its owner's own content, is never shared with other Accounts, and isn't retained by the AI provider (AD-3). The student is told before their first upload (FR-6).
 - **§5.4 Lifecycle:** removal, archive, soft delete, delete forever, and Account deletion behave as in CAP-3, CAP-9, and CAP-13. Permanent deletion covers files, extracted text, generated content, chats, and Mistakes, including their history.
-- **SM-4 Grounding (gating):** sampled Quiz questions, Flashcards, Summaries, chat answers, and practice contain no unsupported claims, including image-sourced material, and each names a source that contains it. Saved items reused for removed material are judged as originally generated.
+- **SM-4 Grounding (gating):** sampled Quiz questions, Flashcards, Summaries, chat answers, and practice contain no unsupported claims, including image-sourced material, and each names a source that contains it. Saved items reused for removed material are judged as originally generated. Runnable check: with the test document in `test-data/`, generate 10 Quiz questions; at least 9 must name a source that actually contains the answer, checked independently by two team members.
+- **SM-2 Mistake Review follow-through (demo check):** after a Quiz with at least one wrong answer, every user in the SM-1 cohort finds the Mistake indicator and starts a Mistake Review from it without help.
+- **SM-3 Resume integrity:** for every user in the SM-1 cohort, a reopened Project shows everything as left, an Unfinished Quiz resumes, and a restored Project returns unchanged.
 - **SM-5 No instruction needed (gating):** every user in the SM-1 cohort completes UJ-1 (sign up → upload → generate → quiz → score) without being told how.
 - **SM-C1:** never shorten or skip Quiz explanations to gain generation speed.
 - **SM-C2:** Mistakes withdrawn by removal, or hidden by archive or delete, don't count as Mistake Review follow-through.

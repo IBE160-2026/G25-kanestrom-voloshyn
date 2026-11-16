@@ -62,6 +62,7 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
 - **CAP-4** — Quiz (FR-10, FR-11, FR-12)
   - **intent:** A student can generate a Quiz of 5, 10, or 20 multiple-choice questions (default 10) from all Topics or chosen Topics, answer one at a time with immediate grounded explanations that name their source, see a final score, and have every wrong answer recorded as a Mistake.
   - **success:**
+    - Every question has four options and exactly one correct answer, and an answer is scored against the stored correct option without an AI call (AD-9).
     - Every question and explanation is traceable to the scope.
     - A scope too thin for the requested count offers the largest supported count, with no padding.
     - The score equals the number of correct answers.
@@ -82,6 +83,7 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
   - **intent:** From the Project's home chat, a student can ask free-form questions answered only from the Project's material, optionally narrowed per chat to one Study Material, and keep several chats per Project.
   - **success:**
     - Answers introduce no facts outside the chat's scope, and they name their sources.
+    - When the scope doesn't contain the answer, the chat says so and makes no factual claim.
     - An answer starts appearing within 5 s and is complete within 15 s.
     - Starting a new chat leaves the old ones intact in History, and chats persist across sessions.
     - The 51st message of the day from an Account, in any chat or Project, is declined with a clear message.
@@ -143,7 +145,17 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
     - The choice persists on the Account.
     - Generated content follows the material's main language, not the interface language.
 
+- **CAP-15** — Test mode (FR-30)
+  - **intent:** An evaluator can start and use the whole app without an API key for the AI service, at no cost.
+  - **success:**
+    - With no key configured, the app starts in test mode instead of failing (AD-4).
+    - Every AI-backed feature returns prepared, deterministic answers, and no request reaches an external AI service.
+    - The §5.2 limits still apply.
+    - A production start without a key fails with a clear message; test mode is never used silently in production.
+
 ## Constraints
+
+- **Scope tiers** (PRD §7.1). **Core**, never cut: FR-1, FR-2, FR-4, FR-6, FR-10, FR-11, FR-12, FR-17, FR-18, FR-25, FR-30, the loop sign up → upload → quiz → Mistakes → Mistake Review → History, runnable without a key. Every other FR is an **Extension**. If time runs out, Extensions are cut in this order: FR-21, then FR-7, then FR-19, then FR-23 and FR-24, then FR-29; any other Extension only by team decision. Cutting an FR also removes the consequences that depend on it in other FRs.
 
 - **Binding documents.** The architecture spine (AD-1 to AD-29) binds all implementation, cited by id. A conflicting change amends the spine through `bmad-architecture` and never renumbers an id. DESIGN.md and EXPERIENCE.md bind every screen, and DESIGN.md wins over a mock.
 - **Environment.** The teacher sets the required environment: Python/uv, Node/npm, Docker, Supabase, GitHub. The spine fixes how each is used.
@@ -162,7 +174,7 @@ FR, UJ, and SM ids are the PRD's; AD ids are the architecture spine's. Each FR's
 - **Data lifecycle.** Deletion follows PRD §5.4: Material removal, archive, soft delete with a 30-day purge, delete forever, and Account deletion.
 - **Account boundary:** a Project belongs to exactly one Account; there is no sharing.
 - **Platform:** a desktop web app plus one single-purpose phone upload page.
-- **LLM access:** all LLM calls go through one module with a deterministic mock mode, so the grader runs the app and tests with no key and no paid calls (AD-3, AD-4).
+- **LLM access:** all LLM calls go through one module with a deterministic mock mode, so the grader runs the app and tests with no key and no paid calls (AD-3, AD-4, FR-30).
 - **Simplicity:** one app instance; no microservices, queues, separate workers, or infrastructure beyond the spine.
 - **Honesty:** never claim the product is the first or only tool of its kind.
 
@@ -196,9 +208,9 @@ The signal is met when **at least 5 test users** each complete the core loop in 
 
 All of the following must also hold:
 
-- **Mistake Review (SM-2):** at least 50 % of students with outstanding Quiz Mistakes start a Mistake Review within 7 days. Mistakes withdrawn by removal or hidden by archive or delete don't count (SM-C2).
-- **Resume (SM-3):** reopened Projects show all material, content, and chats intact; an Unfinished Quiz resumes; a restored Project returns unchanged.
-- **Grounding (gating, SM-4):** sampled outputs contain no unsupported claims, and each names a source that contains it.
+- **Mistake Review (SM-2):** demo check: after a Quiz with at least one wrong answer, every cohort user finds the Mistake indicator and starts a Mistake Review from it without help. Mistakes withdrawn by removal or hidden by archive or delete don't count (SM-C2).
+- **Resume (SM-3):** for every cohort user, reopened Projects show all material, content, and chats intact; an Unfinished Quiz resumes; a restored Project returns unchanged.
+- **Grounding (gating, SM-4):** sampled outputs contain no unsupported claims, and each names a source that contains it. Runnable check: with the test document in `test-data/`, generate 10 Quiz questions; at least 9 must name a source that actually contains the answer, checked independently by two team members.
 - **No instruction needed (gating, SM-5):** every cohort user completes UJ-1 without being told how.
 - **Counter-metric (SM-C1):** never shorten Quiz explanations to gain speed.
 
