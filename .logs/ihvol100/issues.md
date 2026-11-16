@@ -17,6 +17,9 @@
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Add an automated smoke check that the Docker image serves the SPA at `/` (deferred from Story 1.1 review).
 - [ ] 2026-11-05 [story-1-1-app-skeleton](998-2026-11-05-18-19-28-story-1-1-app-skeleton.md) — Replace AGENTS.md's TODO "Running and verifying" with the verified commands via `bmad-project-context`.
 - [ ] 2026-11-12 [story-1-2-language-switch](997-2026-11-12-13-38-02-story-1-2-language-switch.md) — Manual browser check of Story 1.2 (Norwegian browser in a fresh profile, EN | NO toggle, reload, keyboard, console errors).
-- [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Build Story 1.3 part 2: the verification email and link (deferred-work.md).
+- [x] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Build Story 1.3 part 2: the verification email and link (deferred-work.md). (løst 2026-11-16: df32d84)
 - [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Manual browser check of Story 1.3 (sign up in Norwegian, duplicate email, 7-character password, console errors).
 - [ ] 2026-11-12 [story-1-3-create-account](996-2026-11-12-14-17-13-story-1-3-create-account.md) — Add the two-account session-lookup test when Story 1.4 extends the user_auth tests (deferred-work.md).
+- [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Manual browser check of the email-verification flow (Norwegian email in Mailpit, link → verified screen, same link again).
+- [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Concurrency test for the first verification email (deferred-work.md).
+- [ ] 2026-11-16 [story-1-3b-email-verification](995-2026-11-16-15-18-10-story-1-3b-email-verification.md) — Decide with Cristoffer whether to rank FRs into core and extension, per Bård's PRD feedback (tilbakemelding-prd.md).
