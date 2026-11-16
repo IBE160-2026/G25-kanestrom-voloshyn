@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
-import { apiFetch } from '../api/client.js'
+import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import ErrorLine from '../components/ErrorLine.jsx'
+import TopBar from '../components/TopBar.jsx'
 import { errorText } from '../i18n/errors.js'
 import styles from './Projects.module.css'
 
-const SIGNED_OUT = new Set(['unauthorized', 'session_expired'])
-
-// Projects page, empty (Story 1.3): the greeting from GET /api/me and the empty-state heading.
-// Nothing shows until /api/me answers. Signed out, it goes back to Login; Story 1.4 adds the
-// session-expired message and the return route. The "Create your first project" action arrives
-// with Story 2.1, the Account menu with Story 1.4.
+// Projects page, empty (Story 1.3): the top bar with the Account menu (Story 1.4) and the
+// empty-state heading. Nothing shows until /api/me answers. When the session has ended,
+// api/client.js and RequireSession take the student to Login, so no error is shown here.
+// The "Create your first project" action arrives with Story 2.1.
 export default function Projects() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [me, setMe] = useState(null)
   const [error, setError] = useState(null)
 
@@ -23,22 +20,16 @@ export default function Projects() {
     apiFetch('/api/me')
       .then((profile) => live && setMe(profile))
       .catch((err) => {
-        if (!live) return
-        if (SIGNED_OUT.has(err?.code)) navigate('/', { replace: true })
-        else setError(err)
+        if (live && !SIGNED_OUT_CODES.has(err?.code)) setError(err)
       })
     return () => {
       live = false
     }
-  }, [navigate])
+  }, [])
 
   return (
     <div className={styles.page}>
-      <header className={styles.topBar}>
-        {me?.first_name && (
-          <span className={styles.greeting}>{t('projects.welcome', { firstName: me.first_name })}</span>
-        )}
-      </header>
+      <TopBar me={me} ready={Boolean(me || error)} />
       <main className={styles.main} aria-busy={!me && !error}>
         {me && (
           <section className={styles.empty}>

@@ -2,10 +2,11 @@
 // routes (and through them api/client.js and auth/) before a test file's vi.mock calls apply.
 import i18n from '../i18n/index.js'
 
-/** Clear saved state and return to English. */
+/** Clear saved state (language, return route) and return to English. */
 export async function resetI18n() {
   try {
     window.localStorage.clear()
+    window.sessionStorage.clear()
   } catch {
     // a test may have blocked storage; it restores its own stubs
   }

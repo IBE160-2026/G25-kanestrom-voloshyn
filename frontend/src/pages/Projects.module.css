@@ -5,21 +5,6 @@
   background: var(--color-background);
 }
 
-/* Top bar: the greeting sits top right, where the Account menu goes (Story 1.4). */
-.topBar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  min-height: var(--space-7);
-  padding: var(--space-3) var(--space-5);
-}
-
-.greeting {
-  font-size: var(--type-ui-size);
-  font-weight: var(--type-ui-weight);
-  color: var(--color-text);
-}
-
 .main {
   flex: 1;
   display: flex;

@@ -1,0 +1,16 @@
+/* Avatar (DESIGN.md › Avatar, avatar.size-menu): initials on border with a border-strong ring. */
+.avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-avatar-sm);
+  height: var(--space-avatar-sm);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+  color: var(--color-text);
+  font-size: var(--type-ui-size);
+  font-weight: var(--type-button-weight);
+  line-height: 1;
+}

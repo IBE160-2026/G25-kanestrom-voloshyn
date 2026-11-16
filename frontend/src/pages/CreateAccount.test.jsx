@@ -3,19 +3,23 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
-import { signUp } from '../auth/index.js'
+import { hasSession, signUp } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { i18n, renderRoute } from '../test/render.jsx'
 
-vi.mock('../auth/index.js', () => ({ signUp: vi.fn(), getAccessToken: vi.fn() }))
-vi.mock('../api/client.js', () => ({ apiFetch: vi.fn() }))
+vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
+vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
 
 const PROFILE = { first_name: 'Emma', language: 'en', email_verified: false }
 
 beforeEach(() => {
   vi.mocked(signUp).mockReset().mockResolvedValue({ session: { access_token: 't' } })
   vi.mocked(apiFetch).mockReset().mockResolvedValue(PROFILE)
+  // Signed in once sign-up has succeeded, so the guarded Projects page lets the student in.
+  vi.mocked(hasSession).mockReset().mockImplementation(async () =>
+    vi.mocked(signUp).mock.settledResults.some((r) => r.type === 'fulfilled' && r.value?.session),
+  )
 })
 
 function form(catalogue = en) {

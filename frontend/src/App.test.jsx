@@ -7,8 +7,8 @@ import en from './i18n/en.json'
 import nb from './i18n/nb.json'
 import './i18n/index.js'
 
-vi.mock('./auth/index.js', () => ({ signUp: vi.fn(), getAccessToken: vi.fn() }))
-vi.mock('./api/client.js', () => ({ apiFetch: vi.fn() }))
+vi.mock('./auth/index.js', async () => (await import('./test/mocks.js')).authMock())
+vi.mock('./api/client.js', async () => (await import('./test/mocks.js')).clientMock())
 
 describe('App', () => {
   it('renders in English and switches to Norwegian without a provider', async () => {

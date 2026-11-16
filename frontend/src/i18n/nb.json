@@ -7,7 +7,14 @@
     "wordmark": "Study Buddy",
     "tagline": "Studer fra dine egne notater, med kilder",
     "privacy": "Filene dine brukes bare til å lage studiemateriellet ditt.",
-    "createAccount": "Opprett konto"
+    "createAccount": "Opprett konto",
+    "email": "E-post",
+    "password": "Passord",
+    "submit": "Logg inn",
+    "errors": {
+      "credentials": "Feil e-post eller passord.",
+      "failed": "Innloggingen fungerte ikke. Prøv igjen."
+    }
   },
   "signup": {
     "firstName": "Fornavn",
@@ -23,11 +30,19 @@
       "emailInvalid": "Skriv inn en gyldig e-postadresse."
     }
   },
+  "session": {
+    "expired": "Du er logget ut. Logg inn for å fortsette."
+  },
   "projects": {
-    "welcome": "Velkommen, {{firstName}}",
     "empty": {
       "heading": "Opprett ditt første prosjekt"
     }
+  },
+  "account": {
+    "welcome": "Velkommen, {{firstName}}",
+    "menu": "Kontomeny",
+    "language": "Språk",
+    "logOut": "Logg ut"
   },
   "verify": {
     "success": "E-postadressen din er bekreftet.",

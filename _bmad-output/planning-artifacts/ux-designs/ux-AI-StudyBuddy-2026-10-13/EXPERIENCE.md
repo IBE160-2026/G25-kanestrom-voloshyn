@@ -247,6 +247,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Mistake Review, context | "Your earlier answer" [ASSUMPTION: copy] | Det tidligere svaret ditt (proposed) |
 | Mistake Review, already starting | "Your practice questions are already being made." [ASSUMPTION: copy] | Øvingsspørsmålene dine lages allerede. (proposed) |
 | Account menu | "Settings" · "Language" · "Log out" | Innstillinger · Språk · Logg ut (proposed) |
+| Account menu, accessible name without a first name | "Account menu" [ASSUMPTION: copy, added 2026-11-16 with Story 1.4] | Kontomeny (proposed) |
 | Settings, sections | "Account" · "Language" · "Your data" | Konto · Språk · Dataene dine (proposed) |
 | Settings, account actions | "Change password" · "Link Google account" | Endre passord · Koble til Google-konto (proposed) |
 | Settings, sign-in method | "Signs in with Google" · "Signs in with email" [ASSUMPTION: copy] | Logger inn med Google · Logger inn med e-post (proposed) |
