@@ -46,8 +46,8 @@ Punkt 1 fra forrige økt: oppdatere spec, akseptkriterier og epics med FR-30 og 
   - Scope tiers er nå en stående beslutning.
   - Norsk signering er merket som løst, også i Story 7.5.
 - `AGENTS.md`: V1 = FR-1 til FR-30.
-- Beslutningen er ført i spec-ens `.memlog.md`. Commit `2a04fb3` (ikke pushet).
-- Ikke endret: arkitektur-spinen (`status: final`) sier fortsatt «FR-1 to FR-29» i `scope`. FR-30 dekkes allerede av AD-4, så bare scope-linjen må oppdateres, og det krever godkjenning.
+- Beslutningen er ført i spec-ens `.memlog.md`. Commit `2a04fb3`, pushet.
+- Arkitektur-spinen: etter Cristoffers godkjenning er `scope` og `binds` endret til FR-1 til FR-30. AD-4 binder nå FR-30 (ingen regelendring), og det åpne punktet om norske strenger er markert som løst. Ført i spinens `.memlog.md`. Commit `13d1f1f`.
 
 ### Åpne punkter
-- Spinens `scope` sier «FR-1 to FR-29». Spinen er final; endringen til FR-30 må godkjennes (via `bmad-architecture`).
+Ingen.
