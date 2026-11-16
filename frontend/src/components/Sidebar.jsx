@@ -1,7 +1,8 @@
-import { DropdownMenu } from 'radix-ui'
+import { DropdownMenu, Tooltip } from 'radix-ui'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { initials } from './initials.js'
 import ProjectName from './ProjectName.jsx'
 import styles from './Sidebar.module.css'
 
@@ -45,6 +46,39 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
             {t('projects.newShort')}
           </span>
         </button>
+        {/* The active Projects as initials squares, newest first; each opens its home. The full
+            name is the link's accessible name and shows in a tooltip (Cristoffer, 2026-11-17). */}
+        <nav className={styles.stripNav}>
+          <Tooltip.Provider delayDuration={200}>
+            <ul className={styles.stripList}>
+              {projects.map((project) => {
+                const open = project.id === currentId
+                const name = project.name ?? t('projects.placeholder')
+                return (
+                  <li key={project.id}>
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className={`${styles.monogram} ${open ? styles.monogramOpen : ''}`}
+                          aria-label={name}
+                          aria-current={open ? 'page' : undefined}
+                        >
+                          <span aria-hidden="true">{initials(name)}</span>
+                        </Link>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content side="right" sideOffset={8} className={styles.tipPanel}>
+                          {name}
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  </li>
+                )
+              })}
+            </ul>
+          </Tooltip.Provider>
+        </nav>
       </aside>
     )
   }
