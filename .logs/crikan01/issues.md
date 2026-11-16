@@ -6,4 +6,6 @@
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Oppdater spec, akseptkriterier og epics med FR-30 og den nye FR-16-konsekvensen (chat uten svar i materialet → story 4.4).
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Opprett `test-data/` med testfilene FR-7, FR-16, SM-4 og AD-4 forutsetter.
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Ihor ser over PRD-endringene etter Bårds tilbakemelding.
-- [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Kodegjennomgang av story 1.1–1.4 (`bmad-code-review`).
+- [x] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Kodegjennomgang av story 1.1–1.4 (`bmad-code-review`). (delvis løst 2026-11-16: 1.4 gjennomgått i [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md); resten videreført der)
+- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Kodegjennomgang av story 1.3b, 1.3, 1.2 og 1.1.
+- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — `ResetPassword.test.jsx` › «another link starts from a clean screen…» er ustabil (story 1.5, si fra til Ihor).
