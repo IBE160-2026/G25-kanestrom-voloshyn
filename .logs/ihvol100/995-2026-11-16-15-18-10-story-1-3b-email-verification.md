@@ -23,7 +23,8 @@ Build Story 1.3 part 2 (verify my email by link), split off from Story 1.3, with
   - End-to-end against the container: the Norwegian email arrived in Mailpit; the link opened twice → success both times; `email_verified: true`.
 - **Review:** 18 findings: 2 decided by Ihor, 8 patched, 2 deferred (`deferred-work.md`), 6 rejected, all in the spec's triage log.
 - Bård Pettersen's PRD feedback (2026-11-12) suggests ranking requirements into core and extension, with FR-19 (Google) among the first to cut. Not acted on, because the PRD is final.
-- Not pushed.
+- **Merged into `main` and pushed** (same day, at Ihor's request): `bd22b72`; pytest 105/105 and Vitest 87/87 on the merged `main`.
+- **Branches deleted** locally and on GitHub, all fully merged first: `feature/app-skeleton`, `feature/i18n`, `feature/create-account`, `feature/email-verification`, and `design` (Cristoffer's, no commits beyond `main`). Only `main` remains.
 
 ### Åpne punkter
 - Manual browser check of the email flow: sign up in Norwegian, click the link in Mailpit's UI, "E-postadressen din er bekreftet.", then the same link again.
