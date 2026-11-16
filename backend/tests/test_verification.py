@@ -196,11 +196,8 @@ def test_smtp_down_answers_200_and_the_next_sign_in_sends_a_fresh_link(
     assert "token=" not in caplog.text
     assert "/api/auth/verify" not in caplog.text
     assert messages_to(mailpit, email) == []
-    # The unsent token was invalidated in its own transaction.
-    live = db.execute(
-        "SELECT count(*) FROM email_verifications WHERE account_id = %s AND invalidated_at IS NULL", (account_id,)
-    ).fetchone()[0]
-    assert (token_count(db, account_id), live) == (1, 0)
+    # The unsent link was deleted in its own transaction, so it counts as neither sent nor live.
+    assert token_count(db, account_id) == 0
 
     # The next sign-in, with Mailpit up, sends exactly one fresh, working link.
     again = client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
@@ -210,17 +207,33 @@ def test_smtp_down_answers_200_and_the_next_sign_in_sends_a_fresh_link(
     assert verified_at(db, account_id) is not None
 
 
-def test_an_expired_first_link_is_replaced_on_the_next_sign_in(client, gotrue, db, created, mailpit):
-    # FR-1: resendable until verified. The 24 h have passed and the link was never opened.
+def age_links(db, account_id: str, days: int) -> None:
+    """Move every link of the Account `days` into the past, as if that time had gone by."""
+    db.execute(
+        """
+        UPDATE email_verifications
+        SET created_at = created_at - make_interval(days => %s), expires_at = expires_at - make_interval(days => %s)
+        WHERE account_id = %s
+        """,
+        (days, days, account_id),
+    )
+
+
+def sign_in_again(client, body) -> None:
+    response = client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
+    assert response.status_code == 200, response.text
+
+
+# --- Reminders (FR-1 resendable until verified; at least 7 days apart, at most 3 in all) ---
+
+
+def test_a_reminder_with_a_new_link_comes_after_7_days(client, gotrue, db, created, mailpit):
     body = sign_up_and_greet(client, gotrue, created, mailpit)
     email, account_id = body["user"]["email"], body["user"]["id"]
     old_link = link_in(messages_to(mailpit, email, expect=1)[0])
-    db.execute(
-        "UPDATE email_verifications SET expires_at = now() - interval '1 second' WHERE account_id = %s", (account_id,)
-    )
+    age_links(db, account_id, 8)
 
-    again = client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
-    assert again.status_code == 200, again.text
+    sign_in_again(client, body)
     messages = messages_to(mailpit, email, expect=2)
     assert len(messages) == 2
     new_link = next(link for link in map(link_in, messages) if link != old_link)
@@ -229,8 +242,33 @@ def test_an_expired_first_link_is_replaced_on_the_next_sign_in(client, gotrue, d
     assert verified_at(db, account_id) is not None
 
     # Once verified, a later sign-in sends nothing more.
-    client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
+    age_links(db, account_id, 8)
+    sign_in_again(client, body)
     assert len(messages_to(mailpit, email, expect=3, timeout=1)) == 2
+
+
+def test_no_reminder_within_7_days_even_after_the_link_expired(client, gotrue, db, created, mailpit):
+    body = sign_up_and_greet(client, gotrue, created, mailpit)
+    email, account_id = body["user"]["email"], body["user"]["id"]
+    age_links(db, account_id, 6)  # expired (24 h), but under a week old
+
+    sign_in_again(client, body)
+    assert len(messages_to(mailpit, email, expect=2, timeout=1)) == 1
+    assert token_count(db, account_id) == 1
+
+
+def test_at_most_three_automatic_emails(client, gotrue, db, created, mailpit):
+    body = sign_up_and_greet(client, gotrue, created, mailpit)
+    email, account_id = body["user"]["email"], body["user"]["id"]
+    for sent in (2, 3):
+        age_links(db, account_id, 8)
+        sign_in_again(client, body)
+        assert len(messages_to(mailpit, email, expect=sent)) == sent
+
+    age_links(db, account_id, 30)
+    sign_in_again(client, body)
+    assert len(messages_to(mailpit, email, expect=4, timeout=1)) == 3
+    assert token_count(db, account_id) == 3
 
 
 def test_no_first_email_without_an_email_identity(client, gotrue, db, created, mailpit, stub_auth):

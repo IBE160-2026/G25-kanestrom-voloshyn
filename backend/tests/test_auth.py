@@ -229,6 +229,19 @@ def test_session_just_inside_max_age_still_works(client, gotrue, db, created):
     assert client.get("/api/me", headers=bearer(body["access_token"])).status_code == 200
 
 
+def test_session_max_age_days_setting_is_used(settings, gotrue, db, created):
+    # SESSION_MAX_AGE_DAYS=1: a 2-day-old session is expired, a 12-hour-old one still works.
+    app = create_app(settings.model_copy(update={"session_max_age_days": 1}))
+    old, recent = sign_up(gotrue, created), sign_up(gotrue, created)
+    db.execute("UPDATE auth.sessions SET created_at = now() - interval '2 days' WHERE user_id = %s", (old["user"]["id"],))
+    db.execute(
+        "UPDATE auth.sessions SET created_at = now() - interval '12 hours' WHERE user_id = %s", (recent["user"]["id"],)
+    )
+    with TestClient(app, backend_options=LOOP) as test_client:
+        assert_error(test_client.get("/api/me", headers=bearer(old["access_token"])), 401, "session_expired")
+        assert test_client.get("/api/me", headers=bearer(recent["access_token"])).status_code == 200
+
+
 # --- user_auth with a stubbed Supabase Auth: step 2 on its own, and outages ---
 
 

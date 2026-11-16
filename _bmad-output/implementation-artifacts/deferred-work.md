@@ -22,3 +22,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-login-logout.md`
   summary: Test that Login's "already signed in" redirect does not fire while a login is in flight (hold `hasSession()` pending, submit, let `signIn` succeed with `after-sign-in` pending, then resolve `hasSession` true; the route must stay `/` until `after-sign-in` settles).
   evidence: Code review pass 2, Verification Gap. Removing `&& !inFlight.current` in `Login.jsx` fails no test. Narrow window (slow `/api/config`); add when the Login tests are next touched.
+
+## Deferred from: code review of spec-1-3-create-account.md (2026-11-16)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-create-account.md`
+  summary: A half-finished sign-up loses the first name: `signUp` succeeds, `after-sign-in` fails, the page is reloaded, and a resubmit says "duplicate"; no later step sends the name. Story 7.3 must let the student set it (FR-27), or Create account must treat "duplicate with a live session" as signed up.
+  evidence: Code review pass 2, Blind Hunter and Edge Case Hunter. `signedUp` lives only in React state.

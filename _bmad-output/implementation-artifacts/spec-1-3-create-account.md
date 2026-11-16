@@ -93,6 +93,40 @@ Decisions (Ihor, 2026-11-12):
 - Given the grader flow (`npx supabase start`, `db reset`, `docker compose up --build`), when a visitor signs up at `http://localhost:8000/signup`, then they reach the Projects page greeted by first name, and `profiles` holds their row.
 - Given the source, when it is searched, then only `frontend/src/auth/` imports `@supabase/supabase-js`, and only `frontend/src/api/client.js` calls `fetch` for `/api`.
 
+### Review Findings
+
+Code review pass 2 (2026-11-16, run by Cristoffer: Blind Hunter, Edge Case Hunter, Verification Gap, Acceptance Auditor against `492c866`, triaged against the current code, which Story 1.4 has since extended).
+
+- [x] [Review][Patch] Create account is open to a signed-in student: after a sign-up, Back returns to the filled-in form (`navigate('/projects')` without `replace`), and `/signup` has no "already signed in" redirect like Login's, so a second submit with another email creates a second Account and replaces the session [frontend/src/pages/CreateAccount.jsx:69] — fixed: the sign-up navigates with `replace`, and `/signup` sends a signed-in student to `/projects` (as Login does). Two new tests; the Back test fails without `replace` (checked).
+- [x] [Review][Patch] `SESSION_MAX_AGE_DAYS` is only tested at its default of 30; a test with another value (e.g. 1 day, session 2 days old → `session_expired`) would catch the setting being ignored [backend/tests/test_auth.py] — fixed: `test_session_max_age_days_setting_is_used` (1 day); it fails with a hard-coded 30 (checked).
+- [x] [Review][Defer] A half-finished sign-up loses the first name: if `signUp` succeeds but `after-sign-in` fails and the page is then reloaded, a resubmit says "duplicate", and no later step sends the name, so the Account has no name [frontend/src/pages/CreateAccount.jsx] — deferred: needs a failed `after-sign-in` plus a reload; Story 7.3 (Settings) lets the student set the first name (FR-27).
+
+**Rejected (24):**
+- false: Projects leaves a refused Supabase session in storage — Story 1.4's `api/client.js` signs out on `unauthorized`/`session_expired`.
+- false: no route guards — Story 1.4 added `RequireSession` around `/projects` and Login's redirect (the `/signup` gap is the patch above).
+- false: the profile language is never read back — Story 1.4's Login applies it.
+- false: the duplicate-email "Log in" link leads to a page without a form — Login exists since Story 1.4.
+- false: Projects' redirect breaks the "no session handling in 1.3" rule — superseded by Story 1.4.
+- false: the language sent at sign-up and the one shown can drift — reconciled by Story 1.4.
+- false: the session lookup's `AND user_id = %s` is untested — `backend/tests/test_me.py` pins it (Story 1.4; dropping the clause fails that test).
+- false: a non-string `session_id` claim gives a 500 — the claims come from a token Supabase has just accepted.
+- false: an address Supabase refuses gets the generic error — fixed in `0e4a15a` (`email_invalid`).
+- low: session age uses the app clock, not the database's — one machine locally; drift is seconds against 30 days.
+- low: no test that the pool connection is taken only after Supabase answers — a parameter-order rule; reordering is a code review catch.
+- low: `profiles.ensure` runs twice in `after-sign-in` — one extra no-op insert.
+- low: Supabase-backed tests fail instead of skipping without `npx supabase start` — deliberate, so they can't pass silently.
+- low: the Projects error state has no retry — the Account menu (Log out, language) is shown since Story 1.4; reload retries.
+- low: `Me.language` is `str | None`, not `Literal` — the database check constrains it.
+- low: the boundary test only matches `fetch(` — a guard against accidents, not evasion.
+- low: the Data API test accepts a 200 with `[]` — RLS is on and grants are revoked in the migration.
+- low: a Supabase 200 with a non-UUID id maps to `unauthorized` — Supabase ids are UUIDs.
+- low: `opacity: 0.38` is a literal — DESIGN.md defines the disabled treatment, but `tokens.css` has no opacity token.
+- low: no recorded end-to-end grader run — the manual check passed on 2026-11-16.
+- low: a non-ASCII bearer token gives a 500 — only a hand-crafted request can send one.
+- low: an empty publishable key reads as `unauthorized` — a misconfiguration that fails at once.
+- low: a NUL character in the first name gives a 500 — only a hand-crafted request can send one.
+- low: a failing startup doesn't close the pool — the process exits anyway.
+
 ## Implementation Notes
 
 - Installed versions: `httpx2` 2.16.0 (runtime; the dev `httpx` is gone and TestClient uses httpx2 without a warning), `@supabase/supabase-js` 2.118.0, `react-router` 8.5.1.

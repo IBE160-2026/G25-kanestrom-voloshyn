@@ -1,9 +1,9 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { apiFetch } from '../api/client.js'
 import { isEmail } from '../auth/email.js'
-import { signUp } from '../auth/index.js'
+import { hasSession, signUp } from '../auth/index.js'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
 import { errorText } from '../i18n/errors.js'
@@ -32,6 +32,20 @@ export default function CreateAccount() {
   // Set once the Account exists: a retry after a failed after-sign-in only repeats that call,
   // so the email and password are locked (read-only) from then on.
   const [signedUp, setSignedUp] = useState(false)
+
+  // Already signed in (for example Back after a sign-up): go straight in, as Login does, so a
+  // second submit can't create another Account and replace the session.
+  useEffect(() => {
+    const run = { live: true }
+    hasSession()
+      .then((has) => {
+        if (run.live && has && !inFlight.current) navigate('/projects', { replace: true })
+      })
+      .catch(() => {})
+    return () => {
+      run.live = false
+    }
+  }, [navigate])
 
   function fail(kind, field, apiError) {
     // A new attempt number remounts the Error line, so a repeated message is announced again.
@@ -66,7 +80,8 @@ export default function CreateAccount() {
         method: 'POST',
         body: { first_name: name, language: i18n.resolvedLanguage },
       })
-      navigate('/projects')
+      // Replace: Back from Projects must not return to the filled-in form.
+      navigate('/projects', { replace: true })
     } catch (err) {
       fail('api', 'firstName', err)
     } finally {

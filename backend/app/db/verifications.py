@@ -9,32 +9,29 @@ from uuid import UUID
 from psycopg import AsyncConnection
 
 
-async def exists_for(conn: AsyncConnection, account_id: UUID) -> bool:
-    """Whether the Account has a link that is still within its 24 h and was not invalidated.
+async def sent_history(conn: AsyncConnection, account_id: UUID, within: timedelta) -> tuple[int, bool]:
+    """How many links the Account has been sent, and whether one was sent within `within`.
 
-    An expired link doesn't count, so the next sign-in sends a new one (FR-1: resendable until
-    verified). That also recovers a link that was stored but never sent (a crash before the send,
-    or a failed invalidation after a failed send): at most a day later.
+    Every stored row is a sent link: a link whose email failed to send is deleted
+    (`delete_unsent`). A link stored but never sent (a crash before the send) counts too; it is
+    replaced after the gap like any other.
     """
     cur = await conn.execute(
         """
-        SELECT 1 FROM email_verifications
-        WHERE account_id = %s AND invalidated_at IS NULL AND expires_at > now()
-        LIMIT 1
+        SELECT count(*), coalesce(bool_or(created_at > now() - %s), false)
+        FROM email_verifications
+        WHERE account_id = %s
         """,
-        (account_id,),
+        (within, account_id),
     )
-    return await cur.fetchone() is not None
+    count, recent = await cur.fetchone()
+    return count, recent
 
 
-async def invalidate_unused_by_hash(conn: AsyncConnection, token_hash: str) -> None:
-    """Retire one link that was never used, e.g. after its email failed to send."""
+async def delete_unsent(conn: AsyncConnection, token_hash: str) -> None:
+    """Remove a link whose email failed to send, so it counts as neither sent nor live."""
     await conn.execute(
-        """
-        UPDATE email_verifications
-        SET invalidated_at = now()
-        WHERE token_hash = %s AND used_at IS NULL AND invalidated_at IS NULL
-        """,
+        "DELETE FROM email_verifications WHERE token_hash = %s AND used_at IS NULL",
         (token_hash,),
     )
 

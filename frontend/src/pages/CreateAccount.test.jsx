@@ -1,12 +1,15 @@
 // Create account screen (Story 1.3 SPA matrix rows). auth/ and api/client.js are mocked (spine › Tests).
-import { screen, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createMemoryRouter } from 'react-router'
+import { RouterProvider } from 'react-router/dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
 import { hasSession, signUp } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
-import { i18n, renderRoute } from '../test/render.jsx'
+import { routes } from '../routes.jsx'
+import { i18n, renderRoute, renderWithI18n } from '../test/render.jsx'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
 vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
@@ -42,6 +45,34 @@ async function fillAndSubmit(user, { firstName = 'Emma', email = 'emma@example.c
 }
 
 describe('Create account', () => {
+  it('a student who is already signed in goes straight to Projects, without the form', async () => {
+    vi.mocked(hasSession).mockResolvedValue(true)
+    const { router } = renderRoute('/signup')
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
+    expect(signUp).not.toHaveBeenCalled()
+  })
+
+  it('after a sign-up, Back from Projects does not return to the filled-in form', async () => {
+    const user = userEvent.setup()
+    const router = createMemoryRouter(routes, { initialEntries: ['/', '/signup'], initialIndex: 1 })
+    renderWithI18n(<RouterProvider router={router} />)
+
+    await fillAndSubmit(user)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
+
+    // Back lands on the entry before the form (Login, which sends a signed-in student on to
+    // Projects), never on /signup.
+    const visited = []
+    const stop = router.subscribe((state) => visited.push(state.location.pathname))
+    await act(() => router.navigate(-1))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
+    stop()
+    expect(visited[0]).toBe('/')
+    expect(visited).not.toContain('/signup')
+    expect(signUp).toHaveBeenCalledTimes(1)
+  })
+
   it('shows the Login layout with the form, the Log in link, and the toggle', () => {
     renderRoute('/signup')
 
