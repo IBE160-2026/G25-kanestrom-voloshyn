@@ -2,7 +2,7 @@
 title: "PRD: AI Study Buddy"
 status: final
 created: 2026-10-06
-updated: 2026-11-02
+updated: 2026-11-16
 sources:
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
   - ../../ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md
@@ -16,7 +16,7 @@ sources:
 
 This PRD defines Version 1 of AI Study Buddy for the team building it (an IBE160 course project) and for whoever plans architecture and implementation next. It builds on the [Product Brief](../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md) and repeats its problem, users, and vision only where context needs them. Vocabulary is anchored in the Glossary (§3). Features (§4) group behavior descriptions with globally numbered Functional Requirements. Inline `[ASSUMPTION]` tags mark inferences made without explicit confirmation; §10 indexes them.
 
-FR IDs are stable. FR-1 through FR-18 keep their original numbers; FRs added in the 2026-10-14 update are numbered FR-19 onward and placed in their feature group, so reading order is not strictly numeric.
+FR IDs are stable. FR-1 through FR-18 keep their original numbers; FRs added in the 2026-10-14 update are numbered FR-19 onward and placed in their feature group, so reading order is not strictly numeric. FR-30 (Test mode) was added on 2026-11-16 after the course feedback ([tilbakemelding-prd.md](tilbakemelding-prd.md)), together with the Core and Extension tiers in §7.1.
 
 The companion UX contract is [EXPERIENCE.md](../../ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md) (behavior, flows, states, microcopy, accessibility floor) and [DESIGN.md](../../ux-designs/ux-AI-StudyBuddy-2026-10-13/DESIGN.md) (visual system). This PRD states capabilities and their testable consequences; layout, labels, keys, copy, and visual detail live in those spines.
 
@@ -24,7 +24,7 @@ The companion UX contract is [EXPERIENCE.md](../../ux-designs/ux-AI-StudyBuddy-2
 
 Students already have what they need to study — lecture slides, PDFs, notes — but turning that material into active practice (a quiz, a flashcard set, a summary) takes time most students don't spend, so they fall back on passive re-reading. AI Study Buddy removes that step: a student uploads their own course material into a Project and immediately generates a Quiz, Flashcards, or a Summary, or asks Ask AI a question — all grounded in that material, not a generic curriculum.
 
-The loop closes on itself rather than ending at "here's your quiz": incorrect quiz answers are captured as Mistakes, and Mistake Review turns them into targeted practice the student can return to whenever they choose. A Project keeps everything — uploaded material, generated content, chats, and mistake history — so a student can close the app and pick up exactly where they left off.
+The loop closes on itself rather than ending at "here's your quiz": incorrect quiz answers are captured as Mistakes, and Mistake Review turns them into targeted practice the student can return to whenever they choose. A Project keeps everything — uploaded material, Study Content, chats, and mistake history — so a student can close the app and pick up exactly where they left off.
 
 The study core of Version 1 is deliberately narrow: six integrated capabilities (Projects with upload, Quiz, Flashcards, Summarize, Ask AI, and Mistake Review). Around that core, V1 also carries the supports that make "saved and resumed" work day to day: email or Google sign-in, Settings, archiving and deleting Projects, a per-Project History, editable Topics, upload from a phone, and an English and Norwegian interface. These supports add no new way to study, but they do make V1 larger than the brief's "six features and nothing more", and the team accepts that cost knowingly. The bet is unchanged: *upload once, study many ways, review what you got wrong* — a simple, understandable, end-to-end workflow is worth more to a student right now than a longer feature list. This PRD makes no claim of category novelty: NotebookLM, Quizlet, Quizgecko, and Revisely already cover parts of this space, and StudyFetch in particular already does this at real scale. The differentiation is tight integration between generation and mistake-driven review, not an unprecedented feature.
 
@@ -112,8 +112,8 @@ Post-V1 direction (performance tracking, adaptive difficulty, cross-Project know
 - **Unfinished Quiz** — A Quiz left before its last question, saved with its progress and resumable from History (FR-25).
 - **Flashcards** — A set of AI-generated question-and-answer cards drawn from a Selection Scope, self-assessed as known or not yet known. Flashcards never create Mistakes (FR-13, FR-14).
 - **Summarize** — An AI-generated summary of one Study Material, whole or narrowed to one of its Topics (FR-15).
-- **Ask AI** — The free-form chat for asking questions about a Project's Study Material, and the Project's home view. The interface calls it "Chat" (FR-16).
-- **Chat** — One Ask AI conversation. A Project can hold several chats (FR-16).
+- **Ask AI** — The feature: free-form questions about a Project's Study Material, and the Project's home view (FR-16).
+- **Chat** — One Ask AI conversation. Ask AI is the feature; a Chat is one conversation in it. A Project can hold several chats, and the interface uses "Chat" for the conversations (FR-16).
 - **History** — The per-Project list of past chats, Quizzes, Flashcard sets, and Summaries, newest first (FR-25).
 - **Mistake** — A Quiz question answered incorrectly, recorded against the Project with the Study Material it came from. A Mistake is outstanding until cleared in Mistake Review or taken out of review when its Study Material is removed; its history stays for as long as the Project exists (FR-12, FR-18, FR-20).
 - **Mistake Review** — A student-initiated practice session built from a Project's outstanding Mistakes (FR-17, FR-18).
@@ -211,7 +211,7 @@ For an uploaded .jpg/.jpeg, .png, or .heic image, on its own or in a phone batch
 - No feature distinguishes an image-sourced Study Material from a text-sourced one.
 - Image extraction follows the three outcomes in §5.1: fully readable is accepted with no warning, partly readable is accepted with a warning that extraction may be incomplete, and mostly unreadable is rejected.
 - Every image counts toward the Account's limit of 25 images per day, including each photo in a phone batch. An image past that limit is declined with a clear message rather than failing silently.
-- `[NOTE FOR PM]` The confidence thresholds separating the three outcomes are deferred to architecture: this PRD requires the outcomes (accept, warn and continue, reject) but does not set the numeric boundaries. Whoever designs the extraction pipeline must set and document concrete thresholds before this FR is implementable.
+- The numeric thresholds separating the three outcomes are set in architecture AD-6 (for example, a page is readable with at least 20 characters of extracted text; a paged file with under 30 % readable pages is rejected). They are config defaults the team can tune, and each outcome is tested with a file in `test-data/`.
 
 **Out of Scope:**
 - Other image formats, such as WEBP or GIF.
@@ -310,6 +310,7 @@ In an active Project with at least one ready Study Material, a student can choos
 A student answers Quiz questions one at a time; each answer immediately shows whether it was correct, with an explanation grounded in the Study Material. Realizes UJ-1.
 
 **Consequences (testable):**
+- Every question is multiple choice with four options and exactly one correct answer. An answer is scored by comparing the chosen option with the stored correct one, without an AI call (architecture AD-9).
 - Every explanation reflects only content in the Selection Scope and names its source (§5.1).
 - At the end, the student sees an overall score that matches the number of correct answers, and which questions were answered incorrectly.
 
@@ -368,6 +369,7 @@ In an active Project with at least one ready Study Material, a student can ask f
 
 **Consequences (testable):**
 - An answer never introduces facts absent from the material in the chat's scope, and names its source (§5.1).
+- When the material in the chat's scope does not contain the answer, the chat says so and makes no factual claim. Tested with a question outside the test document in `test-data/`.
 - Narrowing to one Study Material changes which material later answers in that chat draw from, until the student broadens the scope again.
 - Starting a new chat leaves the previous chat unchanged and lists it in History (FR-25).
 - Each chat persists across sessions (UJ-2); a reopened chat in an active Project can be continued.
@@ -432,6 +434,16 @@ Quiz, Flashcard, Summary, and Mistake Review generation continues when the stude
 **Feature-specific NFRs:**
 - Each generation completes within 60 seconds end-to-end for a single lecture-deck-sized upload, in line with UJ-1's "in minutes" framing. `[ASSUMPTION: 60 seconds is a round-number target for a course-project MVP, not measured against a baseline.]`
 
+#### FR-30: Test mode
+An evaluator can start and use the app without an API key for the AI service. Supports SM-1 and SM-5, so the grader can run the demo locally at no cost.
+
+**Consequences (testable):**
+- With no API key configured, the app starts in test mode instead of failing (architecture AD-4).
+- In test mode, Quiz, Flashcards, Summarize, Ask AI, Mistake Review, Project naming, Topic detection and image text extraction return prepared, deterministic answers.
+- In test mode, no request is sent to an external AI service.
+- The limits in §5.2 still apply in test mode.
+- Test mode is never used silently in production: a production start without a key fails with a clear message.
+
 ### 4.9 Settings & Language
 
 **Description:** Gives the student control over their Account, interface language, and data. Supports §1 Vision; FR-29 also realizes UJ-1's language choice.
@@ -439,7 +451,7 @@ Quiz, Flashcard, Summary, and Mistake Review generation continues when the stude
 **Functional Requirements:**
 
 #### FR-27: Account settings
-A logged-in student can view and manage their Account's first name, email, profile picture, and sign-in methods. Supports §1 Vision's account-persistence promise.
+A logged-in student can view their Account's email and manage their first name, profile picture, and sign-in methods. The email cannot be changed (§7.2). Supports §1 Vision's account-persistence promise.
 
 **Consequences (testable):**
 - An email-and-password Account can change its first name; the change shows immediately and persists.
@@ -470,7 +482,7 @@ The interface is available in English and Norwegian (bokmål), including errors 
 
 ### 5.1 Content Integrity
 
-- **Extraction outcomes.** Every Study Material format, not only images (FR-7), has three outcomes: a fully usable file is accepted silently; a partly usable file is accepted and processed from what was extracted, with a warning; a mostly or entirely unusable file (a corrupted document, an illegible image) is rejected rather than producing content from little or no real material. A phone batch follows the same rule as a whole, naming any unreadable pages (FR-21). `[NOTE FOR PM]` The threshold gap in FR-7's note applies to every format.
+- **Extraction outcomes.** Every Study Material format, not only images (FR-7), has three outcomes: a fully usable file is accepted silently; a partly usable file is accepted and processed from what was extracted, with a warning; a mostly or entirely unusable file (a corrupted document, an illegible image) is rejected rather than producing content from little or no real material. A phone batch follows the same rule as a whole, naming any unreadable pages (FR-21). The thresholds for every format are set in architecture AD-6.
 - **No fabrication.** No generation feature — Quiz, Flashcards, Summarize, Ask AI, or Mistake Review — fabricates content to cover missing or unreadable material, a student-added Topic absent from the material (FR-22), or a count the material cannot support (FR-10, FR-13). Every explanation, flashcard, summary, practice question, and chat answer reflects only what is present in the Study Material of its Selection Scope. Reusing a Mistake's saved question and explanation after its Study Material is removed is not new generation; that content was grounded when it was created (FR-18).
 - **Sources.** Every Quiz explanation, flashcard answer, summary section, Mistake Review feedback, and chat answer names the Study Material it is drawn from and, where available, the location within it (slide or page).
 
@@ -503,7 +515,7 @@ Uploaded Study Material is used only to generate that student's own Study Conten
 | Delete a Project forever (FR-24) | The Project and everything in it are permanently deleted at once. |
 | Delete the Account (FR-28) | Immediate and permanent: every Project, including those in Deleted projects, and everything in them. |
 
-Mistake history is kept for as long as its Project exists (FR-18). Permanent deletion covers stored files, extracted text, generated content, chats, and Mistakes, including Mistake history.
+Mistake history is kept for as long as its Project exists (FR-18). Permanent deletion covers stored files, extracted text, Study Content, chats, and Mistakes, including Mistake history.
 
 ### 5.5 Account Security
 
@@ -534,6 +546,15 @@ The interface is bilingual and generated content follows the material's language
 
 ### 7.1 In Scope
 
+Every FR below is V1, but not every FR is equally important. Each FR has a tier, so the order of cuts is agreed before time runs out:
+
+| Tier | FRs | Meaning |
+|---|---|---|
+| **Core** | FR-1, FR-2, FR-4, FR-6, FR-10, FR-11, FR-12, FR-17, FR-18, FR-25, FR-30 | The loop the product stands on: sign up → upload → quiz → Mistakes → Mistake Review → History, runnable without a key. Never cut. |
+| **Extension** | All other FRs | Built after or alongside the core. If time runs out, Extensions are cut in this order: 1. FR-21 (upload from phone), 2. FR-7 (text from images, including handwriting), 3. FR-19 (Google sign-in), 4. FR-23 and FR-24 (archive and deletion), 5. FR-29 (Norwegian interface). Any other Extension is cut only after these, by team decision. |
+
+Cutting an Extension removes its FR and every consequence that depends on it in other FRs. For example, cutting FR-7 also removes image uploads from FR-6 and the image limit in §5.2.
+
 - Account creation, login, logout, password reset, and Google sign-in with account linking (FR-1–FR-3, FR-19).
 - Study Projects: creation, AI auto-naming, renaming, multi-file upload (including photos of handwritten or printed notes), text extraction from images, resume, and the Mistake indicator (FR-4–FR-9).
 - Study Material removal, upload from phone, Topic detection and editing, Project archive and restore, and Project deletion with Deleted projects (FR-20–FR-24).
@@ -543,6 +564,7 @@ The interface is bilingual and generated content follows the material's language
 - Ask AI: project-grounded chat as the Project home, several chats per Project, optional narrowing to one Study Material, persistent chat history (FR-16).
 - Mistake Review: student-initiated, targeted practice from incorrect Quiz answers (FR-17, FR-18).
 - History, Unfinished Quiz resume, running a Quiz or Flashcard set again, and background generation with cancel (FR-25, FR-26).
+- Test mode: the app runs without an API key, with prepared answers (FR-30).
 - Settings, account deletion, and an English and Norwegian interface (FR-27–FR-29).
 - Cross-cutting content-integrity, cost-control, data-use, data-lifecycle, account-security, and language guardrails (§5).
 
@@ -569,11 +591,11 @@ All items above are candidates for post-V1 versions per the brief's long-term Vi
 
 **Primary**
 - **SM-1**: End-to-end core loop completion — in one sitting, a student creates a Project, uploads Study Material (text-based, and image-based either directly or from a phone), generates at least one of Quiz, Flashcards, or Summary, and, for Quiz, sees a scored result. Target: completes with no crash, no timeout, and no response contradicting the uploaded material, across a demo cohort of at least 5 test users each covering one text-based and one image-based upload. Validates FR-4, FR-6, FR-7, FR-10, FR-11, FR-13, FR-15, FR-21, FR-22. `[ASSUMPTION: a cohort of 5 is a round number for a course-project demo, not a measured requirement.]`
-- **SM-2**: Mistake-to-review follow-through — of students with outstanding Mistakes from Quiz, the share who start a Mistake Review within 7 days. Target: at least 50%. Validates FR-9, FR-12, FR-17, FR-18.
-- **SM-3**: Resume integrity — a Project reopened in a later session shows all Study Material, Study Content, and chats exactly as left, an Unfinished Quiz resumes where it stopped, and a restored archived or deleted Project returns unchanged. Validates FR-8, FR-16, FR-23, FR-24, FR-25.
+- **SM-2**: Mistake-to-review follow-through — demo check: after a Quiz with at least one wrong answer, a test user finds the Mistake indicator and starts a Mistake Review from it without help. Target: every user in the SM-1 demo cohort. Validates FR-9, FR-12, FR-17, FR-18.
+- **SM-3**: Resume integrity — a Project reopened in a later session shows all Study Material, Study Content, and chats exactly as left, an Unfinished Quiz resumes where it stopped, and a restored archived or deleted Project returns unchanged. Target: all of these hold for every user in the SM-1 demo cohort. Validates FR-8, FR-16, FR-23, FR-24, FR-25.
 
 **Gating Conditions (apply throughout — not secondary, per the brief)**
-- **SM-4**: Generated-content relevance — sampled Quiz questions, Flashcards, Summaries, Ask AI answers, and Mistake Review practice contain no claims unsupported by the uploaded Study Material, including text extracted from images (FR-7), and each names a source that contains it. Saved items reused for removed material (FR-18) are judged as originally generated. Every other metric is evaluated under this condition. Validates FR-7, FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-18.
+- **SM-4**: Generated-content relevance — sampled Quiz questions, Flashcards, Summaries, Ask AI answers, and Mistake Review practice contain no claims unsupported by the uploaded Study Material, including text extracted from images (FR-7), and each names a source that contains it. Saved items reused for removed material (FR-18) are judged as originally generated. Runnable check: with the test document in `test-data/`, generate 10 Quiz questions; at least 9 must name a source that actually contains the answer, checked independently by two team members. Every other metric is evaluated under this condition. Validates FR-7, FR-10, FR-11, FR-13, FR-14, FR-15, FR-16, FR-18.
 - **SM-5**: Usability without instruction — first-time test users complete UJ-1 (sign up → upload → generate → quiz → score) without being told how, per the brief's "simple enough to use without instruction" criterion. Target: every user in the SM-1 demo cohort. Equally gating. Validates FR-1, FR-4, FR-6, FR-10, FR-11. `[ASSUMPTION: as a gating condition, SM-5 requires every user in the SM-1 cohort to pass.]`
 
 **Counter-metrics (do not optimize)**
@@ -584,7 +606,7 @@ All items above are candidates for post-V1 versions per the brief's long-term Vi
 
 No product decision is outstanding. These items remain open for other owners:
 
-1. **Content Integrity thresholds (architecture).** The numeric confidence thresholds behind the three outcomes (accept, warn and continue, reject) are deliberately unset in this PRD (§5.1, FR-7); whoever builds the extraction pipeline must define and document them.
+1. **Content Integrity thresholds (architecture).** **Resolved:** architecture AD-6 sets the thresholds behind the three outcomes (accept, warn and continue, reject) for every format (§5.1, FR-7).
 2. **AI provider data handling (architecture).** Confirm that the chosen AI provider lets the team honor the data-use promise (§5.3) and that permanent deletion (§5.4) reaches any copies the provider keeps.
 3. **Norwegian strings (dependency for FR-29).** FR-29 is complete only once the team signs off the Norwegian strings proposed in EXPERIENCE.md › Voice and Tone; that sign-off is a UX action, not a PRD decision, tracked in `ux-designs/ux-AI-StudyBuddy-2026-10-13/norwegian-strings-signoff.md`. **Resolved 2026-11-16:** Ihor and Cristoffer signed off the strings.
 
