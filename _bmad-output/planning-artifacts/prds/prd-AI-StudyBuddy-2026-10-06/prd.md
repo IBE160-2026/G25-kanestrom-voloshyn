@@ -2,7 +2,7 @@
 title: "PRD: AI Study Buddy"
 status: final
 created: 2026-10-06
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
   - ../../ux-designs/ux-AI-StudyBuddy-2026-10-13/EXPERIENCE.md
@@ -583,6 +583,7 @@ Cutting an Extension removes its FR and every consequence that depends on it in 
 - Adding a password to an Account created with Google, and changing an Account's email address.
 - Interface languages beyond English and Norwegian (bokmål).
 - A light theme and user-chosen theme colors.
+- Pinning Projects or ordering them by hand in the Sidebar; V1 lists them newest first (added 2026-11-17).
 - Multi-user or shared Projects; a mobile app or full mobile layout beyond the phone upload page (§6).
 
 All items above are candidates for post-V1 versions per the brief's long-term Vision, not MVP requirements.

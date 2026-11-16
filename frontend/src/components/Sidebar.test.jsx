@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hasSession } from '../auth/index.js'
 import en from '../i18n/en.json'
 import { PROFILE, callsTo, fakeApi, project } from '../test/fakeApi.js'
+import { initials } from './initials.js'
 import { renderRoute } from '../test/render.jsx'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
@@ -79,7 +80,8 @@ describe('Sidebar', () => {
     const show = screen.getByRole('button', { name: en.projects.show })
     expect(show).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('button', { name: en.projects.newShort })).toBeInTheDocument()
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
+    // The expanded list's "+ New project" is gone (the strip's own squares are tested below).
+    expect(screen.queryByRole('button', { name: en.projects.new })).not.toBeInTheDocument()
     expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([
       ['/api/me/prefs', { method: 'PATCH', body: { sidebar_collapsed: true } }],
     ])
@@ -121,7 +123,7 @@ describe('Sidebar', () => {
     expect(await screen.findByRole('button', { name: en.projects.hide })).toBeInTheDocument()
   })
 
-  it('the strip\'s "New project" button creates and opens a Project', async () => {
+  it('the strip\'s "New project" button creates and opens a Project, and shows it in the expanded Sidebar', async () => {
     fakeApi({ me: { ...PROFILE, ui_prefs: { sidebar_collapsed: true } } })
     const user = userEvent.setup()
     const { router } = renderRoute('/projects')
@@ -129,6 +131,70 @@ describe('Sidebar', () => {
     await user.click(await screen.findByRole('button', { name: en.projects.newShort }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects/new-1'))
+    // The Sidebar opens so the new Project is visible (Cristoffer, 2026-11-17)...
+    const link = await screen.findByRole('link', { name: en.projects.placeholder })
+    expect(link).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: en.projects.hide })).toBeInTheDocument()
+    // ...but that isn't saved as the student's collapse choice.
+    expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([])
+  })
+
+  it('the strip shows the active Projects as initials, newest first, and opens one on click', async () => {
+    fakeApi({
+      me: { ...PROFILE, ui_prefs: { sidebar_collapsed: true } },
+      projects: [project('b', { name: 'Biology 101', name_source: 'student' }), project('a')],
+    })
+    const user = userEvent.setup()
+    const { router } = renderRoute('/projects/a')
+
+    // Wait for the saved collapse to apply; before /api/me answers, the expanded Sidebar shows.
+    await screen.findByRole('button', { name: en.projects.show })
+    const links = await within(screen.getByRole('navigation')).findAllByRole('link')
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual(['Biology 101', en.projects.placeholder])
+    expect(links.map((link) => link.textContent)).toEqual(['B1', 'NP'])
+    await waitFor(() => expect(links[1]).toHaveAttribute('aria-current', 'page'))
+
+    await user.click(links[0])
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/b'))
+    // Opening a Project from the strip keeps the Sidebar collapsed.
+    expect(screen.getByRole('button', { name: en.projects.show })).toBeInTheDocument()
+  })
+
+  it('a strip square shows the full name in a tooltip on keyboard focus', async () => {
+    fakeApi({
+      me: { ...PROFILE, ui_prefs: { sidebar_collapsed: true } },
+      projects: [project('b', { name: 'Biology 101', name_source: 'student' })],
+    })
+    const user = userEvent.setup()
+    renderRoute('/projects/b')
+    const square = await screen.findByRole('link', { name: 'Biology 101' })
+
+    while (document.activeElement !== square) await user.tab()
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Biology 101')
+  })
+
+  it.each([
+    ['Biology 101', 'B1'],
+    ['  økonomi og   ledelse ', 'ØO'],
+    ['Nytt prosjekt', 'NP'],
+    ['Matte', 'M'],
+    ['😀 Fun stuff', '😀F'],
+  ])('initials("%s") is "%s"', (name, expected) => {
+    expect(initials(name)).toBe(expected)
+  })
+
+  it('"+ New project" in the expanded Sidebar keeps it expanded and saves nothing', async () => {
+    fakeApi()
+    const user = userEvent.setup()
+    const { router } = renderRoute('/projects')
+
+    await user.click(await screen.findByRole('button', { name: en.projects.new }))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/new-1'))
+    expect(screen.getByRole('button', { name: en.projects.hide })).toBeInTheDocument()
+    expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([])
   })
 
   it('the strip buttons work from the keyboard', async () => {

@@ -92,7 +92,12 @@ export default function AppShell() {
     setMe((profile) => (profile?.last_project_id === id ? { ...profile, last_project_id: null } : profile))
   }, [])
 
-  async function createProject() {
+  /**
+   * Create a Project and open it (FR-4). `revealSidebar` (from the Sidebar strip) also shows the
+   * Sidebar, so the new Project is visible at the top of the list; it isn't saved as the student's
+   * collapse choice (Cristoffer, 2026-11-17).
+   */
+  async function createProject({ revealSidebar = false } = {}) {
     if (inFlight.current) return
     inFlight.current = true
     setCreating(true)
@@ -100,6 +105,7 @@ export default function AppShell() {
     try {
       const project = await apiFetch('/api/projects', { method: 'POST' })
       upsertProject(project)
+      if (revealSidebar === true) setCollapsedChoice(false)
       navigate(`/projects/${project.id}`)
     } catch (err) {
       if (!SIGNED_OUT_CODES.has(err?.code)) {
