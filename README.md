@@ -33,7 +33,7 @@ Har du allerede kjørt Supabase fra en eldre versjon av repoet, start den på ny
 
 Opprett en konto på <http://localhost:8000/signup> (fornavn, e-post og et passord på minst 8 tegn); du havner da på Prosjekter-siden. Lenken «Opprett konto» på startsiden går dit.
 
-Etter at kontoen er opprettet, sender appen en e-post med en bekreftelseslenke som virker i 24 timer. Lokalt havner den i Mailpit på <http://localhost:54324>; åpne lenken der for å bekrefte e-postadressen. Du kan bruke appen uten å bekrefte; bekreftelsen trengs bare for å koble til en Google-konto.
+Etter at kontoen er opprettet, sender appen en e-post med en bekreftelseslenke som gjelder i 24 timer. Lokalt havner den i Mailpit på <http://localhost:54324>; åpne lenken der for å bekrefte e-postadressen. Du kan bruke appen uten å bekrefte; bekreftelsen trengs bare for å koble til en Google-konto.
 
 `LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. SMTP-verdiene i `.env` kan stå tomme lokalt; standardverdiene sender til Mailpit. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 

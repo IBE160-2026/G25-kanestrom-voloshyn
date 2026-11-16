@@ -35,7 +35,7 @@ _VERIFICATION = {
         "lines": [
             "Bekreft e-postadressen din ved å åpne denne lenken:",
             "{link}",
-            "Lenken virker i 24 timer. Du kan bruke Study Buddy uten å bekrefte; "
+            "Lenken gjelder i 24 timer. Du kan bruke Study Buddy uten å bekrefte; "
             "du trenger det bare for å koble til en Google-konto.",
             "Hvis du ikke har opprettet en konto, kan du se bort fra denne e-posten.",
         ],
