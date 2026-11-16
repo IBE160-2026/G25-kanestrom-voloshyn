@@ -49,8 +49,24 @@
   },
   "projects": {
     "empty": {
-      "heading": "Create your first project"
+      "body": "A project holds the notes for one course.",
+      "create": "Create your first project"
+    },
+    "new": "+ New project",
+    "newShort": "New project",
+    "placeholder": "New project",
+    "rename": "Rename",
+    "more": "More options for {{name}}",
+    "hide": "Hide projects",
+    "show": "Show projects"
+  },
+  "projectHome": {
+    "dropZone": {
+      "heading": "Upload your notes to start"
     }
+  },
+  "files": {
+    "header": "Files <muted>· {{n}} of 10</muted>"
   },
   "account": {
     "welcome": "Welcome, {{firstName}}",
@@ -94,6 +110,8 @@
     "http_error": "Something went wrong.",
     "internal_error": "Something went wrong.",
     "session_expired": "You've been signed out. Log in to continue.",
-    "auth_unavailable": "Something went wrong."
+    "auth_unavailable": "Something went wrong.",
+    "invalid_name": "Give the project a name.",
+    "project_read_only": "This project is read-only."
   }
 }

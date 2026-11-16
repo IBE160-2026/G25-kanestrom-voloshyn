@@ -102,7 +102,7 @@ describe('Create account', () => {
     })
     expect(router.state.location.pathname).toBe('/projects')
     expect(await screen.findByText('Welcome, Emma')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: en.projects.empty.heading })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: en.projects.empty.create })).toBeInTheDocument()
   })
 
   it('in Norwegian: sends nb and greets with "Velkommen, Emma"', async () => {
@@ -117,7 +117,7 @@ describe('Create account', () => {
       body: { first_name: 'Emma', language: 'nb' },
     })
     expect(await screen.findByText('Velkommen, Emma')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: nb.projects.empty.heading })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: nb.projects.empty.create })).toBeInTheDocument()
   })
 
   it('duplicate email: shows the error line with a Log in link and keeps the email', async () => {

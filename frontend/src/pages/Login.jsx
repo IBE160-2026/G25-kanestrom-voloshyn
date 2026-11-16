@@ -10,7 +10,8 @@ import ErrorLine from '../components/ErrorLine.jsx'
 import { LANGUAGES, setLanguage } from '../i18n/index.js'
 import styles from './Login.module.css'
 
-const HOME = '/projects' // until Epic 2 lands on the last Project
+// The Projects page; it forwards to the last opened Project when there is one (FR-8).
+const HOME = '/projects'
 
 // Login screen (FR-2, DESIGN.md › Login screen): email and password through supabase-js, then
 // POST /api/auth/after-sign-in, whose profile carries the Account's language (FR-29). Every
@@ -93,6 +94,7 @@ export default function Login() {
         if (result.error) return fail(result.error === 'credentials' ? 'credentials' : 'failed', 'password')
         setSignedIn(true)
       }
+      let landing = HOME
       try {
         const profile = await apiFetch('/api/auth/after-sign-in', {
           method: 'POST',
@@ -100,13 +102,15 @@ export default function Login() {
         })
         // The Account's language wins over this browser's (it follows the student, FR-29).
         if (LANGUAGES.includes(profile?.language)) await setLanguage(profile.language)
+        // Land on the last opened active Project (FR-8); a remembered route still wins.
+        if (typeof profile?.last_project_id === 'string') landing = `/projects/${profile.last_project_id}`
       } catch (err) {
         // The session is kept (an auth outage never signs out, AD-2); a retry repeats only this
         // step. If the backend refused the session, api/client.js has signed out: log in again.
         if (SIGNED_OUT_CODES.has(err?.code)) setSignedIn(false)
         return fail('failed', 'password')
       }
-      navigate(takeRememberedRoute() ?? HOME, { replace: true })
+      navigate(takeRememberedRoute() ?? landing, { replace: true })
     } finally {
       inFlight.current = false
       setBusy(false)

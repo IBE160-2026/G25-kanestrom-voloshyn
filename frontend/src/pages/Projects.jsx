@@ -1,43 +1,26 @@
-import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
-import ErrorLine from '../components/ErrorLine.jsx'
-import TopBar from '../components/TopBar.jsx'
-import { errorText } from '../i18n/errors.js'
+import { Navigate, useOutletContext } from 'react-router'
 import styles from './Projects.module.css'
 
-// Projects page, empty (Story 1.3): the top bar with the Account menu (Story 1.4) and the
-// empty-state heading. Nothing shows until /api/me answers. When the session has ended,
-// api/client.js and RequireSession take the student to Login, so no error is shown here.
-// The "Create your first project" action arrives with Story 2.1.
+// Projects page (FR-4, FR-8; DESIGN.md › Projects page (empty)). When the Account has a last opened
+// active Project, it goes there (login lands on it). Otherwise, with no active Project, it shows the
+// empty state: one muted sentence and "Create your first project", which creates a Project and
+// opens it. Nothing shows until the profile and the Projects have loaded.
 export default function Projects() {
   const { t } = useTranslation()
-  const [me, setMe] = useState(null)
-  const [error, setError] = useState(null)
+  const { me, activeProjects, creating, createProject } = useOutletContext()
 
-  useEffect(() => {
-    let live = true
-    apiFetch('/api/me')
-      .then((profile) => live && setMe(profile))
-      .catch((err) => {
-        if (live && !SIGNED_OUT_CODES.has(err?.code)) setError(err)
-      })
-    return () => {
-      live = false
-    }
-  }, [])
+  if (me?.last_project_id) return <Navigate to={`/projects/${me.last_project_id}`} replace />
+  if (!me || !activeProjects) return null
+  // No usable last Project but active ones exist: open the most recent (EXPERIENCE.md › No Projects).
+  if (activeProjects.length > 0) return <Navigate to={`/projects/${activeProjects[0].id}`} replace />
 
   return (
-    <div className={styles.page}>
-      <TopBar me={me} ready={Boolean(me || error)} />
-      <main className={styles.main} aria-busy={!me && !error}>
-        {me && (
-          <section className={styles.empty}>
-            <h1 className={styles.heading}>{t('projects.empty.heading')}</h1>
-          </section>
-        )}
-        {error && <ErrorLine>{errorText(t, error)}</ErrorLine>}
-      </main>
-    </div>
+    <section className={styles.empty}>
+      <p className={styles.body}>{t('projects.empty.body')}</p>
+      <button type="button" className={styles.primary} aria-busy={creating} onClick={createProject}>
+        {t('projects.empty.create')}
+      </button>
+    </section>
   )
 }

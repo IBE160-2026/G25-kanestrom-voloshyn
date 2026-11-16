@@ -11,7 +11,7 @@ from uuid import UUID
 from fastapi import Depends, Request
 
 from app import supabase_auth
-from app.api.deps import Conn
+from app.api.conn import Conn
 from app.db import profiles, sessions
 from app.errors import AppError
 
