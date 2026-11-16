@@ -10,3 +10,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-3-create-account.md`
   summary: Pin `user_auth`'s session lookup to the authenticated Account with a two-account stubbed test (session id from account B, Supabase reports account A → 401).
   evidence: Review pass 1, finding #19. Dropping `AND user_id = %s` in `db/sessions.py` fails no test. Real GoTrue already binds session and user in step 1, so the exposure is small. Add it when Story 1.4 extends the `user_auth` tests.
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3b-email-verification.md`
+  summary: Test that two overlapping first `after-sign-in` calls for one Account issue only one verification token and send one email (the profile-row lock in `issue_first`).
+  evidence: Review pass 1, finding #11. Dropping `FOR UPDATE` in `profiles.lock_email_verified_at` fails no test. A deterministic test needs two pooled connections with interleaved transactions. The partial unique index added in the same review limits the damage to one live token.
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3b-email-verification.md`
+  summary: The expired-verification screen offers no way forward until Story 7.3 adds "Resend verification email" in Settings (EXPERIENCE.md › Email verification).
+  evidence: Review pass 1, finding #12. The final UX doc expects a resend path; the epics place resend in Story 7.3. Make sure Story 7.3 links the expired screen to it.

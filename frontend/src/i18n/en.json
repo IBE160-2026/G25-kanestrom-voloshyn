@@ -28,6 +28,11 @@
       "heading": "Create your first project"
     }
   },
+  "verify": {
+    "success": "Your email is verified.",
+    "expired": "This link has expired",
+    "logIn": "Log in"
+  },
   "language": {
     "label": "Language",
     "toggle": {

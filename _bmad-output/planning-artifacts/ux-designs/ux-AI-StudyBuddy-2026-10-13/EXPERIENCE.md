@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-11-12
+updated: 2026-11-16
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -207,6 +207,8 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Password reset, new-password screen | "Choose a new password" · "Save password" [ASSUMPTION: copy] | Velg et nytt passord · Lagre passordet (proposed) |
 | Password reset saved | "Your password is changed. Log in with the new one." [ASSUMPTION: copy] | Passordet er endret. Logg inn med det nye. (proposed) |
 | Email verified | "Your email is verified." [ASSUMPTION: copy] | E-postadressen din er bekreftet. (proposed) |
+| Verification email, subject | "Confirm your email for Study Buddy" [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Bekreft e-postadressen din for Study Buddy (proposed) |
+| Verification email, body ({name} = first name, {link} = verify link) | "Hi {name}," · "Confirm your email address by opening this link:" · "{link}" · "The link works for 24 hours. You can use Study Buddy without confirming; you only need it to link a Google account." · "If you didn't create an account, you can ignore this email." [ASSUMPTION: copy, approved 2026-11-12 with Story 1.3 part 2] | Hei {name}, · Bekreft e-postadressen din ved å åpne denne lenken: · {link} · Lenken virker i 24 timer. Du kan bruke Study Buddy uten å bekrefte; du trenger det bare for å koble til en Google-konto. · Hvis du ikke har opprettet en konto, kan du se bort fra denne e-posten. (proposed) |
 | Projects page (empty) | "Create your first project" | Opprett ditt første prosjekt (proposed) |
 | Sidebar, new project | "+ New project" | + Nytt prosjekt (proposed) |
 | Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt (proposed) |

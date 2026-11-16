@@ -29,9 +29,13 @@ Appen kjører helt lokalt i mock-modus, uten API-nøkkel og uten betalte kall.
 6. Start appen: `docker compose up --build`
 7. Åpne <http://localhost:8000>
 
+Har du allerede kjørt Supabase fra en eldre versjon av repoet, start den på nytt etter `git pull` (`npx supabase stop && npx supabase start`), slik at Mailpit tar imot e-post på SMTP-port 54325, og kjør `npx supabase db reset` for nye migreringer.
+
 Opprett en konto på <http://localhost:8000/signup> (fornavn, e-post og et passord på minst 8 tegn); du havner da på Prosjekter-siden. Lenken «Opprett konto» på startsiden går dit.
 
-`LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. E-poster fra appen havner i Mailpit på <http://localhost:54324>. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
+Etter at kontoen er opprettet, sender appen en e-post med en bekreftelseslenke som virker i 24 timer. Lokalt havner den i Mailpit på <http://localhost:54324>; åpne lenken der for å bekrefte e-postadressen. Du kan bruke appen uten å bekrefte; bekreftelsen trengs bare for å koble til en Google-konto.
+
+`LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. SMTP-verdiene i `.env` kan stå tomme lokalt; standardverdiene sender til Mailpit. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 
 ### Utvikling
 

@@ -29,6 +29,11 @@
       "heading": "Opprett ditt første prosjekt"
     }
   },
+  "verify": {
+    "success": "E-postadressen din er bekreftet.",
+    "expired": "Denne lenken er utløpt",
+    "logIn": "Logg inn"
+  },
   "language": {
     "label": "Språk",
     "toggle": {

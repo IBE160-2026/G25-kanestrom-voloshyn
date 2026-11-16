@@ -36,3 +36,23 @@ async def get(conn: AsyncConnection, account_id: UUID) -> dict[str, Any] | None:
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(f"SELECT {_COLUMNS} FROM profiles WHERE account_id = %s", (account_id,))
         return await cur.fetchone()
+
+
+async def lock_email_verified_at(conn: AsyncConnection, account_id: UUID) -> tuple[bool, Any]:
+    """Lock the Account's profile row for this transaction; return (found, email_verified_at).
+
+    Serialises concurrent first-email checks for the same Account (AD-19).
+    """
+    cur = await conn.execute(
+        "SELECT email_verified_at FROM profiles WHERE account_id = %s FOR UPDATE", (account_id,)
+    )
+    row = await cur.fetchone()
+    return (False, None) if row is None else (True, row[0])
+
+
+async def mark_email_verified(conn: AsyncConnection, account_id: UUID) -> None:
+    """Set email_verified_at, keeping the first time it was set."""
+    await conn.execute(
+        "UPDATE profiles SET email_verified_at = COALESCE(email_verified_at, now()) WHERE account_id = %s",
+        (account_id,),
+    )
