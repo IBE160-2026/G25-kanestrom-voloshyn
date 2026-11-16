@@ -49,5 +49,13 @@ Punkt 1 fra forrige økt: oppdatere spec, akseptkriterier og epics med FR-30 og 
 - Beslutningen er ført i spec-ens `.memlog.md`. Commit `2a04fb3`, pushet.
 - Arkitektur-spinen: etter Cristoffers godkjenning er `scope` og `binds` endret til FR-1 til FR-30. AD-4 binder nå FR-30 (ingen regelendring), og det åpne punktet om norske strenger er markert som løst. Ført i spinens `.memlog.md`. Commit `13d1f1f`.
 
+- `test-data/` opprettet (commit `1c8a05a`, ikke pushet), etter `git pull` (ingenting nytt):
+  - Testdokumentet `photosynthesis-notes.md` (selvskrevet, CC0) med samme innhold som PDF (8 sider), PPTX og DOCX. Brukes til SM-4-sjekken (10 spørsmål, minst 9 med riktig kilde) og til FR-16-spørsmål som materialet ikke dekker (listet i `test-data/README.md`).
+  - Én fil per AD-6-utfall for PDF, PPTX, DOCX og TXT, pluss en ødelagt PDF og en `.rtf` som ikke støttes. Alle utfall er sjekket med `pdfplumber` og MarkItDown.
+  - Tre bilder med navnemarkører for FR-7 i mock-modus (`notes-photo.png`, `-partial`, `-unreadable`).
+  - Norsk eksempel `fotosyntese-notater.md` for FR-29 (språket i generert innhold).
+  - `make_samples.py` lager de binære filene på nytt fra tekstfilene.
+  - Ikke med: `.heic` (krever Apple-enhet) og svært store filer (lages i testene).
+
 ### Åpne punkter
 Ingen.
