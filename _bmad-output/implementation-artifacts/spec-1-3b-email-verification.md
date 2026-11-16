@@ -102,6 +102,34 @@ Email text (English, then Norwegian, proposed; `{name}` is the first name, `{lin
 - Given the grader flow, when a visitor creates an account at `http://localhost:8000/signup`, then the verification email appears in Mailpit, and opening its link in the browser shows "Your email is verified." and sets `profiles.email_verified_at`.
 - Given the source, when it is searched, then only `app/mailer.py` imports `aiosmtplib`, and no log call includes a token or an email address.
 
+### Review Findings
+
+Code review pass 2 (2026-11-16, run by Cristoffer: Blind Hunter, Edge Case Hunter, Verification Gap, Acceptance Auditor against `df32d84`).
+
+- [x] [Review][Decision → Patch] The first verification email can be blocked for good — resolved 2026-11-16 (Cristoffer chose option 1): `verifications.exists_for` now counts only links still within their 24 h, so the next sign-in after expiry sends a new link (at most once a day until verified); a stored-but-unsent link recovers the same way. New test `test_an_expired_first_link_is_replaced_on_the_next_sign_in` fails with the old query (checked). See Spec Change Log. Original finding: `issue_first` sends a first email only while `verifications.exists_for` finds no link that wasn't invalidated, and that check also counts expired links and links that were never sent. Verified cases: (a) the first link expires unused after 24 h: no later sign-in sends a new one; (b) the process stops between the commit and the background send: the unsent link stays live; (c) the send fails and the follow-up invalidation also fails (`services/verification.py:101-106`): same. In every case the Account gets no verification email until Story 7.3's resend, while PRD §5.5 and FR-1 (Core) say "resendable until verified". The matrix has no row for an expired first link. Sources: blind-hunter, edge-case-hunter, verification-gap, acceptance-auditor.
+- [x] [Review][Patch] The SMTP-down test asserts the address isn't logged, but not the token or the link [backend/tests/test_verification.py] — fixed: it also asserts that neither `token=` nor `/api/auth/verify` is in the log.
+- [x] [Review][Defer] No test sends two first `after-sign-in` calls at once (the profile-row lock) — deferred: already in `deferred-work.md` from pass 1 (#11).
+
+**Rejected (18):**
+- false: the Norwegian body says "Lenken virker i 24 timer" — changed to "gjelder" in `639a9ea` with the sign-off.
+- false: an old link verifies a changed email address — the email can't be changed in V1 (PRD §7.2, FR-27).
+- false: "Log in" on the success screen ignores an open session — Login sends a signed-in browser straight to `/projects`.
+- false: `issue()` without the row lock can hit the unique index — only `issue_first` (which locks) calls it today; Story 7.3 must lock too.
+- false: an address that needs SMTPUTF8 retries forever — Supabase refuses such addresses at sign-up (`validation_failed`).
+- false: the manual check's "same link again → expired" is a code bug — the code follows the matrix (Ihor's decision); the manual check line in this spec is out of date (fixing it means editing the spec under review).
+- low: the Code Map names `[inbucket]`, the file has `[local_smtp]` — recorded in Implementation Notes.
+- low: no production check of the SMTP settings and `APP_PUBLIC_URL` — V1 runs locally for the grader; a guard adds config branches.
+- low: compose passes a `.env` `SMTP_HOST` through — the example `.env` leaves it empty, so the Docker default applies.
+- low: old verification rows are never purged — a retention job is new scope.
+- low: a mail scanner's click counts as verification — a recorded decision (Ihor, 2026-11-16); the link still reached that inbox.
+- low: only `uvicorn.access` redacts `token=` — no other server or proxy in V1.
+- low: the two screen strings end with different punctuation — the strings are signed off as written.
+- low: a malformed `SMTP_FROM` fails only at send time — a config typo, logged by type.
+- low: a timeout after the server accepted the email invalidates a delivered link — rare, and the fix needs error-type branching.
+- low: credentials can go over plain SMTP when `SMTP_TLS=none` — a configuration choice; Mailpit needs none.
+- low: `/email-verified` shows success when opened directly — nobody reaches it without a link; the fix spans backend and SPA.
+- low: existing unverified Accounts get a first email on their next sign-in after the migration — intended; only local data exists.
+
 ## Implementation Notes
 
 - Installed `aiosmtplib` 5.1.3. Migration `supabase/migrations/20261116120000_email_verifications.sql` (`token_hash` is the 64-char hex SHA-256, plus an `account_id` index); RLS on, `anon`/`authenticated` revoked. Applied locally with `npx supabase migration up --local`.
@@ -118,6 +146,8 @@ Email text (English, then Norwegian, proposed; `{name}` is the first name, `{lin
 - `docker compose up -d --build` again hit the bake entitlement prompt; the image was built with `docker build -t g25-kanestrom-voloshyn-app .` and started with `docker compose up -d --no-build`.
 
 ## Spec Change Log
+
+- 2026-11-16, code review pass 2, decided by Cristoffer: a new matrix row, outside the frozen block. **Expired first link, then sign-in:** the first link expired unused; `after-sign-in` is called again → a new link is issued and sent, and the old one stays expired. This keeps FR-1's "resendable until verified" (Core) without waiting for Story 7.3. The manual check's "open the same link again and see the expired screen" is out of date: for a verified Account a used link shows the success screen (matrix "Used link").
 
 ## Review Triage Log
 

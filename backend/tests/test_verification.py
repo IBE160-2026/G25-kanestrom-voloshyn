@@ -192,6 +192,9 @@ def test_smtp_down_answers_200_and_the_next_sign_in_sends_a_fresh_link(
     assert response.json()["first_name"] == "Emma"
     assert "Verification email could not be sent" in caplog.text
     assert email not in caplog.text
+    # Neither the link nor its token reaches the log on the failure path.
+    assert "token=" not in caplog.text
+    assert "/api/auth/verify" not in caplog.text
     assert messages_to(mailpit, email) == []
     # The unsent token was invalidated in its own transaction.
     live = db.execute(
@@ -205,6 +208,29 @@ def test_smtp_down_answers_200_and_the_next_sign_in_sends_a_fresh_link(
     [message] = messages_to(mailpit, email, expect=1)
     assert open_link(client, link_in(message)).headers["location"] == "/email-verified"
     assert verified_at(db, account_id) is not None
+
+
+def test_an_expired_first_link_is_replaced_on_the_next_sign_in(client, gotrue, db, created, mailpit):
+    # FR-1: resendable until verified. The 24 h have passed and the link was never opened.
+    body = sign_up_and_greet(client, gotrue, created, mailpit)
+    email, account_id = body["user"]["email"], body["user"]["id"]
+    old_link = link_in(messages_to(mailpit, email, expect=1)[0])
+    db.execute(
+        "UPDATE email_verifications SET expires_at = now() - interval '1 second' WHERE account_id = %s", (account_id,)
+    )
+
+    again = client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
+    assert again.status_code == 200, again.text
+    messages = messages_to(mailpit, email, expect=2)
+    assert len(messages) == 2
+    new_link = next(link for link in map(link_in, messages) if link != old_link)
+    assert open_link(client, old_link).headers["location"] == "/email-verified?status=expired"
+    assert open_link(client, new_link).headers["location"] == "/email-verified"
+    assert verified_at(db, account_id) is not None
+
+    # Once verified, a later sign-in sends nothing more.
+    client.post("/api/auth/after-sign-in", headers=bearer(body["access_token"]), json={})
+    assert len(messages_to(mailpit, email, expect=3, timeout=1)) == 2
 
 
 def test_no_first_email_without_an_email_identity(client, gotrue, db, created, mailpit, stub_auth):

@@ -43,8 +43,10 @@ async def issue(conn: AsyncConnection, account_id: UUID) -> str:
 async def issue_first(conn: AsyncConnection, account_id: UUID, has_email_identity: bool) -> str | None:
     """Issue the first verification token, or None when no first email is due.
 
-    Due only when the Account has an email identity, its email isn't verified, and it has no link
-    that wasn't invalidated (none issued yet, or the earlier ones failed to send). The profile row is locked, so concurrent calls issue at most one token.
+    Due only when the Account has an email identity, its email isn't verified, and it has no live
+    link: none issued yet, the earlier ones failed to send, or the last one expired (then each
+    sign-in after the 24 h sends a new one, FR-1). The profile row is locked, so concurrent calls
+    issue at most one token.
     """
     if not has_email_identity:
         return None

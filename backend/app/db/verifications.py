@@ -10,9 +10,18 @@ from psycopg import AsyncConnection
 
 
 async def exists_for(conn: AsyncConnection, account_id: UUID) -> bool:
-    """Whether the Account has a link that was not invalidated (unused, used, or expired)."""
+    """Whether the Account has a link that is still within its 24 h and was not invalidated.
+
+    An expired link doesn't count, so the next sign-in sends a new one (FR-1: resendable until
+    verified). That also recovers a link that was stored but never sent (a crash before the send,
+    or a failed invalidation after a failed send): at most a day later.
+    """
     cur = await conn.execute(
-        "SELECT 1 FROM email_verifications WHERE account_id = %s AND invalidated_at IS NULL LIMIT 1",
+        """
+        SELECT 1 FROM email_verifications
+        WHERE account_id = %s AND invalidated_at IS NULL AND expires_at > now()
+        LIMIT 1
+        """,
         (account_id,),
     )
     return await cur.fetchone() is not None
