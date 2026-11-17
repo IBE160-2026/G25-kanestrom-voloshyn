@@ -140,7 +140,9 @@
     "project_read_only": "This project is read-only.",
     "unsupported_file_type": "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC.",
     "material_limit_reached": "A project can hold 10 files. Remove one to add another.",
-    "privacy_notice_required": "Accept the note on how your files are used before your first upload."
+    "privacy_notice_required": "Accept the note on how your files are used before your first upload.",
+    "llm_unavailable": "The AI service isn't responding right now.",
+    "llm_output_invalid": "Something went wrong."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

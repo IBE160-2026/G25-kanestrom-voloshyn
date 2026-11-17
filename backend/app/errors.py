@@ -8,6 +8,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.llm.errors import LLMOutputError, ProviderError
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,6 +54,16 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def _app_error(_: Request, exc: AppError) -> JSONResponse:
         return error_response(exc.status, exc.code, exc.message, exc.params)
+
+    # LLM gateway errors (AD-3): the provider couldn't answer, or its reply stayed invalid.
+    @app.exception_handler(ProviderError)
+    async def _llm_unavailable(_: Request, exc: ProviderError) -> JSONResponse:
+        logger.warning("LLM provider error: %s", type(exc).__name__)
+        return error_response(503, "llm_unavailable", "The AI service isn't responding")
+
+    @app.exception_handler(LLMOutputError)
+    async def _llm_output_invalid(_: Request, exc: LLMOutputError) -> JSONResponse:
+        return error_response(502, "llm_output_invalid", "The AI service returned invalid output")
 
     @app.exception_handler(StarletteHTTPException)
     async def _http_error(_: Request, exc: StarletteHTTPException) -> JSONResponse:

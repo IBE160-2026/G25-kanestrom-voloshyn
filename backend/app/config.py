@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # LLM (AD-3, AD-4). Resolved at startup by resolve_llm_mode().
     llm_mode: LlmMode | None = None
     openrouter_api_key: SecretStr | None = None
+    # OpenRouter model id for text tasks; required when LLM_MODE=live (AD-3).
+    llm_text_model: str | None = None
+    # Seconds before a provider request gives up (AD-3).
+    llm_timeout_seconds: float = Field(60, gt=0, le=600)
+    # Milliseconds every mock task waits, so progress steps and cancel can be exercised (AD-4).
+    llm_mock_delay_ms: int = Field(0, ge=0, le=600_000)
 
     # Database: direct Postgres URL (AD-16, AD-29).
     database_url: SecretStr = SecretStr("postgresql://postgres:postgres@127.0.0.1:54322/postgres")
