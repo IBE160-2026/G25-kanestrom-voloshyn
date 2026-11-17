@@ -60,3 +60,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-3-see-the-privacy-notice-before-my-first-upload.md`
   summary: Story 6.1 must gate "Upload from phone" with the same Privacy notice and make new phone links fail with `privacy_notice_required` until it is accepted (AD-19, EXPERIENCE.md › Upload buttons).
   evidence: Story 2.3 review pass 1 (Blind Hunter). Story 2.3 gates the computer's Upload, browse, and drops only; the phone entry doesn't exist yet.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4a-llm-gateway-and-test-mode.md`
+  summary: Story 2.4b (the original Story 2.4) — after a Material commits as Ready, `projects.auto_name_if_unnamed` calls `llm.name_project` outside any write transaction and saves with `WHERE name_source IS NULL`; a failure leaves the name NULL and retries after the next Ready file; the SPA re-reads the Project (2 s, ≤ 30 s) so the name appears without a refresh (FR-4, AD-14).
+  evidence: Split from Story 2.4 by Cristoffer on 2026-11-17 to keep each spec near the size limit; it builds on 2.4a's gateway and `name_project` task.
