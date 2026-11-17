@@ -1,0 +1,96 @@
+/* Files panel (DESIGN.md › Files panel; mock key-project-home.html › .files). */
+.panel {
+  flex: none;
+  width: var(--space-files-panel-width);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4);
+  overflow-y: auto;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+}
+
+/* A file dragged over the panel. */
+.over {
+  outline: 1px dashed var(--color-primary);
+  outline-offset: calc(var(--space-1) * -2);
+}
+
+.heading {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-weight: var(--type-body-weight);
+}
+
+/* Upload buttons: small ghost button (DESIGN.md › Button (ghost)), 44px touch target. */
+.upload {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-4);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.upload:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.upload:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.hint {
+  margin-top: calc(var(--space-1) * -1);
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+.errors {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.failedName {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  font-weight: var(--type-button-weight);
+}
+
+/* Empty: dashed box. */
+.empty {
+  padding: var(--space-4) var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0;
+}
+
+/* Skeleton (DESIGN.md › Skeleton): static, no shimmer. */
+.skeleton {
+  height: var(--space-7);
+  background: var(--color-border);
+  border-radius: var(--radius-lg);
+}

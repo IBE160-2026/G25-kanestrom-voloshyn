@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-11-16
+updated: 2026-11-17
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -217,6 +217,9 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Project placeholder name | "New project" [ASSUMPTION: copy] | Nytt prosjekt |
 | Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} |
 | Upload drop zone | "Upload your notes to start" · "Upload from phone" | Last opp notatene dine for å starte · Last opp fra mobilen |
+| Upload drop zone, body ("browse" opens the file picker) | "Drop files here or browse. When a file is ready, you can ask about it and make quizzes, flashcards, and summaries." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Slipp filer her eller velg fra maskinen. Når en fil er klar, kan du spørre om den og lage quizer, treningskort og sammendrag. |
+| Supported-types caption (drop zone and Files panel) | "PDF, Word, PowerPoint, text, or Markdown · up to 50 MB each" [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | PDF, Word, PowerPoint, tekst eller Markdown · opptil 50 MB hver |
+| Files panel, empty | "No files yet. Your notes will show up here." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Ingen filer ennå. Notatene dine dukker opp her. |
 | Upload buttons | "Upload" · "Upload from phone" | Last opp · Last opp fra mobilen |
 | Privacy notice, title | "Before your first upload" [ASSUMPTION: copy] | Før du laster opp første gang |
 | Privacy notice, body | "Study Buddy sends your files to an external AI service (through OpenRouter) to make your quizzes, flashcards, summaries, and answers. Your files are used only for your own study material, aren't shared with other users, and aren't kept by the AI service." [ASSUMPTION: copy; claims limited to architecture AD-3] | Study Buddy sender filene dine til en ekstern KI-tjeneste (via OpenRouter) for å lage quizer, treningskort, sammendrag og svar til deg. Filene dine brukes bare til ditt eget studiemateriale, deles ikke med andre brukere og lagres ikke av KI-tjenesten. |
@@ -225,6 +228,9 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | File, partly unreadable note | "Everything we could read is ready to study." | Alt vi klarte å lese, er klart til bruk. |
 | File, phone batch with unreadable pages | "Page {page} couldn't be read." (one page) · "Pages {pages} couldn't be read." (several) [ASSUMPTION: copy] | Side {page} kunne ikke leses. · Sidene {pages} kunne ikke leses. |
 | File, unreadable image | "This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick." | Bildet er for uskarpt til å leses, så vi kan ikke studere fra det. Et skarpere bilde i godt lys pleier å hjelpe. |
+| File, rejected: too little text (`unreadable`) | "We couldn't read enough text in this file. It doesn't count toward your 10 files." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Vi fikk ikke lest nok tekst i denne filen. Den teller ikke blant de 10 filene dine. |
+| File, rejected: can't be opened (`unparseable`) | "This file couldn't be opened. It may be damaged or password-protected." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Filen kunne ikke åpnes. Den kan være skadet eller passordbeskyttet. |
+| File, rejected: reading stopped (`interrupted`, `processing_failed`) | "Reading stopped. Upload the file again." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Lesingen stoppet. Last opp filen på nytt. |
 | Upload, unsupported type | "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC." [ASSUMPTION: copy] | Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC. |
 | Upload, over 50 MB | "This file is over 50 MB." [ASSUMPTION: copy] | Filen er over 50 MB. |
 | Upload, 11th file | "A project can hold 10 files. Remove one to add another." [ASSUMPTION: copy] | Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny. |

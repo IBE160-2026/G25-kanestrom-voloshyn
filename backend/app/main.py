@@ -1,23 +1,31 @@
 """FastAPI app: /api/* routes, the /api catch-all, and the built SPA on one origin (AD-17)."""
 
+import asyncio
 import logging
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 from fastapi import APIRouter, FastAPI
 
 from app import supabase_auth
 from app.api import auth as auth_api
 from app.api import config as config_api
+from app.api import jobs as jobs_api
+from app.api import materials as materials_api
 from app.api import me as me_api
 from app.api import projects as projects_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
-from app.services import password_reset
+from app.services import jobs, materials, password_reset
+from app.storage import Storage
 
 logger = logging.getLogger(__name__)
+
+# Seconds between restart-sweep attempts while the database is still coming up.
+SWEEP_RETRY_SECONDS = 5.0
 
 ALL_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
@@ -53,6 +61,8 @@ def _api_router() -> APIRouter:
     api.include_router(auth_api.router)
     api.include_router(me_api.router)
     api.include_router(projects_api.router)
+    api.include_router(materials_api.router)
+    api.include_router(jobs_api.router)
 
     # Registered last, so it only catches paths no real API route matched.
     @api.api_route("", methods=ALL_METHODS, include_in_schema=False)
@@ -61,6 +71,22 @@ def _api_router() -> APIRouter:
         return error_response(404, "not_found", "No API route matches this path")
 
     return api
+
+
+async def _sweep_until_done(pool, kinds: dict[str, jobs.JobKind]) -> None:
+    """The restart sweep (AD-20), retried until the database answers. Only jobs created before this
+    process started are swept, so it never touches the jobs this process runs. The start time is the
+    database's own clock (`SELECT now()`, taken once), the same clock as `created_at`."""
+    started_at: datetime | None = None
+    while True:
+        try:
+            if started_at is None:
+                started_at = await jobs.database_now(pool)
+            await jobs.sweep_interrupted(pool, kinds, started_at)
+            return
+        except Exception as exc:  # noqa: BLE001 -- retried until the database is up
+            logger.warning("Restart sweep failed, retrying: %s", type(exc).__name__)
+            await asyncio.sleep(SWEEP_RETRY_SECONDS)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -79,10 +105,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # The one HTTP client for Supabase Auth (AD-2).
         http = supabase_auth.create_client(settings)
         app.state.http = http
+        storage = Storage(http, settings)
+        app.state.storage = storage
+        # In-process background jobs (AD-20, AD-29), then the restart sweep for the previous process.
+        kinds = {materials.KIND: materials.processing_kind(settings, storage)}
+        runner = jobs.Runner(pool, kinds, settings.jobs_max_concurrent)
+        app.state.runner = runner
+        sweep = asyncio.create_task(_sweep_until_done(pool, kinds))
+        app.state.sweep = sweep
         try:
             yield
         finally:
-            # Let running reset emails finish before their pool and client close.
+            sweep.cancel()
+            await asyncio.gather(sweep, return_exceptions=True)
+            # Let running jobs and reset emails finish before their pool and client close.
+            await runner.drain()
             await password_reset.drain()
             await http.aclose()
             await pool.close()

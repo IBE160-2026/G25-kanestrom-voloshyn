@@ -1,5 +1,6 @@
-// An in-memory stand-in for the backend's profile and Projects routes (Story 2.1), installed on the
-// mocked apiFetch. The test file must mock '../api/client.js' (test/mocks.js clientMock) first.
+// An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
+// 2.2) routes, installed on the mocked apiFetch. The test file must mock '../api/client.js'
+// (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
 
@@ -17,14 +18,39 @@ export function project(id, overrides = {}) {
   }
 }
 
+export function material(id, overrides = {}) {
+  return {
+    id,
+    file_name: `${id}.pdf`,
+    file_type: 'pdf',
+    size_bytes: 1000,
+    status: 'ready',
+    reject_reason: null,
+    warning: false,
+    warning_pages: [],
+    created_at: '2026-11-17T10:00:00Z',
+    ...overrides,
+  }
+}
+
 const notFound = () => ({ code: 'not_found', params: {} })
+const TYPES = { pdf: 'pdf', docx: 'docx', pptx: 'pptx', txt: 'txt', md: 'md' }
 
 /**
- * Install the fake. `projects` is newest first, as the server sends it. `routes` overrides a
- * handler by "METHOD /path" (for example 'POST /api/projects'). Returns the live state.
+ * Install the fake. `projects` is newest first, as the server sends it. `materials` maps a Project
+ * id to its files; `jobs` lists jobs ({id, project_id, kind, status}). An upload adds a processing
+ * file and a running job. `routes` overrides a handler by "METHOD /path" (for example
+ * 'POST /api/projects'). Returns the live state.
  */
-export function fakeApi({ me = PROFILE, projects = [], routes = {} } = {}) {
-  const state = { me: { ...me }, projects: projects.map((p) => ({ ...p })), created: 0 }
+export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = [], routes = {} } = {}) {
+  const state = {
+    me: { ...me },
+    projects: projects.map((p) => ({ ...p })),
+    materials: Object.fromEntries(Object.entries(materials).map(([id, list]) => [id, list.map((m) => ({ ...m }))])),
+    jobs: jobs.map((j) => ({ ...j })),
+    created: 0,
+    uploaded: 0,
+  }
 
   vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
     const override = routes[`${method} ${path}`]
@@ -47,6 +73,33 @@ export function fakeApi({ me = PROFILE, projects = [], routes = {} } = {}) {
       const created = project(`new-${state.created}`)
       state.projects.unshift(created)
       return created
+    }
+
+    const files = path.match(/^\/api\/projects\/([^/]+)\/(materials|jobs)$/)
+    if (files) {
+      const [, id, what] = files
+      if (!state.projects.some((p) => p.id === id)) throw notFound()
+      if (what === 'jobs' && method === 'GET') {
+        return state.jobs.filter((j) => j.project_id === id && (['queued', 'running'].includes(j.status) || !j.seen))
+      }
+      if (what === 'materials' && method === 'GET') return (state.materials[id] ?? []).map((m) => ({ ...m }))
+      if (what === 'materials' && method === 'POST') {
+        const file = body.get('file')
+        state.uploaded += 1
+        const ext = String(file.name).split('.').pop().toLowerCase()
+        const created = material(`m-${state.uploaded}`, { file_name: file.name, file_type: TYPES[ext] ?? ext, status: 'processing' })
+        state.materials[id] = [...(state.materials[id] ?? []), created]
+        const job = { id: `j-${state.uploaded}`, project_id: id, kind: 'material_processing', status: 'running', result_ref: created.id }
+        state.jobs.push(job)
+        return { material: { ...created }, job_id: job.id }
+      }
+    }
+    const seen = path.match(/^\/api\/jobs\/([^/]+)\/seen$/)
+    if (seen && method === 'POST') {
+      const job = state.jobs.find((j) => j.id === seen[1])
+      if (!job) throw notFound()
+      job.seen = true
+      return null
     }
 
     const match = path.match(/^\/api\/projects\/([^/]+)$/)
@@ -74,4 +127,14 @@ export function callsTo(path, method = 'GET') {
   return vi
     .mocked(apiFetch)
     .mock.calls.filter(([p, options = {}]) => p === path && (options.method ?? 'GET') === method)
+}
+
+/** Finish a file's processing in the fake: the Material gets `changes`, its job completes. */
+export function finish(state, materialId, changes = { status: 'ready' }) {
+  for (const list of Object.values(state.materials)) {
+    const found = list.find((m) => m.id === materialId)
+    if (found) Object.assign(found, changes)
+  }
+  const job = state.jobs.find((j) => j.result_ref === materialId)
+  if (job) job.status = 'completed'
 }

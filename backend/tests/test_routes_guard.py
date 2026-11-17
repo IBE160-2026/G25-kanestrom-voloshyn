@@ -22,6 +22,7 @@ ALLOWLIST = {
     ("PATCH", "/api/me"),
     ("PATCH", "/api/me/prefs"),
     ("POST", "/api/projects"),
+    ("POST", "/api/jobs/{job_id}/seen"),
 }
 
 # The /api catch-all only answers 404 not_found (AD-17).
@@ -75,6 +76,14 @@ def test_rename_is_guarded():
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     rename = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}" and "PATCH" in r.methods)
     assert active_project in _calls(rename.dependant)
+
+
+def test_upload_is_guarded():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    upload = next(
+        r for r in api_routes(app) if r.path == "/api/projects/{project_id}/materials" and "POST" in r.methods
+    )
+    assert active_project in _calls(upload.dependant)
 
 
 def test_allowlist_names_only_existing_routes():

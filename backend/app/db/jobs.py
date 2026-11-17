@@ -1,0 +1,143 @@
+"""The `generation_jobs` repository (AD-20). Only `services/jobs` calls it. Plain SQL; never commits."""
+
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from psycopg import AsyncConnection
+from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
+
+_COLUMNS = (
+    "id, account_id, project_id, kind, params, status, progress_step, cancel_requested, result_ref, error_code, "
+    "created_at, finished_at, seen_at"
+)
+ACTIVE = "status IN ('queued', 'running')"
+
+
+async def insert(
+    conn: AsyncConnection,
+    *,
+    account_id: UUID,
+    project_id: UUID,
+    kind: str,
+    params: dict[str, Any],
+    result_ref: UUID | None,
+) -> dict[str, Any]:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            INSERT INTO generation_jobs (account_id, project_id, kind, params, result_ref)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING {_COLUMNS}
+            """,
+            (account_id, project_id, kind, Jsonb(params), result_ref),
+        )
+        return await cur.fetchone()
+
+
+async def claim(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
+    """queued -> running at the `reading` step; None when the job is no longer queued or was cancelled."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs SET status = 'running', progress_step = 'reading'
+            WHERE id = %s AND status = 'queued' AND NOT cancel_requested
+            RETURNING {_COLUMNS}
+            """,
+            (job_id,),
+        )
+        return await cur.fetchone()
+
+
+async def get_for_update(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(f"SELECT {_COLUMNS} FROM generation_jobs WHERE id = %s FOR UPDATE", (job_id,))
+        return await cur.fetchone()
+
+
+async def finish(
+    conn: AsyncConnection, job_id: UUID, status: str, *, error_code: str | None = None, result_ref: UUID | None = None
+) -> dict[str, Any] | None:
+    """Move an active job to `completed`, `failed`, or `cancelled`."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET status = %s, error_code = %s, result_ref = coalesce(%s, result_ref), progress_step = NULL,
+                finished_at = now()
+            WHERE id = %s AND {ACTIVE}
+            RETURNING {_COLUMNS}
+            """,
+            (status, error_code, result_ref, job_id),
+        )
+        return await cur.fetchone()
+
+
+async def now(conn: AsyncConnection) -> datetime:
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT now()")
+        return (await cur.fetchone())[0]
+
+
+async def fail_active_before(conn: AsyncConnection, started_at: datetime, error_code: str) -> list[dict[str, Any]]:
+    """The restart sweep: every job still queued or running from before this process started."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET status = 'failed', error_code = %s, progress_step = NULL, finished_at = now()
+            WHERE {ACTIVE} AND created_at < %s
+            RETURNING {_COLUMNS}
+            """,
+            (error_code, started_at),
+        )
+        return await cur.fetchall()
+
+
+async def project_deleted(conn: AsyncConnection, project_id: UUID) -> bool:
+    """True when the Project is gone or soft-deleted; locks the row so a delete can't slip in (AD-20)."""
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT deleted_at FROM projects WHERE id = %s FOR SHARE", (project_id,))
+        row = await cur.fetchone()
+        return row is None or row[0] is not None
+
+
+async def any_material_removed(conn: AsyncConnection, material_ids: list[UUID]) -> bool:
+    """True when a cited Material is gone or removed; locks the rows until the save commits (AD-5, AD-20)."""
+    if not material_ids:
+        return False
+    async with conn.cursor() as cur:
+        await cur.execute(
+            "SELECT id, removed_at FROM study_materials WHERE id = ANY(%s) FOR UPDATE", (material_ids,)
+        )
+        rows = await cur.fetchall()
+    return len(rows) < len(set(material_ids)) or any(removed_at is not None for _, removed_at in rows)
+
+
+async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
+    """Active jobs and finished ones not yet seen, oldest first (AD-20)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            SELECT {_COLUMNS} FROM generation_jobs
+            WHERE project_id = %s AND account_id = %s AND ({ACTIVE} OR seen_at IS NULL)
+            ORDER BY created_at, id
+            """,
+            (project_id, account_id),
+        )
+        return await cur.fetchall()
+
+
+async def mark_seen(conn: AsyncConnection, account_id: UUID, job_id: UUID) -> bool:
+    """Dismiss a finished job; an active one stays unseen. False when there is no such job."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET seen_at = CASE WHEN {ACTIVE} THEN seen_at ELSE coalesce(seen_at, now()) END
+            WHERE id = %s AND account_id = %s
+            """,
+            (job_id, account_id),
+        )
+        return cur.rowcount == 1

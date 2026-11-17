@@ -79,12 +79,14 @@ export class ApiError extends Error {
 }
 
 /**
- * Call the backend. `body` is sent as JSON; `auth: false` skips the bearer token (only /api/config).
- * Resolves with the parsed JSON (or null for 204); rejects with an ApiError.
+ * Call the backend. `body` is sent as JSON, except a FormData body (a file upload), which goes as is
+ * so the browser sets the multipart Content-Type with its boundary. `auth: false` skips the bearer
+ * token (only /api/config). Resolves with the parsed JSON (or null for 204); rejects with an ApiError.
  */
 export async function apiFetch(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { Accept: 'application/json' }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const raw = typeof FormData !== 'undefined' && body instanceof FormData
+  if (body !== undefined && !raw) headers['Content-Type'] = 'application/json'
   let token = null
   if (auth) {
     token = await getAccessToken()
@@ -96,7 +98,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true } = {})
     response = await fetch(path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined || raw ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, { code: 'network_error' })

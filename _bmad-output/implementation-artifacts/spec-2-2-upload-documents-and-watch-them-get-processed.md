@@ -2,9 +2,10 @@
 title: 'Story 2.2: Upload documents and watch them get processed'
 type: 'feature'
 created: '2026-11-17'
-status: 'ready-for-dev'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 0
+baseline_commit: '9c42995acb283b7cad3da618b6d39f20350239fe'
 context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-2-context.md'
   - '{project-root}/_bmad-output/implementation-artifacts/spec-2-1-create-open-and-rename-projects.md'
@@ -77,17 +78,17 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `supabase/migrations/<ts>_study_materials.sql` -- `study_materials(id, project_id → projects cascade, account_id, file_name, file_type, size_bytes, status check, reject_reason check, warning bool, warning_pages int[], removed_at, created_at)`, `sections(id, material_id cascade, position, label, text, tsv tsvector generated with the 'simple' config, gin index)`, `generation_jobs` (AD-20 columns and checks), the private `study-materials` bucket, RLS on, and access revoked from the browser keys.
-- [ ] `backend/app/storage.py` -- put and delete an object over httpx with the secret key; path `{account_id}/{project_id}/{material_id}/original`.
-- [ ] `backend/app/extraction/` -- `pdf.py`, `office.py` (MarkItDown; slide split), `text.py` (headings, then ~500-word packing), `integrity.py` (pure AD-6 rules returning outcome, reason, and warning pages); `extract(path, type)` runs in `to_thread`.
-- [ ] `backend/app/services/jobs.py`, `db/jobs.py` -- `enqueue`, the runner (semaphore, kept task refs), the save transaction locking the job and aborting on a removed Material or deleted Project, `sweep_interrupted`, `list_for_project` (active plus finished-unseen), `mark_seen`.
-- [ ] `backend/app/services/materials.py`, `db/materials.py` -- `upload` (steps 1–4), the processing handler and save plan, `on_terminal`, `list_for_project`.
-- [ ] `backend/app/api/materials.py`, `api/jobs.py` -- `POST/GET /api/projects/{project_id}/materials` (multipart field `file`), `GET /api/projects/{project_id}/jobs`, `POST /api/jobs/{job_id}/seen`.
-- [ ] `backend/tests/` -- every matrix row using the `test-data/` files, the parallel-at-9 test, the restart sweep, the storage delete after reject, concurrency ≤ 3, and route-guard allowlist updates.
-- [ ] `frontend/src/api/client.js` -- FormData passthrough plus a test.
-- [ ] `frontend/src/pages/ProjectHome.jsx`, `components/FilesPanel.jsx`, `components/FileRow.jsx` + CSS -- Upload button, drag and drop on the drop zone and panel, sequential uploads, file rows with status dots and notes, "Files · n of 10", 2 s polling while any file is Reading…, and the Inline error for upload refusals.
-- [ ] `frontend/src/i18n/en.json`, `nb.json` -- the existing EXPERIENCE strings plus the approved drafts; mirror the drafts into EXPERIENCE.md.
-- [ ] Frontend tests -- the matrix rows on the SPA side, polling starting and stopping, keyboard upload, and both languages.
+- [x] `supabase/migrations/<ts>_study_materials.sql` -- `study_materials(id, project_id → projects cascade, account_id, file_name, file_type, size_bytes, status check, reject_reason check, warning bool, warning_pages int[], removed_at, created_at)`, `sections(id, material_id cascade, position, label, text, tsv tsvector generated with the 'simple' config, gin index)`, `generation_jobs` (AD-20 columns and checks), the private `study-materials` bucket, RLS on, and access revoked from the browser keys.
+- [x] `backend/app/storage.py` -- put and delete an object over httpx with the secret key; path `{account_id}/{project_id}/{material_id}/original`.
+- [x] `backend/app/extraction/` -- `pdf.py`, `office.py` (MarkItDown; slide split), `text.py` (headings, then ~500-word packing), `integrity.py` (pure AD-6 rules returning outcome, reason, and warning pages); `extract(path, type)` runs in `to_thread`.
+- [x] `backend/app/services/jobs.py`, `db/jobs.py` -- `enqueue`, the runner (semaphore, kept task refs), the save transaction locking the job and aborting on a removed Material or deleted Project, `sweep_interrupted`, `list_for_project` (active plus finished-unseen), `mark_seen`.
+- [x] `backend/app/services/materials.py`, `db/materials.py` -- `upload` (steps 1–4), the processing handler and save plan, `on_terminal`, `list_for_project`.
+- [x] `backend/app/api/materials.py`, `api/jobs.py` -- `POST/GET /api/projects/{project_id}/materials` (multipart field `file`), `GET /api/projects/{project_id}/jobs`, `POST /api/jobs/{job_id}/seen`.
+- [x] `backend/tests/` -- every matrix row using the `test-data/` files, the parallel-at-9 test, the restart sweep, the storage delete after reject, concurrency ≤ 3, and route-guard allowlist updates.
+- [x] `frontend/src/api/client.js` -- FormData passthrough plus a test.
+- [x] `frontend/src/pages/ProjectHome.jsx`, `components/FilesPanel.jsx`, `components/FileRow.jsx` + CSS -- Upload button, drag and drop on the drop zone and panel, sequential uploads, file rows with status dots and notes, "Files · n of 10", 2 s polling while any file is Reading…, and the Inline error for upload refusals.
+- [x] `frontend/src/i18n/en.json`, `nb.json` -- the existing EXPERIENCE strings plus the approved drafts; mirror the drafts into EXPERIENCE.md.
+- [x] Frontend tests -- the matrix rows on the SPA side, polling starting and stopping, keyboard upload, and both languages.
 
 **Acceptance Criteria:**
 - Given three files dropped at once, when they upload, then they go one after another and each row appears as "Reading…" at once.
@@ -106,6 +107,50 @@ context:
 
 ## Implementation Notes
 
+- (Revised after review pass 1.) `ActiveProject` now calls `projects.check_active`, which gives the same 404/409 without a row lock. Services take the lock with `require_active` where they mutate. Upload follows AD-5's order: validate → `storage.put` → `require_active` (Project row `FOR UPDATE`) + slot re-check → insert + enqueue. The lock is never held during the storage upload. A loser of the parallel-at-9 race has its stored original deleted on rollback.
+- The job gets the uploaded bytes in memory (`Runner.submit(job, payload)`), not a file path, so `extraction.extract(data, file_type)` takes bytes. A job queued when the process stops is swept to `interrupted` on the next start, so nothing needs the bytes after a restart.
+- (Revised after review pass 1.) `api/conn.py` has `after_commit(request, cb)` and `on_rollback(request, cb)`. `request_conn` runs them right after the commit or the rollback, before the response is sent. The upload route submits the job as an after-commit callback, so the job starts even if the response is never delivered. `materials.upload` registers deleting the stored original as an on-rollback callback. The restart sweep takes `started_at` from Postgres `now()`.
+- The restart sweep runs as a startup task that retries every 5 s until the database answers (the pool opens with `wait=False`), and only fails jobs created before this process started, so it never touches jobs the new process runs.
+- `.docx` and `.pptx` are converted with MarkItDown's own `DocxConverter` / `PptxConverter` (not `MarkItDown.convert`), so a mismatched file fails to parse instead of falling back to plain text. `.txt`/`.md` decode as UTF-8, then Windows-1252; a NUL byte means binary (`unparseable`). Paged files keep empty pages as Sections, so positions match page numbers. Non-paged labels: the part's heading, else "Part n"; slides: "Slide n" or "Slide n: Title".
+- A rejected Material keeps no Sections. A completed job's after-commit step deletes a rejected original; `on_terminal` does the same for failed, cancelled, or interrupted jobs.
+- New settings: `JOBS_MAX_CONCURRENT`, `INTEGRITY_MIN_PAGE_CHARS`, `INTEGRITY_PAGED_ACCEPT_RATIO`, `INTEGRITY_PAGED_REJECT_RATIO`, `INTEGRITY_MIN_TOTAL_CHARS`, `INTEGRITY_TEXT_ACCEPT_CHARS`.
+- `supabase_auth._admin_headers` became public `admin_headers` so `storage.py` reuses it without naming the secret key (the boundary test keeps the key in `supabase_auth.py`).
+- SPA: the drop zone shows until a file is Ready (EXPERIENCE.md › Upload drop zone: "Replaced by the chat once a file is Ready"); the chat column is then empty until the chat story. Type and size are pre-checked in the SPA (same codes, no request); the server still enforces them. Rule refusals show the Inline error with the file name and the message only; network or server failures add the reassurance and "Try again". Polling reads `GET …/jobs` every 2 s only while a file is Reading…, refetches the list when a `material_processing` job finishes, and marks it seen.
+- Copy reused, flagged for review: the warn note for PDF and .pptx names pages with the phone-batch strings ("Page {page}…" / "Pages {pages}…"), also for slides. The approved `unsupported_file_type` text still lists JPG, PNG, and HEIC, which are refused until Story 2.5.
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+Pass 1 (blind = Blind Hunter, edge = Edge Case Hunter, gap = Verification Gap):
+
+| # | Source | Finding | Verdict | Evidence / route |
+|---|---|---|---|---|
+| 1 | blind, edge, gap | The job is started by a response background task; if the response isn't delivered, the job never starts, and the file stays Reading… holding a slot (and the SPA polls) until restart | high | `background.add_task(runner.start, …)` in `api/materials.py`. Patch: run after-commit callbacks in `request_conn` right after the commit, before the response |
+| 2 | blind, edge, gap | A commit failure after `storage.put` leaves an orphaned original | medium | The `except BaseException` only covers insert/enqueue. Patch: an on-rollback callback in the same hook deletes it |
+| 3 | blind, edge, gap | The Project row is locked `FOR UPDATE` (and a write transaction held) during the 50 MB storage upload | medium | `active_project` → locking `require_active` runs before the handler. Against AD-5's order (store, then lock and insert) and AD-18. Patch: `ActiveProject` checks without a lock; services take the lock (`require_active`) where they mutate; upload stores first, then locks, re-checks the slots, and inserts |
+| 4 | blind, edge | The whole multipart body is received before a 413 | medium | No body limit before parsing. Defer: request-size cap (hardening) |
+| 5 | blind, edge | Queued uploads keep up to 50 MB each in memory with no bound | medium | One instance, one demo user at a time; unverified at scale. Defer |
+| 6 | blind, edge | No timeout or size guard for parsers (hang, zip bomb) | medium | `to_thread` can't be cancelled. Defer: per-job timeout + limits |
+| 7 | blind, edge | Threshold settings aren't checked against each other | low | Misconfiguration only; a new validator. Rejected |
+| 8 | blind, edge | A Storage failure answers `500 internal_error` | low | Generic, retryable error is acceptable. Rejected |
+| 9 | blind, edge, gap | Restart sweep compares the app clock with the DB clock; the "created before start" rule is untested | low | Direct correction: take `started_at` from `SELECT now()`. Patch + test |
+| 10 | blind | "Files · n of 10" leaves out rows still uploading | low | Visible after a multi-file drop; counting them is a direct correction. Patch |
+| 11 | blind | The unsupported-type text lists JPG/PNG/HEIC, refused until 2.5 | low | True once 2.5 ships. Defer: edit if 2.5 is cut |
+| 12 | blind | UTF-16 `.txt` is rejected as unparseable | low | Rare; new decoding branch. Rejected |
+| 13 | blind, edge | A >500-word block without blank lines loses its line breaks | low | Rare; splitting rework. Rejected |
+| 14 | edge | `# ` lines inside Markdown code fences split Sections | low | Rare; new parser state. Rejected |
+| 15 | blind | Sprint status and spec status disagree | false | Sprint moves to `review` in step 5 by design. Rejected |
+| 16 | gap | The "Project deleted during processing" abort is untested | medium | Patch: test |
+| 17 | gap, blind | A cancelled job's deletion of the original is unasserted | medium | Patch: assert storage is empty |
+| 18 | gap | Upload cleanup after a failed insert/enqueue is untested | medium | Patch: test |
+| 19 | gap, blind, edge | SPA fallback refetch when no active job is returned is untested | medium | Patch: test |
+| 20 | blind | No composite FK for account consistency | low | Every write is scoped by account. Rejected |
+| 21 | blind | ≥ 80 % readable pages get no warning | false | AD-6: ≥ 80 % is "accept". Rejected |
+| 22 | blind | A new upload clears earlier retryable refusals | low | Minor; rejected |
+| 23 | blind | `aria-live` on the whole list re-announces it | low | Polite region; rework needed. Rejected |
+| 24 | edge | A poll can add the new file before the POST response, giving a duplicate row | low | Direct correction: merge by id. Patch |
+| 25 | edge | A stale list response can drop a just-added file | low | Rare race; rejected |
+| 26 | edge | A file dropped outside the drop targets makes the browser open it and leave the app | medium | Patch: prevent the default drop on the window while on the Project home |
+| 27 | edge | A queued job with `cancel_requested` is never finished | low | No cancel route exists yet. Defer to Story 2.7 (`cancel_for_material`) |
+| 28 | edge | `extract` takes bytes, not a path | false | Recorded deviation; no harm. Rejected |

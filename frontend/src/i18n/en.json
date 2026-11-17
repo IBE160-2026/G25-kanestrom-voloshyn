@@ -62,11 +62,32 @@
   },
   "projectHome": {
     "dropZone": {
-      "heading": "Upload your notes to start"
+      "heading": "Upload your notes to start",
+      "body": "Drop files here or <browse>browse</browse>. When a file is ready, you can ask about it and make quizzes, flashcards, and summaries."
     }
   },
   "files": {
-    "header": "Files <muted>· {{n}} of 10</muted>"
+    "header": "Files <muted>· {{n}} of 10</muted>",
+    "upload": "Upload",
+    "types": "PDF, Word, PowerPoint, text, or Markdown · up to 50 MB each",
+    "empty": "No files yet. Your notes will show up here.",
+    "status": {
+      "processing": "Reading…",
+      "ready": "Ready",
+      "warning": "Ready, partly unreadable",
+      "rejected": "Rejected"
+    },
+    "note": {
+      "warning": "Everything we could read is ready to study.",
+      "pages_one": "Page {{pages}} couldn't be read.",
+      "pages_other": "Pages {{pages}} couldn't be read."
+    },
+    "reason": {
+      "unreadable": "We couldn't read enough text in this file. It doesn't count toward your 10 files.",
+      "unparseable": "This file couldn't be opened. It may be damaged or password-protected.",
+      "interrupted": "Reading stopped. Upload the file again.",
+      "processing_failed": "Reading stopped. Upload the file again."
+    }
   },
   "account": {
     "welcome": "Welcome, {{firstName}}",
@@ -112,6 +133,12 @@
     "session_expired": "You've been signed out. Log in to continue.",
     "auth_unavailable": "Something went wrong.",
     "invalid_name": "Give the project a name.",
-    "project_read_only": "This project is read-only."
+    "project_read_only": "This project is read-only.",
+    "unsupported_file_type": "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC.",
+    "material_limit_reached": "A project can hold 10 files. Remove one to add another."
+  },
+  "inlineError": {
+    "reassurance": "Nothing you've made is lost.",
+    "retry": "Try again"
   }
 }

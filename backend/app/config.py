@@ -65,6 +65,19 @@ class Settings(BaseSettings):
     supabase_auth_external_google_client_id: str = ""
     supabase_auth_external_google_secret: SecretStr | None = None
 
+    # Background jobs run in-process, at most this many at once (AD-20, AD-29).
+    jobs_max_concurrent: int = Field(3, ge=1, le=32)
+
+    # Content Integrity thresholds (AD-6). A readable page or slide has at least this many characters.
+    integrity_min_page_chars: int = Field(20, ge=1)
+    # Paged files (PDF, .pptx): share of readable pages to accept, and below which to reject.
+    integrity_paged_accept_ratio: float = Field(0.8, gt=0, le=1)
+    integrity_paged_reject_ratio: float = Field(0.3, ge=0, le=1)
+    # Every format: fewer characters in total than this rejects.
+    integrity_min_total_chars: int = Field(200, ge=0)
+    # Non-paged files (.docx, .txt, .md): at least this many characters to accept without a warning.
+    integrity_text_accept_chars: int = Field(1000, ge=0)
+
     # Built SPA served by FastAPI (AD-17).
     frontend_dist: Path = REPO_ROOT / "frontend" / "dist"
 
