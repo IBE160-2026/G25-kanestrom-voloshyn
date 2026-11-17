@@ -141,7 +141,9 @@
     "project_read_only": "Dette prosjektet kan bare leses.",
     "unsupported_file_type": "Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC.",
     "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny.",
-    "privacy_notice_required": "Godta merknaden om hvordan filene dine brukes før du laster opp første gang."
+    "privacy_notice_required": "Godta merknaden om hvordan filene dine brukes før du laster opp første gang.",
+    "llm_unavailable": "KI-tjenesten svarer ikke akkurat nå.",
+    "llm_output_invalid": "Noe gikk galt."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

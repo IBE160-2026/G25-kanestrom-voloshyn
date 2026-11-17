@@ -19,6 +19,7 @@ from app.api import projects as projects_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
+from app.llm import create_gateway
 from app.services import jobs, materials, password_reset
 from app.storage import Storage
 
@@ -98,6 +99,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         _redact_access_log()
         app.state.llm_mode = resolve_llm_mode(settings)
         logger.info("Starting (APP_ENV=%s, LLM mode=%s)", settings.app_env, app.state.llm_mode)
+        # The one LLM gateway (AD-3, AD-4); no client and no network in mock mode.
+        llm = create_gateway(settings, app.state.llm_mode)
+        app.state.llm = llm
         pool = create_pool(settings)
         # wait=False: the app starts even while the database is still coming up.
         await pool.open(wait=False)
@@ -122,6 +126,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             await runner.drain()
             await password_reset.drain()
             await http.aclose()
+            await llm.aclose()
             await pool.close()
 
     # Docs live under /api (AD-17). FastAPI registers them in __init__, before the catch-all.

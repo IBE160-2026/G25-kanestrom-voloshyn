@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 16:55
-last_updated: 11-17-2026 14:31
+last_updated: 11-17-2026 19:15
 project: AI-StudyBuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -49,7 +49,7 @@ development_status:
   2-2-upload-documents-and-watch-them-get-processed: done
   2-2b-collapse-the-files-panel-to-the-files-strip: done
   2-3-see-the-privacy-notice-before-my-first-upload: done
-  2-4a-llm-gateway-and-test-mode: ready-for-dev
+  2-4a-llm-gateway-and-test-mode: review
   2-4-my-project-names-itself-from-its-first-file: backlog
   2-5-upload-photos-of-my-notes: backlog
   2-6-see-and-edit-the-topics-in-each-file: backlog

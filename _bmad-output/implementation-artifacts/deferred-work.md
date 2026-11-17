@@ -64,3 +64,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4a-llm-gateway-and-test-mode.md`
   summary: Story 2.4b (the original Story 2.4) — after a Material commits as Ready, `projects.auto_name_if_unnamed` calls `llm.name_project` outside any write transaction and saves with `WHERE name_source IS NULL`; a failure leaves the name NULL and retries after the next Ready file; the SPA re-reads the Project (2 s, ≤ 30 s) so the name appears without a refresh (FR-4, AD-14).
   evidence: Split from Story 2.4 by Cristoffer on 2026-11-17 to keep each spec near the size limit; it builds on 2.4a's gateway and `name_project` task.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-4a-llm-gateway-and-test-mode.md`
+  summary: Verify that the live gateway's `strict: true` json_schema (with `minLength`/`maxLength` from Pydantic) is accepted by the chosen `LLM_TEXT_MODEL` under `require_parameters` and `zdr`, before Story 2.4b relies on it.
+  evidence: medium, unverified — strict structured-output modes may reject those keywords, which would surface as `llm_unavailable`; settle it with one real OpenRouter call (or strip the keywords from the sent schema and keep local validation).
