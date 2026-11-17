@@ -18,3 +18,5 @@
 - [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Manuell nettlesersjekk av story 2.2, deretter merge av `feature/2-2-upload` til `main`. (løst 2026-11-17, merge 7b4c197)
 - [ ] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.5: meldingen `unsupported_file_type` nevner JPG/PNG/HEIC, som avvises frem til bildestøtte er bygget.
 - [x] 2026-11-17 [story-2-2b-files-strip](994-2026-11-17-14-04-48-story-2-2b-files-strip.md) — Manuell nettlesersjekk av story 2.2b, deretter merge av `feature/2-2b-files-strip` til `main`. (løst 2026-11-17, merge 0d49e29)
+- [ ] 2026-11-17 [story-2-3-privacy-notice](993-2026-11-17-14-22-44-story-2-3-privacy-notice.md) — Godkjenn feilteksten for `privacy_notice_required` (utkast i spec 2.3) og før den inn i EXPERIENCE.md.
+- [ ] 2026-11-17 [story-2-3-privacy-notice](993-2026-11-17-14-22-44-story-2-3-privacy-notice.md) — Manuell nettlesersjekk av story 2.3, deretter merge av `feature/2-3-privacy-notice` til `main`.
