@@ -15,4 +15,5 @@
 - [x] 2026-11-17 [story-2-1-projects](996-2026-11-17-00-04-49-story-2-1-projects.md) — Manuell nettlesersjekk av story 2.1, deretter merge av `feature/2-1-projects` til `main`. (løst 2026-11-17, merge 8df7e38)
 - [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Implementer story 2.2 fra godkjent spec (ny `bmad-build`-økt, gren `feature/2-2-upload`).
 - [ ] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.2b: fil-panelet legges sammen til fil-stripa (etter 2.2).
-- [ ] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Manuell nettlesersjekk av story 2.2, deretter merge av `feature/2-2-upload` til `main`.
+- [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Manuell nettlesersjekk av story 2.2, deretter merge av `feature/2-2-upload` til `main`. (løst 2026-11-17, merge 7b4c197)
+- [ ] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.5: meldingen `unsupported_file_type` nevner JPG/PNG/HEIC, som avvises frem til bildestøtte er bygget.
