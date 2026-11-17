@@ -80,6 +80,17 @@ async def enqueue(
     )
 
 
+async def cancel_for_material(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> None:
+    """Cancel the work on a removed Material (AD-20, AD-23), in the caller's transaction.
+
+    A queued job is finished as `cancelled` at once and never runs. A running one gets
+    `cancel_requested`; the runner's save step then ends it `cancelled` without saving. The only
+    writer of `cancel_requested`.
+    """
+    await repo.cancel_queued_for(conn, account_id, material_id)
+    await repo.request_cancel_running_for(conn, account_id, material_id)
+
+
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
     return await repo.list_for_project(conn, account_id, project_id)
 

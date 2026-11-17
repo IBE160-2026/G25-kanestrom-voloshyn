@@ -91,6 +91,16 @@
       "unparseable": "This file couldn't be opened. It may be damaged or password-protected.",
       "interrupted": "Reading stopped. Upload the file again.",
       "processing_failed": "Reading stopped. Upload the file again."
+    },
+    "remove": {
+      "menu": "More options for {{name}}",
+      "item": "Remove",
+      "title": "Remove {{name}}?",
+      "body": "Quizzes, flashcards, and summaries made from this file stay. Its mistakes stay in your review.",
+      "reading": "Reading stops and the file won't be added.",
+      "cancel": "Cancel",
+      "confirm": "Remove",
+      "failed": "We couldn't remove the file."
     }
   },
   "account": {

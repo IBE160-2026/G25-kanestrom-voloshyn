@@ -216,6 +216,8 @@ export default function ProjectHome() {
         </div>
       </section>
       <FilesPanel
+        // Keyed by Project: an open Remove dialog or a removal error never carries over (Story 2.7).
+        key={projectId}
         files={files}
         loading={!ready && !failed}
         readOnly={readOnly}

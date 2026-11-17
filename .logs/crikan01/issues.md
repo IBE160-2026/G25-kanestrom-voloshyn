@@ -25,3 +25,5 @@
 - [ ] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Før 2.4b: test AI-gatewayen mot en ekte OpenRouter-modell (strict json_schema med lengdegrenser).
 - [x] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — Manuell nettlesersjekk av 2.4b (navnet dukker opp uten omlasting; rename under navngiving). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — En ukjent frontend-test feilet én gang (mulig ustabil); følg med.
+- [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Manuell nettlesersjekk av 2.7 (fjern klar, leser…- og avvist fil; fokus inn i dialogen).
+- [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.

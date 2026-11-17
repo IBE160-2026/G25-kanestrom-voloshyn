@@ -65,7 +65,7 @@ async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: 
 
 
 async def get_for_update(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> dict[str, Any] | None:
-    """The Material, locked until the transaction ends; for the job's save transaction (AD-5)."""
+    """The Material, locked until the transaction ends; for the job's save transaction and removal (AD-5)."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             f"SELECT {_COLUMNS}, removed_at FROM study_materials WHERE id = %s AND account_id = %s FOR UPDATE",
@@ -110,3 +110,18 @@ async def set_rejected(
             (reason, material_id, account_id),
         )
         return await cur.fetchone()
+
+
+async def mark_removed(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> None:
+    """The removal tombstone (AD-23): the row stays, with its file name; it no longer lists or counts."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            "UPDATE study_materials SET removed_at = now() WHERE id = %s AND account_id = %s AND removed_at IS NULL",
+            (material_id, account_id),
+        )
+
+
+async def empty_sections(conn: AsyncConnection, material_id: UUID) -> None:
+    """Empty each Section's text on removal (AD-23); `tsv` follows, labels and positions stay."""
+    async with conn.cursor() as cur:
+        await cur.execute("UPDATE sections SET text = '' WHERE material_id = %s AND text <> ''", (material_id,))

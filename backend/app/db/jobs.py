@@ -74,6 +74,51 @@ async def finish(
         return await cur.fetchone()
 
 
+async def cancel_queued_for(conn: AsyncConnection, account_id: UUID, result_ref: UUID) -> list[dict[str, Any]]:
+    """Finish every queued job working on `result_ref` as `cancelled`, so it never runs.
+
+    Skips rows another transaction holds (`SKIP LOCKED`): only `claim` locks a queued job, and a job it
+    claims is caught at its save step instead (the removed Material aborts it). Waiting would risk a
+    deadlock with the runner, which locks the job before the Project and Material rows.
+    """
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET status = 'cancelled', progress_step = NULL, finished_at = now()
+            WHERE id IN (
+                SELECT id FROM generation_jobs
+                WHERE account_id = %s AND result_ref = %s AND status = 'queued'
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING {_COLUMNS}
+            """,
+            (account_id, result_ref),
+        )
+        return await cur.fetchall()
+
+
+async def request_cancel_running_for(conn: AsyncConnection, account_id: UUID, result_ref: UUID) -> int:
+    """Set `cancel_requested` on every running job working on `result_ref`; its save step cancels it.
+
+    `SKIP LOCKED` for the same reason as `cancel_queued_for`: a locked running job is in its save
+    transaction, which waits for this one and then sees the removed Material.
+    """
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE generation_jobs SET cancel_requested = true
+            WHERE id IN (
+                SELECT id FROM generation_jobs
+                WHERE account_id = %s AND result_ref = %s AND status = 'running' AND NOT cancel_requested
+                FOR UPDATE SKIP LOCKED
+            )
+            """,
+            (account_id, result_ref),
+        )
+        return cur.rowcount
+
+
 async def now(conn: AsyncConnection) -> datetime:
     async with conn.cursor() as cur:
         await cur.execute("SELECT now()")

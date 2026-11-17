@@ -1,9 +1,11 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
+import { SIGNED_OUT_CODES } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
 import ErrorLine from './ErrorLine.jsx'
 import FileRow from './FileRow.jsx'
 import InlineError from './InlineError.jsx'
+import RemoveFileDialog from './RemoveFileDialog.jsx'
 import styles from './FilesPanel.module.css'
 import { useDropTarget } from './useDropTarget.js'
 
@@ -13,10 +15,57 @@ import { useDropTarget } from './useDropTarget.js'
 // "Hide files" collapses it to the Files strip: "Show files", a files icon, "{n} of 10", and a
 // warning icon when a file is partly unreadable or rejected (Story 2.2b). "Upload from phone"
 // arrives with Epic 6.
+//
+// Removing a file (Story 2.7, FR-20): a row's "···" → Remove opens the Remove file dialog, which shows
+// the live file (it closes if the file leaves the list); a Rejected row's "Remove" goes at once, several
+// may be in flight, and each failure shows its own Inline error ("Try again" unless the Project is
+// read-only). After a removal the row leaves, the count updates, and focus goes to the Upload button.
+// A read-only Project removes nothing. ProjectHome keys the panel by Project, so none of this state
+// carries over to another Project.
 export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle, onPrivacyInfo }) {
   const { t } = useTranslation()
   const heading = useId()
-  const { materials, pending, failures, loadError, upload, retry } = files
+  const { materials, pending, failures, loadError, upload, retry, remove } = files
+  const canRemove = !readOnly && typeof remove === 'function'
+  const [target, setTarget] = useState(null) // { id, trigger } while the dialog is open
+  const [removingNow, setRemovingNow] = useState(() => new Set()) // ids of Rejected files in flight
+  const [removeErrors, setRemoveErrors] = useState([]) // [{ material, error, retry }]
+  const uploadButton = useRef(null)
+  const focusUpload = useRef(false)
+  // The dialog shows the file as it is now; once it leaves the list (removed), the dialog closes and
+  // focus goes to Upload (the row's "···" trigger left with it).
+  const targetMaterial = target ? ((materials ?? []).find((m) => m.id === target.id) ?? null) : null
+  const targetGone = target !== null && targetMaterial === null
+  useEffect(() => {
+    if (targetGone) uploadButton.current?.focus()
+  }, [targetGone])
+  useEffect(() => {
+    if (!focusUpload.current || targetMaterial !== null) return
+    focusUpload.current = false
+    uploadButton.current?.focus()
+  })
+  const editRemoving = (id, inFlight) =>
+    setRemovingNow((ids) => {
+      const next = new Set(ids)
+      if (inFlight) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  async function removeNow(material) {
+    setRemoveErrors((list) => list.filter((e) => e.material.id !== material.id))
+    editRemoving(material.id, true)
+    try {
+      await remove(material)
+      focusUpload.current = true
+    } catch (error) {
+      if (!SIGNED_OUT_CODES.has(error?.code)) {
+        const retry = error?.code !== 'project_read_only'
+        setRemoveErrors((list) => [...list, { material, error, retry }])
+      }
+    } finally {
+      editRemoving(material.id, false)
+    }
+  }
   const { over, handlers } = useDropTarget(upload, !readOnly && !loading)
   // Reading… counts toward 10, also while the file is still uploading (AD-5).
   const count = (materials ?? []).filter((m) => m.status !== 'rejected').length + pending.length
@@ -100,7 +149,7 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
       </div>
       {!loading && (
         <>
-          <button type="button" className={styles.upload} onClick={onBrowse} disabled={readOnly}>
+          <button ref={uploadButton} type="button" className={styles.upload} onClick={onBrowse} disabled={readOnly}>
             {t('files.upload')}
           </button>
           <p className={styles.hint}>{t('files.types')}</p>
@@ -112,8 +161,14 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
         </>
       )}
       {loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}
-      {failures.length > 0 && (
+      {(failures.length > 0 || removeErrors.length > 0) && (
         <div className={styles.errors}>
+          {removeErrors.map(({ material, error, retry: canRetry }) => (
+            <InlineError key={`remove-${material.id}`} onRetry={canRetry ? () => removeNow(material) : undefined}>
+              <span className={styles.failedName}>{material.file_name}</span>
+              {canRetry ? t('files.remove.failed') : errorText(t, error)}
+            </InlineError>
+          ))}
           {failures.map((failure) => (
             <InlineError
               key={failure.key}
@@ -132,10 +187,22 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
       {rows.length > 0 && (
         <ul className={styles.list} aria-live="polite">
           {rows.map(({ key, material }) => (
-            <FileRow key={key} material={material} />
+            <FileRow
+              key={key}
+              material={material}
+              onRemove={canRemove ? (m, trigger) => setTarget({ id: m.id, trigger }) : undefined}
+              onRemoveNow={canRemove ? removeNow : undefined}
+              removing={removingNow.has(material.id)}
+            />
           ))}
         </ul>
       )}
+      <RemoveFileDialog
+        material={targetMaterial}
+        returnFocus={target?.trigger ?? null}
+        onRemove={remove}
+        onClose={() => setTarget(null)}
+      />
     </aside>
   )
 }
