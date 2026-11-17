@@ -21,6 +21,8 @@ class Me(BaseModel):
     ui_prefs: dict[str, Any]
     # Where login lands; only set while that Project is active (FR-8).
     last_project_id: UUID | None
+    # The one-time Privacy notice before the first upload has been accepted (FR-6, AD-19).
+    privacy_notice_accepted: bool
 
 
 class MeUpdate(BaseModel):
@@ -52,6 +54,7 @@ def to_me(profile: dict[str, Any]) -> Me:
         email_verified=profile["email_verified_at"] is not None,
         ui_prefs=profile["ui_prefs"] or {},
         last_project_id=profile["last_project_id"],
+        privacy_notice_accepted=profile["privacy_notice_ack_at"] is not None,
     )
 
 
@@ -69,3 +72,12 @@ async def patch_me(body: MeUpdate, user: UserAuth, conn: Conn) -> Me:
 async def patch_prefs(body: PrefsUpdate, user: UserAuth, conn: Conn) -> Me:
     prefs = body.model_dump(mode="json", exclude_none=True)
     return to_me(await identity.set_prefs(conn, user.account_id, prefs))
+
+
+@router.post("/me/privacy-notice", response_model=Me)
+async def accept_privacy_notice(user: UserAuth, conn: Conn) -> Me:
+    """Accept the Privacy notice (FR-6, AD-19). Idempotent.
+
+    Account bookkeeping, not a Project content change, so it is on the AD-22 route-guard allowlist.
+    """
+    return to_me(await identity.accept_privacy_notice(conn, user.account_id))

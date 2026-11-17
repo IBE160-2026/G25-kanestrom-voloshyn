@@ -28,7 +28,7 @@ from app.config import Settings
 from app.db import materials as repo
 from app.errors import AppError
 from app.extraction import integrity
-from app.services import jobs, projects
+from app.services import identity, jobs, projects
 from app.storage import Storage, material_path
 
 logger = logging.getLogger(__name__)
@@ -105,6 +105,9 @@ async def upload(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Steps 1-4 of the upload pipeline (AD-5). Returns (material, job); the caller submits the job
     after the commit. `on_rollback` registers work to run if the request transaction rolls back."""
+    # The Privacy notice gate comes first (AD-19): without acceptance nothing is validated, stored, or
+    # inserted. (The request body itself has already been received by then.)
+    await identity.require_privacy_ack(conn, account_id)
     file_name = clean_file_name(raw_file_name)
     file_type, content_type = validate(file_name, len(data))
 

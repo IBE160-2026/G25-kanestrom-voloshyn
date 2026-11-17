@@ -38,8 +38,11 @@ PDF = "application/pdf"
 
 
 @pytest.fixture
-def student(gotrue, created, db, settings) -> dict:
+def student(gotrue, created, db, settings, client) -> dict:
     body = sign_up(gotrue, created)
+    # Uploads need the Privacy notice accepted first (Story 2.3); new_student() covers the refusal.
+    accepted = client.post("/api/me/privacy-notice", headers=bearer(body["access_token"]))
+    assert accepted.status_code == 200, accepted.text
     yield {"token": body["access_token"], "id": body["user"]["id"]}
     # Accounts are deleted through the admin API afterwards; their stored originals go here.
     delete_objects(db, settings, body["user"]["id"])
@@ -593,3 +596,62 @@ def test_tables_are_closed_to_the_browser_keys(db):
 
 def test_settings_default_to_three_concurrent_jobs():
     assert Settings(_env_file=None).jobs_max_concurrent == 3
+
+
+# --- The Privacy notice gate (Story 2.3, FR-6, AD-19) ---
+
+
+def test_upload_without_the_privacy_notice_is_refused_and_nothing_is_stored(client, gotrue, created, db):
+    body = sign_up(gotrue, created)
+    headers = bearer(body["access_token"])
+    project_id = client.post("/api/projects", headers=headers).json()["id"]
+    me = client.get("/api/me", headers=headers).json()
+    assert me["privacy_notice_accepted"] is False
+
+    response = client.post(
+        f"/api/projects/{project_id}/materials", headers=headers, files={"file": ("notes.md", b"# Notes\n" * 50)}
+    )
+
+    assert_error(response, 403, "privacy_notice_required")
+    assert db.execute("SELECT count(*) FROM study_materials WHERE project_id = %s", (project_id,)).fetchone()[0] == 0
+    assert stored_objects_for_account(db, body["user"]["id"]) == 0
+
+
+def test_accepting_the_privacy_notice_is_saved_once_and_unlocks_uploads(client, gotrue, created, db):
+    body = sign_up(gotrue, created)
+    headers = bearer(body["access_token"])
+
+    first = client.post("/api/me/privacy-notice", headers=headers)
+    assert first.status_code == 200, first.text
+    assert first.json()["privacy_notice_accepted"] is True
+    at = db.execute("SELECT privacy_notice_ack_at FROM profiles WHERE account_id = %s", (body["user"]["id"],)).fetchone()[0]
+
+    again = client.post("/api/me/privacy-notice", headers=headers)
+    assert again.status_code == 200
+    # Idempotent: the first acceptance time is kept.
+    assert db.execute(
+        "SELECT privacy_notice_ack_at FROM profiles WHERE account_id = %s", (body["user"]["id"],)
+    ).fetchone()[0] == at
+    assert client.get("/api/me", headers=headers).json()["privacy_notice_accepted"] is True
+
+
+def test_privacy_notice_without_token_is_unauthorized(client):
+    assert_error(client.post("/api/me/privacy-notice"), 401, "unauthorized")
+
+
+def stored_objects_for_account(db, account_id: str) -> int:
+    return db.execute(
+        "SELECT count(*) FROM storage.objects WHERE bucket_id = 'study-materials' AND name LIKE %s",
+        (f"{account_id}/%",),
+    ).fetchone()[0]
+
+def test_the_privacy_gate_comes_before_the_file_checks(client, gotrue, created):
+    body = sign_up(gotrue, created)
+    headers = bearer(body["access_token"])
+    project_id = client.post("/api/projects", headers=headers).json()["id"]
+
+    response = client.post(
+        f"/api/projects/{project_id}/materials", headers=headers, files={"file": ("notes.rtf", b"{\\rtf1 x}")}
+    )
+
+    assert_error(response, 403, "privacy_notice_required")

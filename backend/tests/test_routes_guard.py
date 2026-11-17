@@ -21,6 +21,7 @@ ALLOWLIST = {
     ("POST", "/api/auth/after-password-reset"),
     ("PATCH", "/api/me"),
     ("PATCH", "/api/me/prefs"),
+    ("POST", "/api/me/privacy-notice"),
     ("POST", "/api/projects"),
     ("POST", "/api/jobs/{job_id}/seen"),
 }

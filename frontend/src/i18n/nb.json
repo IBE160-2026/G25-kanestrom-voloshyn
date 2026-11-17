@@ -140,10 +140,19 @@
     "invalid_name": "Gi prosjektet et navn.",
     "project_read_only": "Dette prosjektet kan bare leses.",
     "unsupported_file_type": "Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC.",
-    "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny."
+    "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny.",
+    "privacy_notice_required": "Godta merknaden om hvordan filene dine brukes før du laster opp første gang."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",
     "retry": "Prøv igjen"
+  },
+  "privacyNotice": {
+    "title": "Før du laster opp første gang",
+    "body": "Study Buddy sender filene dine til en ekstern KI-tjeneste (via OpenRouter) for å lage quizer, treningskort, sammendrag og svar til deg. Filene dine brukes bare til ditt eget studiemateriale, deles ikke med andre brukere og lagres ikke av KI-tjenesten.",
+    "cancel": "Avbryt",
+    "accept": "Forstått, last opp",
+    "link": "Slik brukes filene dine",
+    "close": "Lukk"
   }
 }

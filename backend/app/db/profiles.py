@@ -7,7 +7,7 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-_COLUMNS = "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id"
+_COLUMNS = "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id, privacy_notice_ack_at"
 
 
 async def ensure(conn: AsyncConnection, account_id: UUID) -> None:
@@ -88,4 +88,12 @@ async def merge_ui_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[st
         WHERE account_id = %(account_id)s
         """,
         {"top": Jsonb(prefs), "files": Jsonb(files) if files is not None else None, "account_id": account_id},
+    )
+
+
+async def accept_privacy_notice(conn: AsyncConnection, account_id: UUID) -> None:
+    """Record the Privacy notice acceptance once; a repeat keeps the first time (FR-6, AD-19)."""
+    await conn.execute(
+        "UPDATE profiles SET privacy_notice_ack_at = coalesce(privacy_notice_ack_at, now()) WHERE account_id = %s",
+        (account_id,),
     )

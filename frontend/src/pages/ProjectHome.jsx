@@ -4,6 +4,7 @@ import { useNavigate, useOutletContext, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
+import PrivacyNotice from '../components/PrivacyNotice.jsx'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
@@ -24,8 +25,48 @@ export default function ProjectHome() {
   const navigate = useNavigate()
   const { projectId } = useParams()
   const picker = useRef(null)
-  const files = useProjectFiles(projectId)
-  const { me, upsertProject, markOpened, forgetProject, saveFilesCollapsed } = useOutletContext()
+  const projectFiles = useProjectFiles(projectId)
+  const { me, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
+    useOutletContext()
+
+  // Privacy notice (Story 2.3, FR-6, §5.3): until the Account has accepted it, Upload, "browse", and
+  // a drop open it first; "Got it, upload" saves the acceptance and continues that action.
+  const accepted = me?.privacy_notice_accepted === true
+  const [notice, setNotice] = useState(null) // { mode: 'ask' | 'info', files?, picker? }
+  const [noticeBusy, setNoticeBusy] = useState(false)
+  const [noticeError, setNoticeError] = useState(null)
+  const acceptance = useRef(null) // the pending save, which a picker upload waits for
+  const gatedUpload = (list) => {
+    const chosen = Array.from(list ?? [])
+    if (chosen.length === 0) return
+    if (accepted) return projectFiles.upload(chosen)
+    setNoticeError(null)
+    setNotice({ mode: 'ask', files: chosen })
+  }
+  const files = { ...projectFiles, upload: gatedUpload }
+  async function acceptNotice() {
+    const pending = notice
+    // The picker opens in this same click, while the browser still allows it.
+    if (pending?.picker) picker.current?.click()
+    setNoticeBusy(true)
+    setNoticeError(null)
+    // Resolves true once saved, false on failure; files picked meanwhile upload only if it's true.
+    const saving = apiFetch('/api/me/privacy-notice', { method: 'POST' }).then(
+      () => true,
+      (err) => {
+        if (!SIGNED_OUT_CODES.has(err?.code)) setNoticeError(errorText(t, err))
+        return false
+      },
+    )
+    acceptance.current = saving
+    const saved = await saving
+    setNoticeBusy(false)
+    if (!saved) return
+    acceptance.current = null
+    markPrivacyAccepted?.()
+    setNotice(null)
+    if (pending?.files) projectFiles.upload(pending.files)
+  }
   const [loaded, setLoaded] = useState(null) // { id, project } of the Project shown
   const [error, setError] = useState(null) // { id, apiError }
   // Files panel collapse (EXPERIENCE.md › Files strip): the student's choice in this visit, else
@@ -67,13 +108,18 @@ export default function ProjectHome() {
   const project = loaded?.id === projectId ? loaded.project : null
   const failed = error?.id === projectId ? error.apiError : null
   const listed = files.materials !== null || files.loadError !== null
-  const ready = project !== null && listed
+  // The profile must have loaded too: until then it isn't known whether the notice is needed.
+  const ready = project !== null && listed && me !== null && me !== undefined
   const readOnly = Boolean(project?.archived_at || project?.deleted_at)
   const anyReady = (files.materials ?? []).some((m) => m.status === 'ready')
   const drop = useDropTarget(files.upload, ready && !readOnly)
   useBlockWindowFileDrop()
 
-  const openPicker = () => picker.current?.click()
+  const openPicker = () => {
+    if (accepted) return picker.current?.click()
+    setNoticeError(null)
+    setNotice({ mode: 'ask', picker: true })
+  }
 
   return (
     <div className={styles.home} aria-busy={!ready && !failed}>
@@ -87,8 +133,12 @@ export default function ProjectHome() {
         aria-hidden="true"
         data-testid="file-picker"
         onChange={(event) => {
-          files.upload(event.target.files)
+          const chosen = Array.from(event.target.files ?? [])
           event.target.value = ''
+          // A picker opened by "Got it, upload" waits for the acceptance; if saving it failed, the
+          // picked files are dropped (the server would refuse them).
+          const saving = acceptance.current ?? Promise.resolve(true)
+          saving.then((saved) => saved && projectFiles.upload(chosen))
         }}
       />
       <section className={styles.chat}>
@@ -125,6 +175,17 @@ export default function ProjectHome() {
         onBrowse={openPicker}
         collapsed={filesCollapsed}
         onToggle={toggleFiles}
+        onPrivacyInfo={() => {
+          setNoticeError(null)
+          setNotice({ mode: 'info' })
+        }}
+      />
+      <PrivacyNotice
+        mode={notice?.mode ?? null}
+        busy={noticeBusy}
+        error={noticeError}
+        onAccept={acceptNotice}
+        onClose={() => setNotice(null)}
       />
     </div>
   )

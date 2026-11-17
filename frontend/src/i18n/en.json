@@ -139,10 +139,19 @@
     "invalid_name": "Give the project a name.",
     "project_read_only": "This project is read-only.",
     "unsupported_file_type": "This file type isn't supported. Use PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG, or HEIC.",
-    "material_limit_reached": "A project can hold 10 files. Remove one to add another."
+    "material_limit_reached": "A project can hold 10 files. Remove one to add another.",
+    "privacy_notice_required": "Accept the note on how your files are used before your first upload."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",
     "retry": "Try again"
+  },
+  "privacyNotice": {
+    "title": "Before your first upload",
+    "body": "Study Buddy sends your files to an external AI service (through OpenRouter) to make your quizzes, flashcards, summaries, and answers. Your files are used only for your own study material, aren't shared with other users, and aren't kept by the AI service.",
+    "cancel": "Cancel",
+    "accept": "Got it, upload",
+    "link": "How your files are used",
+    "close": "Close"
   }
 }

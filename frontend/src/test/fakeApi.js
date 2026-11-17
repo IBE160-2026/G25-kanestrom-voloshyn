@@ -4,7 +4,16 @@
 import { vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
 
-export const PROFILE = { first_name: 'Emma', language: 'en', email_verified: false, ui_prefs: {}, last_project_id: null }
+// The Privacy notice is accepted by default, so upload tests start from an Account that may upload;
+// Story 2.3's tests set `privacy_notice_accepted: false`.
+export const PROFILE = {
+  first_name: 'Emma',
+  language: 'en',
+  email_verified: false,
+  ui_prefs: {},
+  last_project_id: null,
+  privacy_notice_accepted: true,
+}
 
 export function project(id, overrides = {}) {
   return {
@@ -68,6 +77,10 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
       const prefs = { ...state.me.ui_prefs, ...body }
       if (body.files_collapsed) prefs.files_collapsed = { ...state.me.ui_prefs?.files_collapsed, ...body.files_collapsed }
       state.me = { ...state.me, ui_prefs: prefs }
+      return state.me
+    }
+    if (path === '/api/me/privacy-notice' && method === 'POST') {
+      state.me = { ...state.me, privacy_notice_accepted: true }
       return state.me
     }
     if (path === '/api/projects' && method === 'GET') return state.projects
