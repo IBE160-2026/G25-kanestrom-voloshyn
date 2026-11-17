@@ -20,6 +20,9 @@ export default function ProjectName({ project, onRenamed, variant = 'title', edi
   const isEditing = editing ?? ownEditing
   const setEditing = onEditingChange ?? setOwnEditing
   const [value, setValue] = useState(() => project.name ?? '')
+  // The name the field opened with. An auto-name arriving while it is open (Story 2.4b) doesn't
+  // reset what the student typed, and an untouched empty field still closes without a request.
+  const openedWith = useRef(project.name ?? '')
   const [error, setError] = useState(null) // { apiError, attempt }
   const [busy, setBusy] = useState(false)
   const attempt = useRef(0)
@@ -34,6 +37,7 @@ export default function ProjectName({ project, onRenamed, variant = 'title', edi
   // Sidebar's) starts from the saved name too.
   function startEditing() {
     setValue(project.name ?? '')
+    openedWith.current = project.name ?? ''
     setError(null)
     setEditing(true)
   }
@@ -47,7 +51,9 @@ export default function ProjectName({ project, onRenamed, variant = 'title', edi
     event.preventDefault()
     if (busy) return
     // Nothing changed (including an untouched unnamed Project): close without a request.
-    if (value.trim() === (project.name ?? '')) return close()
+    // An empty field that opened empty stays a no-op even if an auto-name arrived meanwhile.
+    const text = value.trim()
+    if (text === (project.name ?? '') || (text === '' && openedWith.current === '')) return close()
     setBusy(true)
     try {
       const updated = await apiFetch(`/api/projects/${project.id}`, { method: 'PATCH', body: { name: value } })

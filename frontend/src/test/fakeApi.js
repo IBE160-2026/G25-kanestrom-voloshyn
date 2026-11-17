@@ -59,6 +59,7 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     jobs: jobs.map((j) => ({ ...j })),
     created: 0,
     uploaded: 0,
+    autoNames: {}, // { [projectId]: name } the next GET /api/projects/{id} returns (Story 2.4b)
   }
 
   vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
@@ -124,7 +125,13 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
       if (!found) throw notFound()
       if (method === 'GET') {
         state.me = { ...state.me, last_project_id: found.id }
-        return found
+        // An auto-name set by finish() lands now, as the server's naming trails the Ready commit.
+        const autoName = state.autoNames[found.id]
+        if (autoName !== undefined && !found.name_source) {
+          delete state.autoNames[found.id]
+          Object.assign(found, { name: autoName, name_source: 'auto' })
+        }
+        return { ...found }
       }
       if (method === 'PATCH') {
         const name = String(body?.name ?? '').trim()
@@ -145,11 +152,16 @@ export function callsTo(path, method = 'GET') {
     .mock.calls.filter(([p, options = {}]) => p === path && (options.method ?? 'GET') === method)
 }
 
-/** Finish a file's processing in the fake: the Material gets `changes`, its job completes. */
-export function finish(state, materialId, changes = { status: 'ready' }) {
-  for (const list of Object.values(state.materials)) {
+/**
+ * Finish a file's processing in the fake: the Material gets `changes`, its job completes. With
+ * `projectName`, the server auto-names the Project: the next GET /api/projects/{id} returns that name
+ * (unless the Project is named by then).
+ */
+export function finish(state, materialId, changes = { status: 'ready' }, { projectName } = {}) {
+  for (const [projectId, list] of Object.entries(state.materials)) {
     const found = list.find((m) => m.id === materialId)
     if (found) Object.assign(found, changes)
+    if (found && projectName !== undefined) state.autoNames[projectId] = projectName
   }
   const job = state.jobs.find((j) => j.result_ref === materialId)
   if (job) job.status = 'completed'

@@ -1,16 +1,25 @@
-"""Projects service: create, list, open, rename, and the read-only guard (FR-4, FR-5, AD-14, AD-22).
+"""Projects service: create, list, open, rename, auto-naming, and the read-only guard (FR-4, FR-5,
+AD-14, AD-22).
 
-Takes `conn`, never commits (AD-18). Every call is scoped by `account_id` (AD-2).
+Takes `conn`, never commits (AD-18); the exception is `auto_name_if_unnamed`, an after-commit step that
+takes the pool. Every call is scoped by `account_id` (AD-2).
 """
 
+import logging
+from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 
 from app.db import profiles
 from app.db import projects as repo
 from app.errors import AppError
+from app.llm import Gateway
+from app.llm.gateway import SectionLike
+
+logger = logging.getLogger(__name__)
 
 NAME_MAX_LENGTH = 100
 
@@ -101,3 +110,32 @@ async def rename(conn: AsyncConnection, account_id: UUID, project_id: UUID, raw_
     if project is None:
         raise ProjectNotFound()
     return project
+
+
+async def auto_name_if_unnamed(
+    pool: AsyncConnectionPool,
+    llm: Gateway,
+    account_id: UUID,
+    project_id: UUID,
+    sections: Sequence[SectionLike],
+) -> dict[str, Any] | None:
+    """Name an unnamed Project from a Material that just became Ready (FR-4, AD-14).
+
+    Runs after the Material's ready commit, outside any transaction: a short read, then the model with
+    no connection held (AD-18), then a conditional write (`WHERE name_source IS NULL`), so a student
+    rename that lands meanwhile wins. The only writer of `name_source='auto'`. Any failure is logged by
+    type and leaves the name NULL; the next Ready file tries again. Returns the named Project, or None.
+    """
+    try:
+        async with pool.connection() as conn:
+            project = await repo.get(conn, account_id, project_id)
+        if project is None or project["name_source"] is not None or not is_active(project):
+            return None
+        result = await llm.name_project(sections)
+        name = clean_name(result.name)
+        async with pool.connection() as conn:
+            async with conn.transaction():
+                return await repo.set_auto_name(conn, account_id, project_id, name)
+    except Exception as exc:  # noqa: BLE001 -- naming never affects the file or the job
+        logger.warning("Auto-naming Project %s failed: %s", project_id, type(exc).__name__)
+        return None

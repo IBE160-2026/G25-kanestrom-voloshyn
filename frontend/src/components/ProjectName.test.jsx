@@ -1,13 +1,15 @@
 // Inline rename in the Top bar and the Sidebar row (Story 2.1, FR-5): Enter saves, Esc cancels with
 // no request, a blank name shows invalid_name under the field. api/client.js and auth/ are mocked.
-import { screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { I18nextProvider } from 'react-i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { hasSession } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { callsTo, fakeApi, project } from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
+import ProjectName from './ProjectName.jsx'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
 vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
@@ -311,5 +313,24 @@ describe('Sidebar rename', () => {
     await user.type(field, ' 2{Enter}')
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'More options for Biology 2' })).toHaveFocus())
+  })
+})
+
+describe('Rename while the saved name changes (Story 2.4b)', () => {
+  it('saves the name the field opened with when the student types it back after the name changed', async () => {
+    fakeApi({ projects: [project('a', { name: 'B', name_source: 'auto' })] })
+    const onRenamed = vi.fn()
+    const user = userEvent.setup()
+    const wrapper = ({ children }) => <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+    const { rerender } = render(<ProjectName project={project('a', { name: 'A', name_source: 'auto' })} onRenamed={onRenamed} />, { wrapper })
+
+    await user.click(screen.getByRole('button', { name: 'A' }))
+    rerender(<ProjectName project={project('a', { name: 'B', name_source: 'auto' })} onRenamed={onRenamed} />)
+    const field = screen.getByRole('textbox', { name: en.projects.rename })
+    expect(field).toHaveValue('A')
+    await user.type(field, '{Enter}')
+
+    await waitFor(() => expect(onRenamed).toHaveBeenCalled())
+    expect(callsTo('/api/projects/a', 'PATCH')).toEqual([['/api/projects/a', { method: 'PATCH', body: { name: 'A' } }]])
   })
 })

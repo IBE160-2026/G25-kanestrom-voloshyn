@@ -62,3 +62,23 @@ async def set_student_name(
             (name, project_id, account_id),
         )
         return await cur.fetchone()
+
+
+async def set_auto_name(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, name: str
+) -> dict[str, Any] | None:
+    """Save an auto-name (FR-4, AD-14), only while the Project is still unnamed and active.
+
+    None when a name (a student's rename or an earlier auto-name) landed first, or the Project is gone.
+    """
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE projects SET name = %s, name_source = 'auto'
+            WHERE id = %s AND account_id = %s AND name_source IS NULL
+              AND archived_at IS NULL AND deleted_at IS NULL
+            RETURNING {_COLUMNS}
+            """,
+            (name, project_id, account_id),
+        )
+        return await cur.fetchone()

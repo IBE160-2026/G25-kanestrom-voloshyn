@@ -112,7 +112,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         storage = Storage(http, settings)
         app.state.storage = storage
         # In-process background jobs (AD-20, AD-29), then the restart sweep for the previous process.
-        kinds = {materials.KIND: materials.processing_kind(settings, storage)}
+        kinds = {materials.KIND: materials.processing_kind(settings, storage, pool, llm)}
         runner = jobs.Runner(pool, kinds, settings.jobs_max_concurrent)
         app.state.runner = runner
         sweep = asyncio.create_task(_sweep_until_done(pool, kinds))

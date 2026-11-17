@@ -13,6 +13,7 @@ If anything after step 2 fails, or the commit does, the stored original is delet
 
 Processing: extract (in a thread) -> Content Integrity -> one save transaction with the Sections and
 `ready`, or `rejected` with its reason; a rejected Material's original is deleted after the commit.
+After a `ready` commit, an unnamed Project is named from that Material's Sections (FR-4, AD-14).
 """
 
 import logging
@@ -22,12 +23,14 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 
 from app import extraction
 from app.config import Settings
 from app.db import materials as repo
 from app.errors import AppError
 from app.extraction import integrity
+from app.llm import Gateway
 from app.services import identity, jobs, projects
 from app.storage import Storage, material_path
 
@@ -147,8 +150,11 @@ def _reject_reason(job: dict[str, Any]) -> str:
     return jobs.INTERRUPTED if job.get("error_code") == jobs.INTERRUPTED else jobs.PROCESSING_FAILED
 
 
-def processing_kind(settings: Settings, storage: Storage) -> jobs.JobKind:
-    """The handler and terminal hook for `material_processing`, bound to the settings and storage."""
+def processing_kind(
+    settings: Settings, storage: Storage, pool: AsyncConnectionPool, llm: Gateway
+) -> jobs.JobKind:
+    """The handler and terminal hook for `material_processing`, bound to the settings, storage, the
+    pool, and the LLM gateway (for auto-naming after a ready commit)."""
     thresholds = integrity.Thresholds.from_settings(settings)
 
     def _delete_original(job: dict[str, Any]) -> jobs.AfterCommit:
@@ -183,6 +189,7 @@ def processing_kind(settings: Settings, storage: Storage) -> jobs.JobKind:
             )
 
         sections = [(section.label, section.text) for section in extracted.sections]
+        saved: list[bool] = []
 
         async def save_ready(conn: AsyncConnection) -> None:
             material = await repo.get_for_update(conn, account_id, material_id)
@@ -196,8 +203,16 @@ def processing_kind(settings: Settings, storage: Storage) -> jobs.JobKind:
                 warning=verdict.outcome == "accepted_with_warning",
                 warning_pages=list(verdict.warning_pages),
             )
+            saved.append(True)
 
-        return jobs.SavePlan(apply=save_ready, material_ids=(material_id,), result_ref=material_id)
+        async def after_ready() -> None:
+            # Only a Material this job saved as ready names the Project; never inside a transaction.
+            if any(saved):
+                await projects.auto_name_if_unnamed(pool, llm, account_id, job["project_id"], extracted.sections)
+
+        return jobs.SavePlan(
+            apply=save_ready, material_ids=(material_id,), result_ref=material_id, after_commit=after_ready
+        )
 
     async def on_terminal(conn: AsyncConnection, job: dict[str, Any]) -> jobs.AfterCommit | None:
         """A failed, interrupted, or cancelled job rejects its Material, freeing the slot (AD-5)."""
