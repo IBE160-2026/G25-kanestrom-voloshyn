@@ -22,6 +22,8 @@ const RULES = new Set([
   'project_read_only',
   'not_found',
   'invalid_request',
+  // The Privacy notice isn't accepted (Story 2.3): retrying sends the same refusal.
+  'privacy_notice_required',
 ])
 
 export function isRuleRefusal(error) {

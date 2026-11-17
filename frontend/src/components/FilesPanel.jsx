@@ -13,7 +13,7 @@ import { useDropTarget } from './useDropTarget.js'
 // "Hide files" collapses it to the Files strip: "Show files", a files icon, "{n} of 10", and a
 // warning icon when a file is partly unreadable or rejected (Story 2.2b). "Upload from phone"
 // arrives with Epic 6.
-export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle }) {
+export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle, onPrivacyInfo }) {
   const { t } = useTranslation()
   const heading = useId()
   const { materials, pending, failures, loadError, upload, retry } = files
@@ -104,6 +104,11 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
             {t('files.upload')}
           </button>
           <p className={styles.hint}>{t('files.types')}</p>
+          {onPrivacyInfo && (
+            <button type="button" className={styles.privacyLink} onClick={onPrivacyInfo}>
+              {t('privacyNotice.link')}
+            </button>
+          )}
         </>
       )}
       {loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}

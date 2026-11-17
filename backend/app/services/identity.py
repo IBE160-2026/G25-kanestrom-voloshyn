@@ -43,3 +43,21 @@ async def set_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, An
     """Merge interface preferences (Sidebar collapse; Files panel collapse per Project) into ui_prefs (AD-19)."""
     await profiles.merge_ui_prefs(conn, account_id, prefs)
     return await get_profile(conn, account_id)
+
+
+class PrivacyNoticeRequired(AppError):
+    def __init__(self) -> None:
+        super().__init__(403, "privacy_notice_required", "Accept the privacy notice before the first upload")
+
+
+async def accept_privacy_notice(conn: AsyncConnection, account_id: UUID) -> dict[str, Any]:
+    """The Account accepts the one-time Privacy notice (FR-6, §5.3). Idempotent."""
+    await profiles.accept_privacy_notice(conn, account_id)
+    return await get_profile(conn, account_id)
+
+
+async def require_privacy_ack(conn: AsyncConnection, account_id: UUID) -> None:
+    """Uploads (and later phone links) are refused until the notice is accepted (AD-19)."""
+    profile = await profiles.get(conn, account_id)
+    if profile is None or profile["privacy_notice_ack_at"] is None:
+        raise PrivacyNoticeRequired()

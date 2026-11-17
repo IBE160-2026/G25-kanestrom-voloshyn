@@ -103,6 +103,11 @@ export default function AppShell() {
     apiFetch('/api/me/prefs', { method: 'PATCH', body: { files_collapsed: { [id]: collapsed } } }).catch(() => {})
   }, [])
 
+  /** The Privacy notice was accepted: it never blocks an upload again (Story 2.3). */
+  const markPrivacyAccepted = useCallback(() => {
+    setMe((profile) => (profile ? { ...profile, privacy_notice_accepted: true } : profile))
+  }, [])
+
   /** The Project is gone or not this Account's: drop it, and never land on it again. */
   const forgetProject = useCallback((id) => {
     setProjects((list) => (list ? list.filter((p) => p.id !== id) : list))
@@ -160,7 +165,7 @@ export default function AppShell() {
             </div>
           )}
           <Outlet
-            context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed }}
+            context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted }}
           />
         </main>
       </div>

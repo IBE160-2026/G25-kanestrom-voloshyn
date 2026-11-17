@@ -282,6 +282,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | API error, invalid details (`invalid_request`) | "Some of the details aren't valid." [ASSUMPTION: copy, added 2026-11-12 with Story 1.2] | Noen av opplysningene er ikke gyldige. |
 | API error, blank project name (`invalid_name`) | "Give the project a name." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Gi prosjektet et navn. |
 | API error, read-only project (`project_read_only`) | "This project is read-only." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Dette prosjektet kan bare leses. |
+| API error, privacy notice not accepted (`privacy_notice_required`) | "Accept the note on how your files are used before your first upload." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.3] | Godta merknaden om hvordan filene dine brukes før du laster opp første gang. |
 | Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye materiale. Velg færre emner eller én fil. |
 | Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. |
 

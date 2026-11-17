@@ -584,6 +584,7 @@ Cutting an Extension removes its FR and every consequence that depends on it in 
 - Interface languages beyond English and Norwegian (bokmål).
 - A light theme and user-chosen theme colors.
 - Pinning Projects or ordering them by hand in the Sidebar; V1 lists them newest first (added 2026-11-17).
+- A guided first-run tour of the features and the layout for new students; V1 must be usable without instruction (SM-5) (added 2026-11-17).
 - Multi-user or shared Projects; a mobile app or full mobile layout beyond the phone upload page (§6).
 
 All items above are candidates for post-V1 versions per the brief's long-term Vision, not MVP requirements.

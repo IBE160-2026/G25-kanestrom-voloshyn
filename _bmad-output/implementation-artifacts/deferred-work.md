@@ -56,3 +56,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-2-upload-documents-and-watch-them-get-processed.md`
   summary: A queued job with `cancel_requested` is never finished by `Runner._steps` (claim returns None); finish it as cancelled and run its terminal hook when Story 2.7 adds `jobs.cancel_for_material`.
   evidence: Story 2.2 review pass 1, Edge Case Hunter. No cancel route exists in 2.2.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-3-see-the-privacy-notice-before-my-first-upload.md`
+  summary: Story 6.1 must gate "Upload from phone" with the same Privacy notice and make new phone links fail with `privacy_notice_required` until it is accepted (AD-19, EXPERIENCE.md › Upload buttons).
+  evidence: Story 2.3 review pass 1 (Blind Hunter). Story 2.3 gates the computer's Upload, browse, and drops only; the phone entry doesn't exist yet.
