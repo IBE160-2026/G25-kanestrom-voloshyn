@@ -69,6 +69,10 @@
   },
   "files": {
     "header": "Filer <muted>· {{n}} av 10</muted>",
+    "show": "Vis filer",
+    "hide": "Skjul filer",
+    "stripCount": "{{n}} <of>av 10</of>",
+    "attention": "En fil trenger oppmerksomheten din",
     "upload": "Last opp",
     "types": "PDF, Word, PowerPoint, tekst eller Markdown · opptil 50 MB hver",
     "empty": "Ingen filer ennå. Notatene dine dukker opp her.",

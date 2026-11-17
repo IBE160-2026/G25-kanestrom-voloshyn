@@ -68,6 +68,10 @@
   },
   "files": {
     "header": "Files <muted>· {{n}} of 10</muted>",
+    "show": "Show files",
+    "hide": "Hide files",
+    "stripCount": "{{n}} <of>of 10</of>",
+    "attention": "A file needs your attention",
     "upload": "Upload",
     "types": "PDF, Word, PowerPoint, text, or Markdown · up to 50 MB each",
     "empty": "No files yet. Your notes will show up here.",

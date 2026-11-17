@@ -25,9 +25,20 @@ export default function ProjectHome() {
   const { projectId } = useParams()
   const picker = useRef(null)
   const files = useProjectFiles(projectId)
-  const { upsertProject, markOpened, forgetProject } = useOutletContext()
+  const { me, upsertProject, markOpened, forgetProject, saveFilesCollapsed } = useOutletContext()
   const [loaded, setLoaded] = useState(null) // { id, project } of the Project shown
   const [error, setError] = useState(null) // { id, apiError }
+  // Files panel collapse (EXPERIENCE.md › Files strip): the student's choice in this visit, else
+  // collapsed below 1024 px, else the choice saved to the Account for this Project (Story 2.2b).
+  const [narrow] = useState(isNarrow)
+  const [filesChoice, setFilesChoice] = useState({}) // { [projectId]: collapsed }
+  const filesCollapsed =
+    filesChoice[projectId] ?? (narrow || me?.ui_prefs?.files_collapsed?.[projectId] === true)
+  const toggleFiles = () => {
+    const next = !filesCollapsed
+    setFilesChoice((choices) => ({ ...choices, [projectId]: next }))
+    saveFilesCollapsed?.(projectId, next)
+  }
 
   useEffect(() => {
     let live = true
@@ -107,7 +118,19 @@ export default function ProjectHome() {
           <div className={styles.tools} data-testid="tools-row" />
         </div>
       </section>
-      <FilesPanel files={files} loading={!ready && !failed} readOnly={readOnly} onBrowse={openPicker} />
+      <FilesPanel
+        files={files}
+        loading={!ready && !failed}
+        readOnly={readOnly}
+        onBrowse={openPicker}
+        collapsed={filesCollapsed}
+        onToggle={toggleFiles}
+      />
     </div>
   )
+}
+
+// Below this width the Files panel starts collapsed, whatever the saved choice (DESIGN.md › Layout).
+function isNarrow() {
+  return typeof window !== 'undefined' && window.innerWidth < 1024
 }

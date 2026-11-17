@@ -284,7 +284,35 @@ def test_prefs_merge_keeps_other_keys(client, student, db):
     assert response.json()["ui_prefs"] == {"files_collapsed": {"p1": True}, "sidebar_collapsed": True}
 
 
-@pytest.mark.parametrize("payload", [{}, {"sidebar_collapsed": None}, {"sidebar_collapsed": True, "theme": "x"}])
+def test_prefs_files_collapsed_merge_per_project(client, student, db):
+    # Story 2.2b: one Project's Files panel choice keeps the others and the Sidebar's.
+    a, b = "11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222"
+    headers = bearer(student["token"])
+    client.patch("/api/me/prefs", headers=headers, json={"sidebar_collapsed": True})
+    client.patch("/api/me/prefs", headers=headers, json={"files_collapsed": {a: True}})
+
+    response = client.patch("/api/me/prefs", headers=headers, json={"files_collapsed": {b: False}})
+
+    assert response.status_code == 200, response.text
+    expected = {"sidebar_collapsed": True, "files_collapsed": {a: True, b: False}}
+    assert response.json()["ui_prefs"] == expected
+    client.patch("/api/me/prefs", headers=headers, json={"files_collapsed": {a: False}})
+    assert client.get("/api/me", headers=headers).json()["ui_prefs"]["files_collapsed"] == {a: False, b: False}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"sidebar_collapsed": None},
+        {"sidebar_collapsed": True, "theme": "x"},
+        {"files_collapsed": {}},
+        {"files_collapsed": {"not-a-uuid": True}},
+        {"files_collapsed": {"11111111-1111-1111-1111-111111111111": "yes"}},
+        {"sidebar_collapsed": "yes"},
+        {"files_collapsed": {f"{i:08d}-1111-1111-1111-111111111111": True for i in range(21)}},
+    ],
+)
 def test_prefs_refuse_a_malformed_body(client, student, payload):
     response = client.patch("/api/me/prefs", headers=bearer(student["token"]), json=payload)
     assert_error(response, 422, "invalid_request")
@@ -292,3 +320,18 @@ def test_prefs_refuse_a_malformed_body(client, student, payload):
 
 def test_prefs_without_token_is_unauthorized(client):
     assert_error(client.patch("/api/me/prefs", json={"sidebar_collapsed": True}), 401, "unauthorized")
+
+def test_prefs_both_keys_in_one_request(client, student):
+    a = "11111111-1111-1111-1111-111111111111"
+    response = client.patch(
+        "/api/me/prefs",
+        headers=bearer(student["token"]),
+        json={"sidebar_collapsed": None, "files_collapsed": {a: True}},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["ui_prefs"] == {"files_collapsed": {a: True}}
+
+    response = client.patch(
+        "/api/me/prefs", headers=bearer(student["token"]), json={"sidebar_collapsed": True, "files_collapsed": {a: False}}
+    )
+    assert response.json()["ui_prefs"] == {"sidebar_collapsed": True, "files_collapsed": {a: False}}

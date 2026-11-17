@@ -70,7 +70,22 @@ async def set_last_project(conn: AsyncConnection, account_id: UUID, project_id: 
 
 
 async def merge_ui_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, Any]) -> None:
-    """Merge `prefs` into ui_prefs, keeping the keys it doesn't name (AD-19)."""
+    """Merge `prefs` into ui_prefs, keeping the keys it doesn't name (AD-19).
+
+    `files_collapsed` ({project_id: bool}) is merged one level deeper, so saving one Project's
+    Files panel choice keeps the others.
+    """
+    prefs = dict(prefs)
+    files = prefs.pop("files_collapsed", None)
     await conn.execute(
-        "UPDATE profiles SET ui_prefs = ui_prefs || %s WHERE account_id = %s", (Jsonb(prefs), account_id)
+        """
+        UPDATE profiles SET ui_prefs = CASE
+            WHEN %(files)s::jsonb IS NULL THEN ui_prefs || %(top)s
+            ELSE ui_prefs || %(top)s || jsonb_build_object(
+                'files_collapsed', coalesce(ui_prefs -> 'files_collapsed', '{}'::jsonb) || %(files)s
+            )
+        END
+        WHERE account_id = %(account_id)s
+        """,
+        {"top": Jsonb(prefs), "files": Jsonb(files) if files is not None else None, "account_id": account_id},
     )
