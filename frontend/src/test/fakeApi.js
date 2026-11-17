@@ -64,7 +64,10 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     }
     if (path === '/api/me' && method === 'PATCH') return Object.assign(state.me, body)
     if (path === '/api/me/prefs' && method === 'PATCH') {
-      state.me = { ...state.me, ui_prefs: { ...state.me.ui_prefs, ...body } }
+      // As the server: files_collapsed merges per Project (Story 2.2b).
+      const prefs = { ...state.me.ui_prefs, ...body }
+      if (body.files_collapsed) prefs.files_collapsed = { ...state.me.ui_prefs?.files_collapsed, ...body.files_collapsed }
+      state.me = { ...state.me, ui_prefs: prefs }
       return state.me
     }
     if (path === '/api/projects' && method === 'GET') return state.projects

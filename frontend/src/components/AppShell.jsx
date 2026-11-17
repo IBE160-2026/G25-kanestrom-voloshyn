@@ -86,6 +86,23 @@ export default function AppShell() {
     setMe((profile) => (profile ? { ...profile, last_project_id: id } : profile))
   }, [])
 
+  /** Save one Project's Files panel collapse to the Account (merged per Project, Story 2.2b). */
+  const saveFilesCollapsed = useCallback((id, collapsed) => {
+    setMe((profile) =>
+      profile
+        ? {
+            ...profile,
+            ui_prefs: {
+              ...profile.ui_prefs,
+              files_collapsed: { ...profile.ui_prefs?.files_collapsed, [id]: collapsed },
+            },
+          }
+        : profile,
+    )
+    // A failed save only loses persistence; the switch still holds.
+    apiFetch('/api/me/prefs', { method: 'PATCH', body: { files_collapsed: { [id]: collapsed } } }).catch(() => {})
+  }, [])
+
   /** The Project is gone or not this Account's: drop it, and never land on it again. */
   const forgetProject = useCallback((id) => {
     setProjects((list) => (list ? list.filter((p) => p.id !== id) : list))
@@ -143,7 +160,7 @@ export default function AppShell() {
             </div>
           )}
           <Outlet
-            context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject }}
+            context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed }}
           />
         </main>
       </div>

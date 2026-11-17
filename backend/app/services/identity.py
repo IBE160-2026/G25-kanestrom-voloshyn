@@ -40,6 +40,6 @@ async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -
 
 
 async def set_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, Any]) -> dict[str, Any]:
-    """Merge interface preferences (Sidebar collapse) into the profile's ui_prefs (AD-19)."""
+    """Merge interface preferences (Sidebar collapse; Files panel collapse per Project) into ui_prefs (AD-19)."""
     await profiles.merge_ui_prefs(conn, account_id, prefs)
     return await get_profile(conn, account_id)

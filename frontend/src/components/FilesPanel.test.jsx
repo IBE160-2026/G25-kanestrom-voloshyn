@@ -8,7 +8,7 @@ import { hasSession } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { POLL_MS } from '../pages/useProjectFiles.js'
-import { callsTo, fakeApi, finish, material, project } from '../test/fakeApi.js'
+import { PROFILE, callsTo, fakeApi, finish, material, project } from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
@@ -40,7 +40,8 @@ function panel() {
 
 /** The Project and its files have loaded: the panel shows its Upload button (in either language). */
 async function loaded() {
-  await screen.findByRole('button', { name: /^(Upload|Last opp)$/ })
+  // The panel's Upload button, or the Files strip's "Show files" when it starts collapsed.
+  await screen.findByRole('button', { name: /^(Upload|Last opp|Show files|Vis filer)$/ })
 }
 
 async function openProject(options) {
@@ -399,5 +400,138 @@ describe('Live status (polling)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Files · 0 of 10' })).toBeInTheDocument()
     expect(panel()).toHaveTextContent(en.files.reason.unreadable)
+  })
+})
+
+describe('Files strip (Story 2.2b)', () => {
+  const strip = () => screen.getByRole('complementary', { name: en.files.show })
+  const hide = () => screen.getByRole('button', { name: en.files.hide })
+
+  it('"Hide files" collapses to the strip with "n of 10", and saves the choice for this Project', async () => {
+    const { state } = await openProject({
+      materials: { a: [material('m1', { status: 'ready' }), material('m2', { status: 'processing' })] },
+    })
+
+    await userEvent.setup().click(hide())
+
+    expect(strip()).toHaveTextContent('2 of 10')
+    expect(screen.getByRole('button', { name: en.files.show })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: en.files.upload })).not.toBeInTheDocument()
+    expect(callsTo('/api/me/prefs', 'PATCH')).toEqual([
+      ['/api/me/prefs', { method: 'PATCH', body: { files_collapsed: { a: true } } }],
+    ])
+    expect(state.me.ui_prefs.files_collapsed).toEqual({ a: true })
+  })
+
+  it('"Show files" expands it again and saves that', async () => {
+    await openProject({ me: PROFILE_WITH({ a: true }) })
+    const user = userEvent.setup()
+
+    await user.click(await screen.findByRole('button', { name: en.files.show }))
+
+    expect(hide()).toHaveAttribute('aria-expanded', 'true')
+    expect(callsTo('/api/me/prefs', 'PATCH').at(-1)).toEqual([
+      '/api/me/prefs',
+      { method: 'PATCH', body: { files_collapsed: { a: false } } },
+    ])
+  })
+
+  it('the saved choice is per Project', async () => {
+    fakeApi({
+      me: PROFILE_WITH({ b: true }),
+      projects: [project('a'), project('b')],
+    })
+    const { router } = renderRoute('/projects/a')
+    await loaded()
+    expect(hide()).toBeInTheDocument()
+
+    await act(() => router.navigate('/projects/b'))
+
+    expect(await screen.findByRole('complementary', { name: en.files.show })).toBeInTheDocument()
+  })
+
+  it('shows no warning icon when every file is fine', async () => {
+    await openProject({ me: PROFILE_WITH({ a: true }), materials: { a: [material('m1', { status: 'ready' })] } })
+    // Wait until the list has loaded (the strip counts it) before asserting there's no icon.
+    await waitFor(() => expect(strip()).toHaveTextContent('1 of 10'))
+    expect(screen.queryByRole('img', { name: en.files.attention })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['partly unreadable', { status: 'ready', warning: true, warning_pages: [2] }],
+    ['rejected', { status: 'rejected', reject_reason: 'unreadable' }],
+  ])('a %s file shows the warning icon in the strip', async (_label, overrides) => {
+    await openProject({ me: PROFILE_WITH({ a: true }), materials: { a: [material('m1', overrides)] } })
+    expect(await screen.findByRole('img', { name: en.files.attention })).toBeInTheDocument()
+  })
+
+  it('below 1024 px it starts collapsed even when "expanded" was saved', async () => {
+    const width = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 900 })
+    try {
+      fakeApi({ me: PROFILE_WITH({ a: false }), projects: [project('a')] })
+      renderRoute('/projects/a')
+      expect(await screen.findByRole('complementary', { name: en.files.show })).toBeInTheDocument()
+    } finally {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+    }
+  })
+
+  it('is in Norwegian too', async () => {
+    await i18n.changeLanguage('nb')
+    try {
+      await openProject({ me: PROFILE_WITH({ a: true }) })
+      const stripNb = await screen.findByRole('complementary', { name: nb.files.show })
+      expect(within(stripNb).getByText(/av 10/)).toBeInTheDocument()
+    } finally {
+      await i18n.changeLanguage('en')
+    }
+  })
+})
+
+function PROFILE_WITH(filesCollapsed) {
+  return { ...PROFILE, ui_prefs: { files_collapsed: filesCollapsed } }
+}
+
+describe('Files strip, focus and problems (Story 2.2b review)', () => {
+  it('focus moves to "Show files" after hiding, and back to "Hide files" after showing', async () => {
+    await openProject()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: en.files.hide }))
+    expect(screen.getByRole('button', { name: en.files.show })).toHaveFocus()
+
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('button', { name: en.files.hide })).toHaveFocus()
+  })
+
+  it('a refused upload shows the warning icon in the strip', async () => {
+    await openProject()
+    const user = userEvent.setup()
+    drop(panel(), [file('notes.rtf')])
+    await screen.findByText(en.errors.unsupported_file_type, { exact: false })
+
+    await user.click(screen.getByRole('button', { name: en.files.hide }))
+
+    expect(screen.getByRole('img', { name: en.files.attention })).toBeInTheDocument()
+  })
+
+  it('a rejected file uses the error colour; a partly unreadable one stays muted', async () => {
+    await openProject({
+      me: { ...PROFILE, ui_prefs: { files_collapsed: { a: true } } },
+      materials: { a: [material('m1', { status: 'rejected', reject_reason: 'unreadable' })] },
+    })
+    expect((await screen.findByRole('img', { name: en.files.attention })).className).toMatch(/attentionError/)
+  })
+
+  it('shows no count until the list has loaded', async () => {
+    fakeApi({
+      me: { ...PROFILE, ui_prefs: { files_collapsed: { a: true } } },
+      projects: [project('a')],
+      routes: { 'GET /api/projects/a/materials': () => new Promise(() => {}) },
+    })
+    renderRoute('/projects/a')
+    const strip = await screen.findByRole('complementary', { name: en.files.show })
+    expect(strip).not.toHaveTextContent(/of 10/)
   })
 })

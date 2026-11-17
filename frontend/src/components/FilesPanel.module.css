@@ -94,3 +94,108 @@
   background: var(--color-border);
   border-radius: var(--radius-lg);
 }
+
+/* Header row: the heading and "Hide files". */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.collapse,
+.stripButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--space-touch-target-min);
+  height: var(--space-touch-target-min);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.collapse:hover,
+.stripButton:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon {
+  width: 12px;
+  height: 12px;
+}
+
+/* Files strip (DESIGN.md › Files strip): same width as the Sidebar strip, on the right edge. */
+.strip {
+  flex: none;
+  width: var(--space-sidebar-collapsed-width);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+}
+
+.filesIcon {
+  width: 16px;
+  height: 18px;
+  color: var(--color-text-muted);
+}
+
+/* "n of 10": the number on one line, "of 10" below. */
+.stripCount {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.of {
+  display: block;
+}
+
+.attention {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+
+.attention.attentionError {
+  color: var(--color-error);
+}
+
+.stripButton {
+  position: relative;
+}
+
+/* Caption-size tooltip on a surface panel, on hover and keyboard focus (as the Sidebar strip). */
+.tip {
+  display: none;
+  position: absolute;
+  right: calc(100% + var(--space-2));
+  top: 50%;
+  transform: translateY(-50%);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.stripButton:hover .tip,
+.stripButton:focus-visible .tip {
+  display: block;
+}
