@@ -36,7 +36,8 @@ def providers(user: dict[str, Any]) -> frozenset[str]:
     )
 
 
-def _admin_headers(settings: Settings) -> dict[str, str]:
+def admin_headers(settings: Settings) -> dict[str, str]:
+    """The secret-key headers for Supabase admin calls; `storage.py` uses them for the private bucket."""
     secret = settings.supabase_secret_key.get_secret_value() if settings.supabase_secret_key else ""
     return {"apikey": secret, "Authorization": f"Bearer {secret}"}
 
@@ -99,7 +100,7 @@ async def generate_recovery_link(
     try:
         response = await client.post(
             "/auth/v1/admin/generate_link",
-            headers=_admin_headers(settings),
+            headers=admin_headers(settings),
             json={"type": "recovery", "email": email},
         )
     except httpx2.HTTPError as exc:

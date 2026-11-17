@@ -1,0 +1,112 @@
+"""The `study_materials` and `sections` repository (AD-5, AD-6). Plain SQL; scoped by `account_id`.
+
+Only `services/materials` calls the writers here. Takes the caller's `conn` and never commits.
+"""
+
+from typing import Any
+from uuid import UUID
+
+from psycopg import AsyncConnection
+from psycopg.rows import dict_row
+
+_COLUMNS = (
+    "id, project_id, account_id, file_name, file_type, size_bytes, status, reject_reason, warning, "
+    "warning_pages, created_at"
+)
+
+# AD-5: the one slot predicate, used for every count.
+OCCUPIES_SLOT = "removed_at IS NULL AND status IN ('processing', 'ready')"
+
+
+async def count_slots(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> int:
+    async with conn.cursor() as cur:
+        await cur.execute(
+            f"SELECT count(*) FROM study_materials WHERE project_id = %s AND account_id = %s AND {OCCUPIES_SLOT}",
+            (project_id, account_id),
+        )
+        return (await cur.fetchone())[0]
+
+
+async def insert(
+    conn: AsyncConnection,
+    *,
+    material_id: UUID,
+    account_id: UUID,
+    project_id: UUID,
+    file_name: str,
+    file_type: str,
+    size_bytes: int,
+) -> dict[str, Any]:
+    """A new Material in `processing` (AD-5 step 3)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            INSERT INTO study_materials (id, account_id, project_id, file_name, file_type, size_bytes)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING {_COLUMNS}
+            """,
+            (material_id, account_id, project_id, file_name, file_type, size_bytes),
+        )
+        return await cur.fetchone()
+
+
+async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
+    """Every Material not removed, in upload order (FR-8)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            SELECT {_COLUMNS} FROM study_materials
+            WHERE project_id = %s AND account_id = %s AND removed_at IS NULL
+            ORDER BY created_at, id
+            """,
+            (project_id, account_id),
+        )
+        return await cur.fetchall()
+
+
+async def get_for_update(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> dict[str, Any] | None:
+    """The Material, locked until the transaction ends; for the job's save transaction (AD-5)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"SELECT {_COLUMNS}, removed_at FROM study_materials WHERE id = %s AND account_id = %s FOR UPDATE",
+            (material_id, account_id),
+        )
+        return await cur.fetchone()
+
+
+async def insert_sections(conn: AsyncConnection, material_id: UUID, sections: list[tuple[str, str]]) -> None:
+    """Sections as (label, text), in order (AD-5)."""
+    async with conn.cursor() as cur:
+        await cur.executemany(
+            "INSERT INTO sections (material_id, position, label, text) VALUES (%s, %s, %s, %s)",
+            [(material_id, position, label, text) for position, (label, text) in enumerate(sections)],
+        )
+
+
+async def set_ready(
+    conn: AsyncConnection, account_id: UUID, material_id: UUID, warning: bool, warning_pages: list[int]
+) -> None:
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE study_materials SET status = 'ready', warning = %s, warning_pages = %s
+            WHERE id = %s AND account_id = %s AND status = 'processing'
+            """,
+            (warning, warning_pages, material_id, account_id),
+        )
+
+
+async def set_rejected(
+    conn: AsyncConnection, account_id: UUID, material_id: UUID, reason: str
+) -> dict[str, Any] | None:
+    """Reject a Material still processing; returns it, or None when it had already finished."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE study_materials SET status = 'rejected', reject_reason = %s
+            WHERE id = %s AND account_id = %s AND status = 'processing'
+            RETURNING {_COLUMNS}, removed_at
+            """,
+            (reason, material_id, account_id),
+        )
+        return await cur.fetchone()

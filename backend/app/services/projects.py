@@ -59,6 +59,18 @@ async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict
     return project
 
 
+async def check_active(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
+    """The read-only guard without a row lock, for the `ActiveProject` dependency (AD-22).
+
+    Same answers as `require_active`. Services lock with `require_active` where they mutate, so no
+    lock is held for the rest of the request (for example during an upload's storage write).
+    """
+    project = await get(conn, account_id, project_id)
+    if not is_active(project):
+        raise ProjectReadOnly()
+    return project
+
+
 async def require_active(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
     """The read-only guard (AD-22): every content mutation calls it first.
 

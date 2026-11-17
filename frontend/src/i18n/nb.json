@@ -63,11 +63,32 @@
   },
   "projectHome": {
     "dropZone": {
-      "heading": "Last opp notatene dine for å starte"
+      "heading": "Last opp notatene dine for å starte",
+      "body": "Slipp filer her eller <browse>velg fra maskinen</browse>. Når en fil er klar, kan du spørre om den og lage quizer, treningskort og sammendrag."
     }
   },
   "files": {
-    "header": "Filer <muted>· {{n}} av 10</muted>"
+    "header": "Filer <muted>· {{n}} av 10</muted>",
+    "upload": "Last opp",
+    "types": "PDF, Word, PowerPoint, tekst eller Markdown · opptil 50 MB hver",
+    "empty": "Ingen filer ennå. Notatene dine dukker opp her.",
+    "status": {
+      "processing": "Leser …",
+      "ready": "Klar",
+      "warning": "Klar, delvis uleselig",
+      "rejected": "Avvist"
+    },
+    "note": {
+      "warning": "Alt vi klarte å lese, er klart til bruk.",
+      "pages_one": "Side {{pages}} kunne ikke leses.",
+      "pages_other": "Sidene {{pages}} kunne ikke leses."
+    },
+    "reason": {
+      "unreadable": "Vi fikk ikke lest nok tekst i denne filen. Den teller ikke blant de 10 filene dine.",
+      "unparseable": "Filen kunne ikke åpnes. Den kan være skadet eller passordbeskyttet.",
+      "interrupted": "Lesingen stoppet. Last opp filen på nytt.",
+      "processing_failed": "Lesingen stoppet. Last opp filen på nytt."
+    }
   },
   "account": {
     "welcome": "Velkommen, {{firstName}}",
@@ -113,6 +134,12 @@
     "session_expired": "Du er logget ut. Logg inn for å fortsette.",
     "auth_unavailable": "Noe gikk galt.",
     "invalid_name": "Gi prosjektet et navn.",
-    "project_read_only": "Dette prosjektet kan bare leses."
+    "project_read_only": "Dette prosjektet kan bare leses.",
+    "unsupported_file_type": "Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC.",
+    "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny."
+  },
+  "inlineError": {
+    "reassurance": "Ingenting du har laget, er borte.",
+    "retry": "Prøv igjen"
   }
 }

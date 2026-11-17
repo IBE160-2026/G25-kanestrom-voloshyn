@@ -44,6 +44,48 @@
   letter-spacing: var(--type-title-sm-letter-spacing);
 }
 
+/* A file dragged over the drop zone. */
+.over {
+  border-color: var(--color-primary);
+  background: var(--color-primary-wash);
+}
+
+/* Muted body with "browse" in the primary colour. */
+.dropBody {
+  max-width: calc(var(--space-7) * 9);
+  color: var(--color-text-muted);
+  font-size: var(--type-body-size);
+}
+
+.browse {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.browse:disabled {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.dropTypes {
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+/* The chat thread's place once a file is Ready; the chat arrives with its own story. */
+.thread {
+  flex: 1;
+}
+
+/* The hidden file picker behind "browse" and Upload. */
+.picker {
+  display: none;
+}
+
 /* Tool buttons row: empty until Quiz, Flashcards, and Summarize arrive. */
 .tools {
   display: flex;
@@ -51,25 +93,6 @@
   gap: var(--space-2);
   min-height: var(--space-touch-target-min);
   margin-top: var(--space-2);
-}
-
-/* Files panel (DESIGN.md › Files panel). */
-.files {
-  flex: none;
-  width: var(--space-files-panel-width);
-  padding: var(--space-5) var(--space-4);
-  background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
-}
-
-.filesHeading {
-  font-size: var(--type-heading-size);
-  font-weight: var(--type-heading-weight);
-}
-
-.muted {
-  color: var(--color-text-muted);
-  font-weight: var(--type-body-weight);
 }
 
 /* Skeleton (DESIGN.md › Skeleton): static border-coloured blocks, no shimmer. */
@@ -82,10 +105,4 @@
   flex: 1;
   min-height: calc(var(--space-7) * 6);
   border-radius: var(--radius-xl);
-}
-
-.skeletonRow {
-  height: var(--space-7);
-  margin-top: var(--space-4);
-  border-radius: var(--radius-lg);
 }

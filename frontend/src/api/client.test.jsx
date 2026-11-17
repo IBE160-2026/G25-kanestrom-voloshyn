@@ -68,6 +68,16 @@ describe('apiFetch', () => {
     expect(JSON.parse(init.body)).toEqual({ first_name: 'Emma' })
   })
 
+  it('sends a FormData body as is, with no Content-Type, so the browser sets the multipart boundary', async () => {
+    const form = new FormData()
+    form.append('file', new File(['hello'], 'notes.txt', { type: 'text/plain' }))
+    await client.apiFetch('/api/projects/p/materials', { method: 'POST', body: form })
+    const [, init] = callTo('/api/projects/p/materials')
+    expect(init.body).toBe(form)
+    expect(init.headers['Content-Type']).toBeUndefined()
+    expect(init.headers.Authorization).toBe('Bearer tok')
+  })
+
   it('sends no Authorization header when signed out', async () => {
     getSession.mockResolvedValue({ data: { session: null } })
     await client.apiFetch('/api/me')
