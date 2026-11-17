@@ -165,11 +165,12 @@ class Runner:
 
     async def _run(self, job_id: UUID, kind_name: str, payload: Any) -> None:
         assert self._semaphore is not None
+        after: AfterCommit | None = None
         async with self._semaphore:
             started = time.monotonic()
             outcome = "error"
             try:
-                outcome = await self._steps(job_id, kind_name, payload)
+                outcome, after = await self._steps(job_id, kind_name, payload)
             except Exception as exc:  # noqa: BLE001 -- a job task must never raise
                 logger.warning("Job %s (%s) failed: %s", job_id, kind_name, type(exc).__name__)
                 outcome = await self._end_safely(job_id, "failed", PROCESSING_FAILED)
@@ -177,15 +178,19 @@ class Runner:
                 logger.info(
                     "Job %s (%s): %s in %.2f s", job_id, kind_name, outcome, time.monotonic() - started
                 )
+        # After the slot is released: a slow after-commit step (auto-naming's model call) never holds
+        # one of the `max_concurrent` slots. Still awaited in this task, so `drain` waits for it.
+        await _after([after])
 
-    async def _steps(self, job_id: UUID, kind_name: str, payload: Any) -> str:
+    async def _steps(self, job_id: UUID, kind_name: str, payload: Any) -> tuple[str, AfterCommit | None]:
+        """Returns the outcome and the after-commit step, which the caller runs outside the slot."""
         kind = self.kinds[kind_name]
         # 1. Claim it in a short transaction.
         async with self.pool.connection() as conn:
             async with conn.transaction():
                 job = await repo.claim(conn, job_id)
         if job is None:
-            return "skipped"
+            return "skipped", None
 
         # 2. The work, with no connection held (AD-18).
         plan = await kind.run(job, payload)
@@ -196,7 +201,7 @@ class Runner:
             async with conn.transaction():
                 locked = await repo.get_for_update(conn, job_id)
                 if locked is None or locked["status"] != "running":
-                    return "skipped"
+                    return "skipped", None
                 if (
                     locked["cancel_requested"]
                     or await repo.project_deleted(conn, locked["project_id"])
@@ -209,8 +214,7 @@ class Runner:
                     await plan.apply(conn)
                     await repo.finish(conn, job_id, "completed", result_ref=plan.result_ref)
                     after = plan.after_commit
-        await _after([after])
-        return aborted_status or "completed"
+        return aborted_status or "completed", after
 
     async def _end_safely(self, job_id: UUID, status: str, error_code: str) -> str:
         """Fail or cancel a job and run its terminal hook, in one transaction. Never raises."""

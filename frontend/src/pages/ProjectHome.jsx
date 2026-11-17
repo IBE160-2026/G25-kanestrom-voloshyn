@@ -13,6 +13,10 @@ import { ACCEPT, useProjectFiles } from './useProjectFiles.js'
 // Codes that mean "no such Project here": a missing or foreign id, or one that isn't an id at all.
 const GONE = new Set(['not_found', 'invalid_request'])
 
+// Re-reading an unnamed Project for its auto-name: every 2 s, for at most 30 s (Story 2.4b).
+export const NAME_POLL_MS = 2000
+export const NAME_WAIT_MS = 30000
+
 // Project home (FR-4, FR-6, FR-8; DESIGN.md › Layout › Project home, mock key-project-home.html).
 // Opening it reads the Project through GET /api/projects/{id}, which records it as the last opened,
 // and lists its files. The chat column shows the Upload drop zone until a file is Ready (the chat
@@ -26,7 +30,7 @@ export default function ProjectHome() {
   const { projectId } = useParams()
   const picker = useRef(null)
   const projectFiles = useProjectFiles(projectId)
-  const { me, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
+  const { me, activeProjects, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
     useOutletContext()
 
   // Privacy notice (Story 2.3, FR-6, §5.3): until the Account has accepted it, Upload, "browse", and
@@ -112,6 +116,49 @@ export default function ProjectHome() {
   const ready = project !== null && listed && me !== null && me !== undefined
   const readOnly = Boolean(project?.archived_at || project?.deleted_at)
   const anyReady = (files.materials ?? []).some((m) => m.status === 'ready')
+
+  // Auto-naming (Story 2.4b, FR-4, AD-14): the server names an unnamed Project after a file turns
+  // Ready. When a file turns Ready in this view while the Project has no name, the Project is read
+  // again every 2 s, for at most 30 s, until it has one; the Top bar and the Sidebar then show it.
+  // The first list of a Project is only the baseline, so opening one never starts re-reading.
+  const shown = activeProjects?.find((p) => p.id === projectId) ?? project
+  const unnamed = project !== null && !shown?.name
+  const readyCount = files.materials ? files.materials.filter((m) => m.status === 'ready').length : null
+  const [readySeen, setReadySeen] = useState({ id: null, count: 0 })
+  const [naming, setNaming] = useState(null) // { id, round }: a new round restarts the 30 s
+  if (readyCount !== null && (readySeen.id !== projectId || readySeen.count !== readyCount)) {
+    const rose = readySeen.id === projectId && readyCount > readySeen.count
+    setReadySeen({ id: projectId, count: readyCount })
+    if (rose && unnamed) setNaming({ id: projectId, round: (naming?.round ?? 0) + 1 })
+  }
+  const namingRound = naming?.id === projectId && unnamed ? naming.round : null
+  useEffect(() => {
+    if (namingRound === null) return undefined
+    let live = true
+    const handle = { timer: null, tries: 0 }
+    const tick = async () => {
+      handle.tries += 1
+      try {
+        const fresh = await apiFetch(`/api/projects/${projectId}`)
+        if (!live) return
+        if (fresh?.name) {
+          setLoaded((state) => (state?.id === projectId ? { id: projectId, project: fresh } : state))
+          upsertProject(fresh)
+          return
+        }
+      } catch (err) {
+        if (SIGNED_OUT_CODES.has(err?.code) || GONE.has(err?.code)) return
+        // anything else is retried on the next tick
+      }
+      if (live && handle.tries < NAME_WAIT_MS / NAME_POLL_MS) handle.timer = setTimeout(tick, NAME_POLL_MS)
+    }
+    handle.timer = setTimeout(tick, NAME_POLL_MS)
+    return () => {
+      live = false
+      clearTimeout(handle.timer)
+    }
+  }, [namingRound, projectId, upsertProject])
+
   const drop = useDropTarget(files.upload, ready && !readOnly)
   useBlockWindowFileDrop()
 
