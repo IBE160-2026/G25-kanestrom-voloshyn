@@ -92,6 +92,16 @@
       "unparseable": "Filen kunne ikke åpnes. Den kan være skadet eller passordbeskyttet.",
       "interrupted": "Lesingen stoppet. Last opp filen på nytt.",
       "processing_failed": "Lesingen stoppet. Last opp filen på nytt."
+    },
+    "remove": {
+      "menu": "Flere valg for {{name}}",
+      "item": "Fjern",
+      "title": "Vil du fjerne {{name}}?",
+      "body": "Quizer, treningskort og sammendrag laget fra denne filen blir liggende. Feilene fra den ligger fortsatt i repetisjonen din.",
+      "reading": "Lesingen stopper, og filen blir ikke lagt til.",
+      "cancel": "Avbryt",
+      "confirm": "Fjern",
+      "failed": "Vi fikk ikke fjernet filen."
     }
   },
   "account": {

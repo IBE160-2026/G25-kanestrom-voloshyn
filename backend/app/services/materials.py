@@ -14,6 +14,9 @@ If anything after step 2 fails, or the commit does, the stored original is delet
 Processing: extract (in a thread) -> Content Integrity -> one save transaction with the Sections and
 `ready`, or `rejected` with its reason; a rejected Material's original is deleted after the commit.
 After a `ready` commit, an unnamed Project is named from that Material's Sections (FR-4, AD-14).
+
+Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, and cancels the
+Material's job; the stored original is deleted after the commit.
 """
 
 import logging
@@ -53,6 +56,11 @@ DOCUMENT_TYPES = {
 # Reject reasons (AD-6): codes the SPA translates.
 UNREADABLE = "unreadable"
 UNPARSEABLE = "unparseable"
+
+
+class MaterialNotFound(AppError):
+    def __init__(self) -> None:
+        super().__init__(404, "not_found", "No such file")
 
 
 class UnsupportedFileType(AppError):
@@ -141,6 +149,27 @@ async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: 
     """Every non-removed Material of the Project with its last status (FR-8). A read: no guard."""
     await projects.get(conn, account_id, project_id)
     return await repo.list_for_project(conn, account_id, project_id)
+
+
+async def remove(
+    conn: AsyncConnection, storage: Storage, account_id: UUID, project_id: UUID, material_id: UUID
+) -> Callable[[], Any]:
+    """Remove a Material, all or nothing (FR-20, AD-23). Returns the after-commit step that deletes the
+    stored original. An already removed Material changes nothing in the database, but the delete is
+    returned again, so a retry deletes an original whose earlier delete failed (it is idempotent).
+
+    The row, its file name, and its Section labels stay; the text goes. Generated content stays.
+    """
+    await projects.require_active(conn, account_id, project_id)
+    material = await repo.get_for_update(conn, account_id, material_id)
+    if material is None or material["project_id"] != project_id:
+        raise MaterialNotFound()
+    if material["removed_at"] is None:
+        await repo.mark_removed(conn, account_id, material_id)
+        await repo.empty_sections(conn, material_id)
+        await jobs.cancel_for_material(conn, account_id, material_id)
+    path = material_path(account_id, project_id, material_id)
+    return lambda: storage.delete(path)
 
 
 # --- The material_processing job (AD-5, AD-20) ---

@@ -59,6 +59,7 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     jobs: jobs.map((j) => ({ ...j })),
     created: 0,
     uploaded: 0,
+    removed: [], // ids of removed files (Story 2.7)
     autoNames: {}, // { [projectId]: name } the next GET /api/projects/{id} returns (Story 2.4b)
   }
 
@@ -110,6 +111,23 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
         state.jobs.push(job)
         return { material: { ...created }, job_id: job.id }
       }
+    }
+    // Remove a file (Story 2.7): like the server, 204 also when already removed; the job is cancelled.
+    const one = path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/]+)$/)
+    if (one && method === 'DELETE') {
+      const [, id, materialId] = one
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw { code: 'project_read_only', params: {} }
+      if (state.removed.includes(materialId)) return null
+      const list = state.materials[id] ?? []
+      if (!list.some((m) => m.id === materialId)) throw notFound()
+      state.materials[id] = list.filter((m) => m.id !== materialId)
+      state.removed.push(materialId)
+      for (const job of state.jobs) {
+        if (job.result_ref === materialId && ['queued', 'running'].includes(job.status)) job.status = 'cancelled'
+      }
+      return null
     }
     const seen = path.match(/^\/api\/jobs\/([^/]+)\/seen$/)
     if (seen && method === 'POST') {

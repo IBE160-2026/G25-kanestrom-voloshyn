@@ -115,3 +115,93 @@
 .noteError {
   color: var(--color-error);
 }
+
+/* Overflow menu (DESIGN.md › Overflow menu): a muted "···" trigger with a touch-target hit area, and a
+   surface panel whose items are normal text, at least touch-target tall, hover fill. */
+.more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-touch-target-min);
+  height: var(--space-touch-target-min);
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dots {
+  width: var(--space-4);
+  height: var(--space-1);
+}
+
+.more:hover,
+.more:focus-visible,
+.more[data-state='open'] {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.menu {
+  min-width: calc(var(--space-7) * 3);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  font-size: var(--type-ui-size);
+  z-index: 10;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.item[data-highlighted] {
+  background: var(--color-hover);
+}
+
+.item:focus-visible {
+  outline-offset: calc(var(--space-focus-ring-width) * -1);
+}
+
+/* Rejected rows: a small ghost "Remove" instead of the menu (DESIGN.md › File row). */
+.removeNow {
+  flex: none;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  margin: calc(var(--space-2) * -1) calc(var(--space-2) * -1) 0 0;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  cursor: pointer;
+}
+
+.removeNow:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.more:focus-visible,
+.removeNow:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* As the Upload button's disabled state (FilesPanel.module.css): muted label, no opacity value. */
+.removeNow:disabled {
+  color: var(--color-text-muted);
+  cursor: progress;
+}

@@ -4,6 +4,9 @@
 // - Type and size are checked here first as a hint only; the server enforces every limit (AD-5).
 // - While any file is Reading…, the jobs endpoint is polled every 2 s. When a processing job finishes,
 //   the list is fetched again and the job is marked seen. Nothing is polled otherwise.
+// - `remove(material)` removes a file (FR-20, AD-23): the row leaves only once the server has said 204
+//   (or `not_found`: it is gone already). Removed ids are remembered per Project, so a list request
+//   sent before the removal committed can't bring the row back when it answers later.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
@@ -51,6 +54,13 @@ export function useProjectFiles(projectId) {
   const [pending, setPending] = useState([]) // [{ key, projectId, name }] queued or sending
   const [failures, setFailures] = useState([]) // [{ key, projectId, name, error, file }]
   const queue = useRef(Promise.resolve())
+  const removedIds = useRef(new Map()) // { [projectId]: Set of removed Material ids }
+
+  const withoutRemoved = useCallback((id, list) => {
+    const gone = removedIds.current.get(id)
+    const all = Array.isArray(list) ? list : []
+    return gone ? all.filter((m) => !gone.has(m.id)) : all
+  }, [])
 
   const materials = loaded.id === projectId ? loaded.materials : null
 
@@ -58,16 +68,16 @@ export function useProjectFiles(projectId) {
     (id) =>
       apiFetch(`/api/projects/${id}/materials`).then((list) => {
         // Only while that Project is still the one shown.
-        setLoaded((state) => (state.id === id ? { id, materials: Array.isArray(list) ? list : [] } : state))
+        setLoaded((state) => (state.id === id ? { id, materials: withoutRemoved(id, list) } : state))
       }),
-    [],
+    [withoutRemoved],
   )
 
   // Load the list when a Project opens (FR-8).
   useEffect(() => {
     let live = true
     apiFetch(`/api/projects/${projectId}/materials`)
-      .then((list) => live && setLoaded({ id: projectId, materials: Array.isArray(list) ? list : [] }))
+      .then((list) => live && setLoaded({ id: projectId, materials: withoutRemoved(projectId, list) }))
       .catch((error) => {
         // A missing or foreign Project is handled by the page (it goes back to /projects).
         if (live && !SIGNED_OUT_CODES.has(error?.code) && error?.code !== 'not_found' && error?.code !== 'invalid_request') {
@@ -77,7 +87,7 @@ export function useProjectFiles(projectId) {
     return () => {
       live = false
     }
-  }, [projectId])
+  }, [projectId, withoutRemoved])
 
   // Poll only while something is Reading… (AD-20).
   const processing = Boolean(materials?.some((m) => m.status === 'processing'))
@@ -165,6 +175,23 @@ export function useProjectFiles(projectId) {
     [failures, send],
   )
 
+  /** Remove a file; resolves once removed (the row leaves), rejects with the ApiError otherwise.
+   * `not_found` counts as removed: the file is gone either way. */
+  const remove = useCallback(
+    async (material) => {
+      const id = projectId
+      try {
+        await apiFetch(`/api/projects/${id}/materials/${material.id}`, { method: 'DELETE' })
+      } catch (error) {
+        if (error?.code !== 'not_found') throw error
+      }
+      if (!removedIds.current.has(id)) removedIds.current.set(id, new Set())
+      removedIds.current.get(id).add(material.id)
+      setLoaded((state) => (state.id === id ? { id, materials: withoutRemoved(id, state.materials) } : state))
+    },
+    [projectId, withoutRemoved],
+  )
+
   return {
     materials,
     pending: pending.filter((item) => item.projectId === projectId),
@@ -172,5 +199,6 @@ export function useProjectFiles(projectId) {
     loadError: loadError?.id === projectId ? loadError.error : null,
     upload,
     retry,
+    remove,
   }
 }

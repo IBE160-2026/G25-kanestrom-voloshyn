@@ -87,6 +87,16 @@ def test_upload_is_guarded():
     assert active_project in _calls(upload.dependant)
 
 
+def test_remove_is_guarded():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    remove = next(
+        r
+        for r in api_routes(app)
+        if r.path == "/api/projects/{project_id}/materials/{material_id}" and "DELETE" in r.methods
+    )
+    assert active_project in _calls(remove.dependant)
+
+
 def test_allowlist_names_only_existing_routes():
     # A stale entry would hide a typo or a removed route.
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
