@@ -27,4 +27,4 @@
 - [ ] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — En ukjent frontend-test feilet én gang (mulig ustabil); følg med.
 - [x] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Manuell nettlesersjekk av 2.7 (fjern klar, leser…- og avvist fil; fokus inn i dialogen). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.
-- [ ] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner.
+- [x] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner. (løst 2026-11-18, merge b4257c5)
