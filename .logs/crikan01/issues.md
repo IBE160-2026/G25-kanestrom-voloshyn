@@ -29,4 +29,4 @@
 - [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.
 - [x] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner. (løst 2026-11-18, merge b4257c5)
 - [ ] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Prøv `extract_image_text` mot en ekte syns-modell (`LLM_VISION_MODEL`) når OpenRouter-nøkkelen er på plass.
-- [ ] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Epic 2 er ferdig: sett `epic-2` til done i sprint-status, eventuelt etter en retrospektiv.
+- [x] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Epic 2 er ferdig: sett `epic-2` til done i sprint-status, eventuelt etter en retrospektiv. (løst 2026-11-18, commit f9acc9d)
