@@ -105,7 +105,10 @@
       "delete": "Slett emnet {{label}}",
       "new": "Nytt emne",
       "failed": "Vi fikk ikke endret emnene.",
-      "invalidName": "Gi emnet et navn."
+      "invalidName": "Gi emnet et navn.",
+      "mergeTopics": "Slå sammen emner",
+      "mergeHint": "Velg emnene som skal slås sammen.",
+      "cancel": "Avbryt"
     },
     "remove": {
       "menu": "Flere valg for {{name}}",

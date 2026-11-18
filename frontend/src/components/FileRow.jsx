@@ -1,5 +1,5 @@
 import { DropdownMenu } from 'radix-ui'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styles from './FileRow.module.css'
 import TopicList from './TopicList.jsx'
@@ -16,7 +16,8 @@ import TopicList from './TopicList.jsx'
 // Project) or an id (still uploading), the row offers neither.
 //
 // Topic edits (Story 2.6b): with `onEditTopics(materialId, edit)` (an active Project), the Topic list
-// offers rename, delete, merge, and add; without it the list is read-only.
+// offers rename, delete, merge, and add; without it the list is read-only. With 2+ Topics the "···"
+// menu also offers "Merge topics", which starts the list's merge mode; Cancel returns focus to "···".
 function fileState(material) {
   if (material.status === 'processing') return 'processing'
   if (material.status === 'rejected') return 'rejected'
@@ -37,6 +38,8 @@ export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics,
   const state = fileState(material)
   const removable = Boolean(material.id)
   const topics = state === 'ready' || state === 'warning' ? (material.topics ?? []) : []
+  const [mergeMode, setMergeMode] = useState(false)
+  const canMerge = Boolean(onEditTopics) && removable && topics.length >= 2
   const pages = material.warning_pages ?? []
   const pageList = new Intl.ListFormat(i18n.language, { style: 'long', type: 'conjunction' }).format(
     pages.map(String),
@@ -85,6 +88,11 @@ export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics,
                 // The dialog takes focus and later returns it to the trigger.
                 onCloseAutoFocus={(event) => event.preventDefault()}
               >
+                {canMerge && (
+                  <DropdownMenu.Item className={styles.item} onSelect={() => setMergeMode(true)}>
+                    {t('files.topics.mergeTopics')}
+                  </DropdownMenu.Item>
+                )}
                 <DropdownMenu.Item className={styles.item} onSelect={() => onRemove(material, trigger.current)}>
                   {t('files.remove.item')}
                 </DropdownMenu.Item>
@@ -109,6 +117,11 @@ export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics,
         <TopicList
           topics={topics}
           onEdit={onEditTopics && material.id ? (edit) => onEditTopics(material.id, edit) : undefined}
+          mergeMode={canMerge && mergeMode}
+          onMergeEnd={({ cancelled }) => {
+            setMergeMode(false)
+            if (cancelled) trigger.current?.focus()
+          }}
         />
       )}
     </li>

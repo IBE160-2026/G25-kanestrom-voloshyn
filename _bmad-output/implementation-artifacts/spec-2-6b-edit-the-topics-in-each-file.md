@@ -30,6 +30,7 @@ context:
   - The count and the list update from the response.
   - A failed edit shows the Inline error under the list, and the Topics stay as they were. A network or server error offers "Try again"; a refusal that names a rule shows only its message.
 - Read-only Projects show the list without edit controls (EXPERIENCE.md L485, L516).
+- Merge mode, decided by Cristoffer 2026-11-18 after the browser check (a plain click always renamed, so Merge was hard to find): the file's "···" menu gets "Merge topics" (Ready, active, 2+ Topics). It shows the hint "Select the topics to merge." / "Velg emnene som skal slås sammen."; a click or Space on a chip selects instead of renaming; "Merge" (enabled at 2+) and "Cancel" / "Avbryt" end the mode. Ctrl+click and Space stay as shortcuts. One merge kind only: combine into the lowest-position Topic, then rename. Menu item copy "Merge topics" / "Slå sammen emner".
 - Copy, decided by Cristoffer 2026-11-18 and added to EXPERIENCE.md's strings table: edit failed "We couldn't change the topics." / "Vi fikk ikke endret emnene."; `topic_limit_reached` "A file can have at most 100 topics." / "En fil kan ha høyst 100 emner."; `topic_last_cannot_delete` "A file needs at least one topic." / "En fil må ha minst ett emne."; `topic_merge_cross_material` "Only topics from the same file can be merged." / "Bare emner fra samme fil kan slås sammen."; `invalid_name` on a Topic "Give the topic a name." / "Gi emnet et navn."; accessible names "Rename topic" / "Gi emnet nytt navn", "Delete topic {label}" / "Slett emnet {label}", "New topic" / "Nytt emne". "+ Add topic" and "Merge" come from EXPERIENCE.md L238, L144.
 
 ## Boundaries & Constraints
@@ -106,6 +107,13 @@ context:
 ## Implementation Notes
 
 ## Spec Change Log
+
+### 2026-11-18 — merge mode (human renegotiation)
+- Trigger: Cristoffer's browser check — clicking a second chip opened rename, so Merge could not be reached without knowing Ctrl+click.
+- Amended: frozen Approach gains the merge-mode bullet; EXPERIENCE.md Topic list, File row, and strings updated as decided by Cristoffer.
+- Avoids: a Merge that exists but cannot be discovered.
+- KEEP: the four routes, the service, the grouped-run rendering, Ctrl+click/Space shortcuts, and every existing test.
+
 
 ## Review Triage Log
 

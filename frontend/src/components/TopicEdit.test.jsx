@@ -417,3 +417,113 @@ describe('A Topic that is gone', () => {
     expect(callsTo('/api/projects/a/materials').length).toBe(listsBefore + 1)
   })
 })
+
+describe('Merge mode', () => {
+  const menuButton = (name) => within(panel()).getByRole('button', { name: `More options for ${name}` })
+
+  async function startMergeMode(user, name = 'lecture.pdf', strings = en) {
+    const trigger = within(panel()).getByRole('button', {
+      name: strings.files.remove.menu.replace('{{name}}', name),
+    })
+    await user.click(trigger)
+    await user.click(await screen.findByRole('menuitem', { name: strings.files.topics.mergeTopics }))
+    return trigger
+  }
+
+  async function menuItems(user, name) {
+    await user.click(menuButton(name))
+    const items = (await screen.findAllByRole('menuitem')).map((item) => item.textContent)
+    await user.keyboard('{Escape}')
+    return items
+  }
+
+  it('"Merge topics" shows only for a Ready file with 2+ Topics in an active Project', async () => {
+    const user = userEvent.setup()
+    await openProject({
+      files: [
+        material('m', { file_name: 'lecture.pdf', topics: topics(3) }),
+        material('w', { file_name: 'scan.pdf', warning: true, warning_pages: [2], topics: topics(2) }),
+        material('one', { file_name: 'single.pdf', topics: topics(1) }),
+        material('r', { file_name: 'reading.pdf', status: 'processing' }),
+      ],
+    })
+
+    expect(await menuItems(user, 'lecture.pdf')).toEqual([en.files.topics.mergeTopics, en.files.remove.item])
+    expect(await menuItems(user, 'scan.pdf')).toEqual([en.files.topics.mergeTopics, en.files.remove.item])
+    expect(await menuItems(user, 'single.pdf')).toEqual([en.files.remove.item])
+    expect(await menuItems(user, 'reading.pdf')).toEqual([en.files.remove.item])
+  })
+
+  it('offers no "Merge topics" in a read-only Project', async () => {
+    await openProject({ projects: [project('a', { archived_at: '2026-11-17T10:00:00Z' })] })
+    expect(within(panel()).queryByRole('button', { name: /More options/ })).not.toBeInTheDocument()
+  })
+
+  it('plain clicks select; Merge is enabled at 2, sends both ids, and opens rename on the survivor', async () => {
+    const user = userEvent.setup()
+    await openProject({ files: [material('m', { file_name: 'lecture.pdf', topics: topics(4) })] })
+
+    await startMergeMode(user)
+
+    expect(within(panel()).getByText(en.files.topics.mergeHint)).toBeInTheDocument()
+    await waitFor(() => expect(within(list(4)).getByRole('button', { name: 'Topic 1' })).toHaveFocus())
+    expect(within(panel()).queryByRole('button', { name: /^Delete topic/ })).not.toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: en.files.topics.add })).not.toBeInTheDocument()
+    const merge = within(panel()).getByRole('button', { name: en.files.topics.merge })
+    expect(merge).toBeDisabled()
+
+    await user.click(within(list(4)).getByRole('button', { name: 'Topic 3' }))
+    expect(within(panel()).queryByRole('textbox')).not.toBeInTheDocument()
+    expect(within(list(4)).getByRole('button', { name: 'Topic 3' })).toHaveAttribute('aria-pressed', 'true')
+    expect(merge).toBeDisabled()
+    within(list(4)).getByRole('button', { name: 'Topic 2' }).focus()
+    await user.keyboard(' ')
+    expect(merge).toBeEnabled()
+
+    await user.click(merge)
+
+    expect(callsTo('/api/projects/a/topics/merge', 'POST')).toEqual([
+      ['/api/projects/a/topics/merge', { method: 'POST', body: { topic_ids: ['t-2', 't-3'] } }],
+    ])
+    const field = await within(panel()).findByRole('textbox', { name: en.files.topics.rename })
+    expect(field).toHaveValue('Topic 2')
+    expect(within(panel()).queryByText(en.files.topics.mergeHint)).not.toBeInTheDocument()
+    expect(within(panel()).getByText('3 topics')).toBeInTheDocument()
+  })
+
+  it.each([
+    ['Cancel', async (user) => user.click(within(panel()).getByRole('button', { name: en.files.topics.cancel }))],
+    ['Esc', async (user) => user.keyboard('{Escape}')],
+  ])('%s ends the mode with nothing sent and focus back on "···"', async (_, end) => {
+    const user = userEvent.setup()
+    await openProject()
+    const trigger = await startMergeMode(user)
+    await user.click(within(list(3)).getByRole('button', { name: 'Topic 1' }))
+    await user.click(within(list(3)).getByRole('button', { name: 'Topic 2' }))
+
+    await end(user)
+
+    expect(within(panel()).queryByText(en.files.topics.mergeHint)).not.toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: en.files.topics.merge })).not.toBeInTheDocument()
+    expect(within(list(3)).getByRole('button', { name: 'Topic 1' })).toHaveAttribute('aria-pressed', 'false')
+    expect(within(panel()).getByRole('button', { name: en.files.topics.add })).toBeInTheDocument()
+    expect(callsTo('/api/projects/a/topics/merge', 'POST')).toEqual([])
+    await waitFor(() => expect(trigger).toHaveFocus())
+    // Back outside the mode, a click renames again.
+    await user.click(within(list(3)).getByRole('button', { name: 'Topic 1' }))
+    expect(within(panel()).getByRole('textbox', { name: en.files.topics.rename })).toBeInTheDocument()
+  })
+
+  it('works in Norwegian', async () => {
+    const user = userEvent.setup()
+    await i18n.changeLanguage('nb')
+    await openProject()
+
+    await startMergeMode(user, 'lecture.pdf', nb)
+
+    expect(within(panel()).getByText(nb.files.topics.mergeHint)).toBeInTheDocument()
+    expect(within(panel()).getByRole('button', { name: nb.files.topics.merge })).toBeDisabled()
+    await user.click(within(panel()).getByRole('button', { name: nb.files.topics.cancel }))
+    expect(within(panel()).queryByText(nb.files.topics.mergeHint)).not.toBeInTheDocument()
+  })
+})

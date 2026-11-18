@@ -104,7 +104,10 @@
       "delete": "Delete topic {{label}}",
       "new": "New topic",
       "failed": "We couldn't change the topics.",
-      "invalidName": "Give the topic a name."
+      "invalidName": "Give the topic a name.",
+      "mergeTopics": "Merge topics",
+      "mergeHint": "Select the topics to merge.",
+      "cancel": "Cancel"
     },
     "remove": {
       "menu": "More options for {{name}}",

@@ -230,3 +230,19 @@
 .error {
   margin-top: var(--space-2);
 }
+
+.merge:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.merge:disabled:hover {
+  background: transparent;
+}
+
+/* Merge mode's hint: muted caption above the list. */
+.hint {
+  margin-bottom: var(--space-2);
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}

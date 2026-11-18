@@ -20,6 +20,10 @@ import styles from './TopicList.module.css'
 // - "+ Add topic" opens the same field, and Enter adds;
 // - Ctrl+click or Space selects chips; with 2 or more selected a ghost "Merge" appears, and the merged
 //   Topic then opens for rename.
+// - merge mode (`mergeMode`, started from the file row's "···" → "Merge topics"): the hint "Select the
+//   topics to merge." shows, a click or Space on a chip selects it instead of renaming, the × and
+//   "+ Add topic" hide, and "Merge" (enabled at 2+) and "Cancel" sit at the end of the list. Cancel or
+//   Esc clears the selection; either way the mode ends through `onMergeEnd({ cancelled })`.
 // A failed edit leaves the Topics as they were and shows the Inline error under the list: "Try again"
 // for a network or server failure, only the message for a refusal that names a rule.
 export const COLLAPSE_ABOVE = 20
@@ -90,7 +94,7 @@ function LabelField({ value, onChange, onCommit, onCancel, label }) {
   )
 }
 
-export default function TopicList({ topics, onEdit }) {
+export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEnd }) {
   const { t } = useTranslation()
   const baseId = useId()
   // Open state by run index, overriding the default (collapsed above 20).
@@ -114,6 +118,14 @@ export default function TopicList({ topics, onEdit }) {
     const element = target === 'add' ? addButton.current : chipRefs.current.get(target)
     ;(element ?? addButton.current ?? region.current)?.focus()
   })
+  // Merge mode starts on the first chip (or the list, when it sits in a collapsed group).
+  useEffect(() => {
+    if (!mergeMode) return
+    const first = (topics ?? []).map((topic) => chipRefs.current.get(topic.id)).find(Boolean)
+    ;(first ?? region.current)?.focus()
+    // Only when the mode starts, not on every Topic change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mergeMode])
   // "Try again" takes focus after a failure (EXPERIENCE.md › Inline error).
   useEffect(() => {
     if (failure?.retry) errorBox.current?.querySelector('button')?.focus()
@@ -122,6 +134,7 @@ export default function TopicList({ topics, onEdit }) {
   if (!topics?.length) return null
 
   const editable = typeof onEdit === 'function'
+  const merging = editable && mergeMode
   const groups = groupTopics(topics)
   const grouped = groups.some((group) => group.label !== null)
   const collapsedByDefault = topics.length > COLLAPSE_ABOVE
@@ -203,19 +216,25 @@ export default function TopicList({ topics, onEdit }) {
     )
   }
 
+  function cancelMerge() {
+    setSelected(new Set())
+    onMergeEnd?.({ cancelled: true })
+  }
+
   function merge() {
     if (chosen.length < 2) return
     // The server keeps the Topic with the lowest position; the list is in position order.
     const survivor = chosen[0]
     send({ type: 'merge', topicIds: chosen.map((topic) => topic.id) }, (next) => {
       setSelected(new Set())
+      if (merging) onMergeEnd?.({ cancelled: false })
       const merged = next.find((topic) => topic.id === survivor.id)
       if (merged) startRename(merged)
     })
   }
 
   function editableChips({ items, id }) {
-    const deletable = topics.length > 1
+    const deletable = topics.length > 1 && !merging
     return (
       <ul className={styles.chips} id={id}>
         {items.map((topic) => {
@@ -245,7 +264,7 @@ export default function TopicList({ topics, onEdit }) {
                   title={topic.label}
                   aria-pressed={isSelected}
                   onClick={(event) => {
-                    if (event.ctrlKey || event.metaKey) toggleSelected(topic.id)
+                    if (merging || event.ctrlKey || event.metaKey) toggleSelected(topic.id)
                     else startRename(topic)
                   }}
                   onKeyDown={(event) => {
@@ -254,7 +273,8 @@ export default function TopicList({ topics, onEdit }) {
                       toggleSelected(topic.id)
                     } else if (event.key === 'Enter') {
                       event.preventDefault()
-                      startRename(topic)
+                      if (merging) toggleSelected(topic.id)
+                      else startRename(topic)
                     }
                   }}
                   // Space selects on key down; the key up must not also click (which would rename).
@@ -289,7 +309,16 @@ export default function TopicList({ topics, onEdit }) {
     editable ? editableChips({ items, id }) : <ReadOnlyChips topics={items} id={id} />
 
   return (
-    <div className={styles.topics}>
+    <div
+      className={styles.topics}
+      onKeyDown={(event) => {
+        if (merging && event.key === 'Escape') {
+          event.preventDefault()
+          cancelMerge()
+        }
+      }}
+    >
+      {merging && <p className={styles.hint}>{t('files.topics.mergeHint')}</p>}
       {/* Focusable so the keyboard can scroll it (WCAG 2.1.1); named by the Topic count. */}
       <div ref={region} className={styles.scroll} tabIndex={0} role="region" aria-label={t('files.topics.count', { count: topics.length })}>
         {!grouped && chips(topics)}
@@ -325,7 +354,17 @@ export default function TopicList({ topics, onEdit }) {
               </div>
             )
           })}
-        {editable && (
+        {merging && (
+          <div className={styles.actions}>
+            <button type="button" className={styles.merge} disabled={chosen.length < 2} onClick={merge}>
+              {t('files.topics.merge')}
+            </button>
+            <button type="button" className={styles.merge} onClick={cancelMerge}>
+              {t('files.topics.cancel')}
+            </button>
+          </div>
+        )}
+        {editable && !merging && (
           <div className={styles.actions}>
             {editing?.add ? (
               <span className={`${styles.chip} ${styles.editable} ${styles.editing}`}>
