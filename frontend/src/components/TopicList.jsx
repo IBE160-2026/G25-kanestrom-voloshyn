@@ -18,12 +18,14 @@ import styles from './TopicList.module.css'
 //   unchanged or blank label closes without saving);
 // - each chip has a × that deletes it, except a file's last chip;
 // - "+ Add topic" opens the same field, and Enter adds;
-// - Ctrl+click or Space selects chips; with 2 or more selected a ghost "Merge" appears, and the merged
-//   Topic then opens for rename.
+// - Ctrl+click (or Cmd+click) or Space on a chip starts merge mode with that chip selected (through
+//   `onMergeStart`), the same mode as "Merge topics" in the file row's menu;
 // - merge mode (`mergeMode`, started from the file row's "···" → "Merge topics"): the hint "Select the
 //   topics to merge." shows, a click or Space on a chip selects it instead of renaming, the × and
-//   "+ Add topic" hide, and "Merge" (enabled at 2+) and "Cancel" sit at the end of the list. Cancel or
-//   Esc clears the selection; either way the mode ends through `onMergeEnd({ cancelled })`.
+//   "+ Add topic" hide, and a primary "Merge" (enabled at 2+) and a ghost "Cancel" show. "Merge"
+//   merges, then the merged Topic opens for rename. Cancel or Esc clears the selection and returns
+//   focus to the chip that started the mode (or, from the menu, `onMergeEnd` returns it to "···").
+// The action row (hint, Merge, Cancel, "+ Add topic") sits below the scrolling list, always visible.
 // A failed edit leaves the Topics as they were and shows the Inline error under the list: "Try again"
 // for a network or server failure, only the message for a refusal that names a rule.
 export const COLLAPSE_ABOVE = 20
@@ -94,7 +96,7 @@ function LabelField({ value, onChange, onCommit, onCancel, label }) {
   )
 }
 
-export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEnd }) {
+export default function TopicList({ topics, onEdit, mergeMode = false, onMergeStart, onMergeEnd }) {
   const { t } = useTranslation()
   const baseId = useId()
   // Open state by run index, overriding the default (collapsed above 20).
@@ -109,6 +111,7 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
   const errorBox = useRef(null)
   const region = useRef(null)
   const focusNext = useRef(null) // a Topic id or 'add', focused after the next render
+  const mergeOrigin = useRef(null) // the chip that started merge mode, null when the menu did
 
   useEffect(() => {
     const target = focusNext.current
@@ -118,9 +121,10 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
     const element = target === 'add' ? addButton.current : chipRefs.current.get(target)
     ;(element ?? addButton.current ?? region.current)?.focus()
   })
-  // Merge mode starts on the first chip (or the list, when it sits in a collapsed group).
+  // Merge mode from the menu starts on the first chip (or the list, when it sits in a collapsed group);
+  // from a chip, focus stays on that chip.
   useEffect(() => {
-    if (!mergeMode) return
+    if (!mergeMode || mergeOrigin.current) return
     const first = (topics ?? []).map((topic) => chipRefs.current.get(topic.id)).find(Boolean)
     ;(first ?? region.current)?.focus()
     // Only when the mode starts, not on every Topic change.
@@ -216,9 +220,24 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
     )
   }
 
-  function cancelMerge() {
+  function startMergeFrom(topic) {
+    // A file with one Topic has nothing to merge.
+    if (topics.length < 2 || typeof onMergeStart !== 'function') return
+    mergeOrigin.current = topic.id
+    setSelected(new Set([topic.id]))
+    onMergeStart()
+  }
+
+  function endMerge() {
+    mergeOrigin.current = null
     setSelected(new Set())
-    onMergeEnd?.({ cancelled: true })
+  }
+
+  function cancelMerge() {
+    const origin = mergeOrigin.current
+    endMerge()
+    if (origin) focusNext.current = origin
+    onMergeEnd?.({ cancelled: true, returnFocus: !origin })
   }
 
   function merge() {
@@ -226,8 +245,8 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
     // The server keeps the Topic with the lowest position; the list is in position order.
     const survivor = chosen[0]
     send({ type: 'merge', topicIds: chosen.map((topic) => topic.id) }, (next) => {
-      setSelected(new Set())
-      if (merging) onMergeEnd?.({ cancelled: false })
+      endMerge()
+      onMergeEnd?.({ cancelled: false, returnFocus: false })
       const merged = next.find((topic) => topic.id === survivor.id)
       if (merged) startRename(merged)
     })
@@ -264,13 +283,15 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
                   title={topic.label}
                   aria-pressed={isSelected}
                   onClick={(event) => {
-                    if (merging || event.ctrlKey || event.metaKey) toggleSelected(topic.id)
+                    if (merging) toggleSelected(topic.id)
+                    else if (event.ctrlKey || event.metaKey) startMergeFrom(topic)
                     else startRename(topic)
                   }}
                   onKeyDown={(event) => {
                     if (event.key === ' ') {
                       event.preventDefault()
-                      toggleSelected(topic.id)
+                      if (merging) toggleSelected(topic.id)
+                      else startMergeFrom(topic)
                     } else if (event.key === 'Enter') {
                       event.preventDefault()
                       if (merging) toggleSelected(topic.id)
@@ -318,7 +339,7 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
         }
       }}
     >
-      {merging && <p className={styles.hint}>{t('files.topics.mergeHint')}</p>}
+
       {/* Focusable so the keyboard can scroll it (WCAG 2.1.1); named by the Topic count. */}
       <div ref={region} className={styles.scroll} tabIndex={0} role="region" aria-label={t('files.topics.count', { count: topics.length })}>
         {!grouped && chips(topics)}
@@ -354,43 +375,42 @@ export default function TopicList({ topics, onEdit, mergeMode = false, onMergeEn
               </div>
             )
           })}
-        {merging && (
+      </div>
+      {/* The action row sits below the scrolling list, so it shows however long the list is. */}
+      {merging && (
+        <div className={styles.actionArea}>
+          <p className={styles.hint}>{t('files.topics.mergeHint')}</p>
           <div className={styles.actions}>
-            <button type="button" className={styles.merge} disabled={chosen.length < 2} onClick={merge}>
+            <button type="button" className={styles.primary} disabled={chosen.length < 2} onClick={merge}>
               {t('files.topics.merge')}
             </button>
-            <button type="button" className={styles.merge} onClick={cancelMerge}>
+            <button type="button" className={styles.ghost} onClick={cancelMerge}>
               {t('files.topics.cancel')}
             </button>
           </div>
-        )}
-        {editable && !merging && (
-          <div className={styles.actions}>
-            {editing?.add ? (
-              <span className={`${styles.chip} ${styles.editable} ${styles.editing}`}>
-                <LabelField value={draft} onChange={setDraft} onCommit={commit} onCancel={cancel} label={t('files.topics.new')} />
-              </span>
-            ) : (
-              <button
-                ref={addButton}
-                type="button"
-                className={styles.add}
-                onClick={() => {
-                  setEditing({ add: true })
-                  setDraft('')
-                }}
-              >
-                {t('files.topics.add')}
-              </button>
-            )}
-            {chosen.length >= 2 && (
-              <button type="button" className={styles.merge} onClick={merge}>
-                {t('files.topics.merge')}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
+      {editable && !merging && (
+        <div className={styles.actions}>
+          {editing?.add ? (
+            <span className={`${styles.chip} ${styles.editable} ${styles.editing}`}>
+              <LabelField value={draft} onChange={setDraft} onCommit={commit} onCancel={cancel} label={t('files.topics.new')} />
+            </span>
+          ) : (
+            <button
+              ref={addButton}
+              type="button"
+              className={styles.add}
+              onClick={() => {
+                setEditing({ add: true })
+                setDraft('')
+              }}
+            >
+              {t('files.topics.add')}
+            </button>
+          )}
+        </div>
+      )}
       {failure && (
         <div ref={errorBox} className={styles.error}>
           <InlineError onRetry={failure.retry ?? undefined}>

@@ -168,19 +168,27 @@ describe('Add', () => {
 })
 
 describe('Merge', () => {
-  it('Ctrl+click selects; with 2 selected, Merge merges and opens the merged Topic for rename', async () => {
+  it('Ctrl+click starts merge mode with that chip selected; Merge then merges and opens rename', async () => {
     const user = userEvent.setup()
     await openProject({ files: [material('m', { topics: topics(4) })] })
     expect(within(panel()).queryByRole('button', { name: en.files.topics.merge })).not.toBeInTheDocument()
 
     await user.keyboard('{Control>}')
     await user.click(within(list(4)).getByRole('button', { name: 'Topic 3' }))
-    expect(within(list(4)).getByRole('button', { name: 'Topic 3' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(panel()).queryByRole('button', { name: en.files.topics.merge })).not.toBeInTheDocument()
-    await user.click(within(list(4)).getByRole('button', { name: 'Topic 2' }))
     await user.keyboard('{/Control}')
-    expect(within(panel()).queryByRole('textbox')).not.toBeInTheDocument()
 
+    // Merge mode: the hint, a disabled Merge, and Cancel; no × and no "+ Add topic".
+    expect(within(list(4)).getByRole('button', { name: 'Topic 3' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(list(4)).getByRole('button', { name: 'Topic 3' })).toHaveFocus()
+    expect(within(panel()).getByText(en.files.topics.mergeHint)).toBeInTheDocument()
+    expect(within(panel()).getByRole('button', { name: en.files.topics.merge })).toBeDisabled()
+    expect(within(panel()).getByRole('button', { name: en.files.topics.cancel })).toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: /^Delete topic/ })).not.toBeInTheDocument()
+    expect(within(panel()).queryByRole('button', { name: en.files.topics.add })).not.toBeInTheDocument()
+
+    // In merge mode a plain click selects.
+    await user.click(within(list(4)).getByRole('button', { name: 'Topic 2' }))
+    expect(within(panel()).queryByRole('textbox')).not.toBeInTheDocument()
     await user.click(within(panel()).getByRole('button', { name: en.files.topics.merge }))
 
     expect(callsTo('/api/projects/a/topics/merge', 'POST')).toEqual([
@@ -196,7 +204,7 @@ describe('Merge', () => {
     await waitFor(() => expect(chipLabels(list(3))).toEqual(['Topic 1', 'Cell division', 'Topic 4']))
   })
 
-  it('Space selects and unselects a chip without renaming it', async () => {
+  it('Space starts merge mode with that chip selected, without renaming it', async () => {
     const user = userEvent.setup()
     await openProject()
     const first = within(list(3)).getByRole('button', { name: 'Topic 1' })
@@ -205,6 +213,7 @@ describe('Merge', () => {
     await user.keyboard(' ')
     expect(first).toHaveAttribute('aria-pressed', 'true')
     expect(within(panel()).queryByRole('textbox')).not.toBeInTheDocument()
+    expect(within(panel()).getByText(en.files.topics.mergeHint)).toBeInTheDocument()
     await user.keyboard(' ')
     expect(first).toHaveAttribute('aria-pressed', 'false')
 
@@ -215,6 +224,54 @@ describe('Merge', () => {
 
     expect(callsTo('/api/projects/a/topics/merge', 'POST')[0][1].body).toEqual({ topic_ids: ['t-1', 't-3'] })
     expect(await within(panel()).findByRole('textbox', { name: en.files.topics.rename })).toHaveValue('Topic 1')
+  })
+
+  it('Esc from a mode started on a chip returns focus to that chip with nothing sent', async () => {
+    const user = userEvent.setup()
+    await openProject()
+    const second = within(list(3)).getByRole('button', { name: 'Topic 2' })
+
+    second.focus()
+    await user.keyboard(' ')
+    await user.click(within(list(3)).getByRole('button', { name: 'Topic 3' }))
+    await user.keyboard('{Escape}')
+
+    expect(within(panel()).queryByText(en.files.topics.mergeHint)).not.toBeInTheDocument()
+    expect(second).toHaveAttribute('aria-pressed', 'false')
+    expect(callsTo('/api/projects/a/topics/merge', 'POST')).toEqual([])
+    await waitFor(() => expect(within(list(3)).getByRole('button', { name: 'Topic 2' })).toHaveFocus())
+  })
+
+  it('a file with one Topic does not start merge mode', async () => {
+    const user = userEvent.setup()
+    await openProject({ files: [material('m', { topics: topics(1) })] })
+
+    within(within(panel()).getByRole('region', { name: '1 topic' })).getByRole('button', { name: 'Topic 1' }).focus()
+    await user.keyboard(' ')
+
+    expect(within(panel()).queryByText(en.files.topics.mergeHint)).not.toBeInTheDocument()
+  })
+
+  it('the action row sits outside the scrolling list, and Merge is a primary button', async () => {
+    const user = userEvent.setup()
+    await openProject({ files: [material('m', { topics: topics(24, { groupSize: 12 }) })] })
+    const region = list(24)
+    expect(region).not.toContainElement(within(panel()).getByRole('button', { name: en.files.topics.add }))
+
+    await user.click(within(panel()).getByRole('button', { name: 'Part 1, 12 topics' }))
+    within(region).getByRole('button', { name: 'Topic 1' }).focus()
+    await user.keyboard(' ')
+
+    const merge = within(panel()).getByRole('button', { name: en.files.topics.merge })
+    for (const element of [
+      merge,
+      within(panel()).getByRole('button', { name: en.files.topics.cancel }),
+      within(panel()).getByText(en.files.topics.mergeHint),
+    ]) {
+      expect(region).not.toContainElement(element)
+    }
+    expect(merge.className).toMatch(/primary/)
+    expect(within(panel()).getByRole('button', { name: en.files.topics.cancel }).className).toMatch(/ghost/)
   })
 })
 

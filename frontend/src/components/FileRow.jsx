@@ -17,7 +17,8 @@ import TopicList from './TopicList.jsx'
 //
 // Topic edits (Story 2.6b): with `onEditTopics(materialId, edit)` (an active Project), the Topic list
 // offers rename, delete, merge, and add; without it the list is read-only. With 2+ Topics the "···"
-// menu also offers "Merge topics", which starts the list's merge mode; Cancel returns focus to "···".
+// menu also offers "Merge topics", which starts the list's merge mode (Ctrl+click or Space on a chip
+// starts it too); Cancel returns focus to "···", or to the chip that started it.
 function fileState(material) {
   if (material.status === 'processing') return 'processing'
   if (material.status === 'rejected') return 'rejected'
@@ -118,9 +119,10 @@ export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics,
           topics={topics}
           onEdit={onEditTopics && material.id ? (edit) => onEditTopics(material.id, edit) : undefined}
           mergeMode={canMerge && mergeMode}
-          onMergeEnd={({ cancelled }) => {
+          onMergeStart={canMerge ? () => setMergeMode(true) : undefined}
+          onMergeEnd={({ cancelled, returnFocus }) => {
             setMergeMode(false)
-            if (cancelled) trigger.current?.focus()
+            if (cancelled && returnFocus) trigger.current?.focus()
           }}
         />
       )}
