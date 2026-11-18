@@ -61,6 +61,7 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     created: 0,
     uploaded: 0,
     removed: [], // ids of removed files (Story 2.7)
+    topicEdits: 0, // Topic edits answered or refused (Story 2.6b)
     autoNames: {}, // { [projectId]: name } the next GET /api/projects/{id} returns (Story 2.4b)
   }
 
@@ -113,6 +114,13 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
         return { material: { ...created }, job_id: job.id }
       }
     }
+    // Topic edits (Story 2.6b): like the server, each answers the file's whole Topic list, with the same
+    // rule refusals.
+    const topicEdit =
+      path.match(/^\/api\/projects\/([^/]+)\/topics\/(merge)$/) ??
+      path.match(/^\/api\/projects\/([^/]+)\/topics\/([^/]+)$/) ??
+      path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/]+)\/(topics)$/)
+    if (topicEdit) return editTopics(state, method, path, body, topicEdit)
     // Remove a file (Story 2.7): like the server, 204 also when already removed; the job is cancelled.
     const one = path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/]+)$/)
     if (one && method === 'DELETE') {
@@ -162,6 +170,58 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     throw new Error(`unexpected ${method} ${path}`)
   })
   return state
+}
+
+const rule = (code, params = {}) => ({ code, params })
+
+function editTopics(state, method, path, body, [, projectId, second, third]) {
+  const owner = state.projects.find((p) => p.id === projectId)
+  if (!owner) throw notFound()
+  if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+  const files = (state.materials[projectId] ?? []).filter((m) => m.status === 'ready')
+  const fileOf = (topicId) => files.find((m) => (m.topics ?? []).some((t) => t.id === topicId))
+  const answer = (file) => ({ material_id: file.id, topics: file.topics.map((t) => ({ ...t })) })
+  const cleanLabel = () => {
+    const label = String(body?.label ?? '').trim()
+    if (!label || label.length > 100) throw rule('invalid_name')
+    return label
+  }
+  state.topicEdits += 1
+
+  if (third === 'topics' && method === 'POST') {
+    const file = files.find((m) => m.id === second)
+    if (!file) throw notFound()
+    const label = cleanLabel()
+    if (file.topics.length >= 100) throw rule('topic_limit_reached', { max: 100 })
+    const position = Math.max(-1, ...file.topics.map((t) => t.position)) + 1
+    file.topics = [...file.topics, { id: `t-new-${state.topicEdits}`, label, group_label: null, position }]
+    return answer(file)
+  }
+  if (second === 'merge' && method === 'POST') {
+    const ids = [...new Set(body?.topic_ids ?? [])]
+    if (ids.length < 2) throw rule('invalid_request', { fields: ['topic_ids'] })
+    const owners = ids.map(fileOf)
+    if (owners.some((file) => !file)) throw notFound()
+    if (new Set(owners).size > 1) throw rule('topic_merge_cross_material')
+    const file = owners[0]
+    const chosen = file.topics.filter((t) => ids.includes(t.id))
+    const survivor = chosen.reduce((low, t) => (t.position < low.position ? t : low))
+    file.topics = file.topics.filter((t) => t === survivor || !ids.includes(t.id))
+    return answer(file)
+  }
+  const file = fileOf(second)
+  if (!file) throw notFound()
+  if (method === 'PATCH') {
+    const label = cleanLabel()
+    file.topics = file.topics.map((t) => (t.id === second ? { ...t, label } : t))
+    return answer(file)
+  }
+  if (method === 'DELETE') {
+    if (file.topics.length <= 1) throw rule('topic_last_cannot_delete')
+    file.topics = file.topics.filter((t) => t.id !== second)
+    return answer(file)
+  }
+  throw new Error(`unexpected ${method} ${path}`)
 }
 
 /** `n` Topics as the server lists them; with `groupSize`, grouped under "Part 1", "Part 2", ... */

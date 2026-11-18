@@ -10,6 +10,12 @@ Topics are ordered by the first Section they cover and cut to 100, and every Sec
 joins the Topic before it (the first Topic, for Sections before any). A reply with fewer Topics than
 the target is kept, never padded with made-up ones.
 
+Student edits (Story 2.6b): `rename`, `delete`, `merge`, and `add`. Each runs in the request
+transaction: the read-only guard (`projects.require_active`), then the Material row locked FOR UPDATE,
+so edits of one file run one at a time. Each returns the Material's whole Topic list. Every Section
+keeps at least one Topic: a merge keeps all links on the surviving Topic, and a delete hands the
+Sections only the deleted Topic covered to its neighbour (the Topic before it, else the one after).
+
 Logs carry counts only, never labels or text.
 """
 
@@ -20,17 +26,46 @@ from uuid import UUID, uuid4
 
 from psycopg import AsyncConnection
 
+from app.db import materials as materials_repo
 from app.db import topics as repo
+from app.errors import AppError
 from app.extraction import Extracted
 from app.extraction.text import count_words
 from app.llm import DetectedTopics, Gateway, LLMOutputError
 from app.llm.schemas import TOPICS_MAX
+from app.services import projects
 
 logger = logging.getLogger(__name__)
 
 TOPICS_MIN = 3
 PAGES_PER_TOPIC = 5
 WORDS_PER_PAGE = 500
+LABEL_MAX_LENGTH = 100
+
+
+class TopicNotFound(AppError):
+    def __init__(self) -> None:
+        super().__init__(404, "not_found", "No such Topic or file")
+
+
+class TopicLastCannotDelete(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "topic_last_cannot_delete", "A file needs at least one Topic")
+
+
+class TopicMergeCrossMaterial(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "topic_merge_cross_material", "Only Topics of the same file can be merged")
+
+
+class TopicLimitReached(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "topic_limit_reached", "A file has at most 100 Topics", {"max": TOPICS_MAX})
+
+
+class InvalidMergeRequest(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "invalid_request", "A merge needs at least two different Topics", {"fields": ["topic_ids"]})
 
 
 @dataclass(frozen=True)
@@ -110,3 +145,95 @@ async def list_for_materials(conn: AsyncConnection, material_ids: list[UUID]) ->
         material_id = row.pop("material_id")
         grouped.setdefault(material_id, []).append(row)
     return grouped
+
+
+# --- Student edits (Story 2.6b, FR-22, AD-21) ---
+
+
+def clean_label(raw: str) -> str:
+    """Whitespace runs (newlines, tabs) collapsed to single spaces and trimmed, then 1-100 characters;
+    anything else is `422 invalid_name` (longer labels are refused, not cut)."""
+    label = " ".join(raw.split())
+    if not label or len(label) > LABEL_MAX_LENGTH:
+        raise projects.InvalidName()
+    return label
+
+
+async def _lock_material(conn: AsyncConnection, account_id: UUID, project_id: UUID, material_id: UUID) -> dict:
+    """The Material, locked FOR UPDATE; `404` unless it is in this Project and not removed."""
+    material = await materials_repo.get_for_update(conn, account_id, material_id)
+    if material is None or material["project_id"] != project_id or material["removed_at"] is not None:
+        raise TopicNotFound()
+    return material
+
+
+async def _locked_topics(conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_ids: list[UUID]) -> list[dict]:
+    """The Topics, read again under their Material's lock, so a concurrent edit can't slip in between.
+    `404` when any id is missing or foreign; `422 topic_merge_cross_material` when they span files."""
+    found = await repo.get_many(conn, account_id, project_id, topic_ids)
+    if len(found) != len(topic_ids):
+        raise TopicNotFound()
+    material_ids = {row["material_id"] for row in found}
+    if len(material_ids) > 1:
+        raise TopicMergeCrossMaterial()
+    await _lock_material(conn, account_id, project_id, material_ids.pop())
+    found = await repo.get_many(conn, account_id, project_id, topic_ids)
+    if len(found) != len(topic_ids):
+        raise TopicNotFound()
+    return found
+
+
+async def _result(conn: AsyncConnection, material_id: UUID) -> dict:
+    return {"material_id": material_id, "topics": (await list_for_materials(conn, [material_id]))[material_id]}
+
+
+async def rename(conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_id: UUID, raw_label: str) -> dict:
+    await projects.require_active(conn, account_id, project_id)
+    label = clean_label(raw_label)
+    (topic,) = await _locked_topics(conn, account_id, project_id, [topic_id])
+    await repo.update_label(conn, topic_id, label)
+    return await _result(conn, topic["material_id"])
+
+
+async def delete(conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_id: UUID) -> dict:
+    """Delete a Topic, never the last one. Sections only it covered move to its neighbour."""
+    await projects.require_active(conn, account_id, project_id)
+    (topic,) = await _locked_topics(conn, account_id, project_id, [topic_id])
+    material_id = topic["material_id"]
+    siblings = [row["id"] for row in await repo.list_for_materials(conn, [material_id])]
+    if len(siblings) <= 1:
+        raise TopicLastCannotDelete()
+    index = siblings.index(topic_id)
+    heir = siblings[index - 1] if index > 0 else siblings[index + 1]
+    await repo.relink(conn, heir, [topic_id], orphans_only=True)
+    await repo.delete(conn, [topic_id])
+    return await _result(conn, material_id)
+
+
+async def merge(conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_ids: list[UUID]) -> dict:
+    """Merge 2+ Topics of one file into the one with the lowest position, which keeps its id, label,
+    and group and takes the union of their Sections; the others are deleted."""
+    await projects.require_active(conn, account_id, project_id)
+    distinct = list(dict.fromkeys(topic_ids))
+    if len(distinct) < 2:
+        raise InvalidMergeRequest()
+    found = await _locked_topics(conn, account_id, project_id, distinct)
+    survivor, *others = sorted(found, key=lambda row: row["position"])
+    other_ids = [row["id"] for row in others]
+    await repo.relink(conn, survivor["id"], other_ids)
+    await repo.delete(conn, other_ids)
+    return await _result(conn, survivor["material_id"])
+
+
+async def add(conn: AsyncConnection, account_id: UUID, project_id: UUID, material_id: UUID, raw_label: str) -> dict:
+    """A student Topic, with no Sections and no group, placed last. Only a Ready file takes one."""
+    await projects.require_active(conn, account_id, project_id)
+    label = clean_label(raw_label)
+    material = await _lock_material(conn, account_id, project_id, material_id)
+    if material["status"] != "ready":
+        raise TopicNotFound()
+    if await repo.count(conn, material_id) >= TOPICS_MAX:
+        raise TopicLimitReached()
+    last = await repo.max_position(conn, material_id)
+    await repo.insert_one(conn, material_id, label, 0 if last is None else last + 1)
+    return await _result(conn, material_id)

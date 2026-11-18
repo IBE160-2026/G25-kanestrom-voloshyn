@@ -25,8 +25,10 @@ import { useDropTarget } from './useDropTarget.js'
 export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle, onPrivacyInfo }) {
   const { t } = useTranslation()
   const heading = useId()
-  const { materials, pending, failures, loadError, upload, retry, remove } = files
+  const { materials, pending, failures, loadError, upload, retry, remove, editTopics } = files
   const canRemove = !readOnly && typeof remove === 'function'
+  // Topic edits (Story 2.6b): only in an active Project; a read-only one shows the list without controls.
+  const canEditTopics = !readOnly && typeof editTopics === 'function'
   const [target, setTarget] = useState(null) // { id, trigger } while the dialog is open
   const [removingNow, setRemovingNow] = useState(() => new Set()) // ids of Rejected files in flight
   const [removeErrors, setRemoveErrors] = useState([]) // [{ material, error, retry }]
@@ -193,6 +195,7 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
               onRemove={canRemove ? (m, trigger) => setTarget({ id: m.id, trigger }) : undefined}
               onRemoveNow={canRemove ? removeNow : undefined}
               removing={removingNow.has(material.id)}
+              onEditTopics={canEditTopics ? editTopics : undefined}
             />
           ))}
         </ul>

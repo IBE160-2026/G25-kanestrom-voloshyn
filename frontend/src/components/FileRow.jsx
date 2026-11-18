@@ -1,5 +1,5 @@
 import { DropdownMenu } from 'radix-ui'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styles from './FileRow.module.css'
 import TopicList from './TopicList.jsx'
@@ -14,6 +14,11 @@ import TopicList from './TopicList.jsx'
 // "Remove", which calls `onRemove(material, trigger)` to open the Remove file dialog. Rejected rows get
 // a ghost "Remove" that calls `onRemoveNow(material)` at once. Without the handlers (a read-only
 // Project) or an id (still uploading), the row offers neither.
+//
+// Topic edits (Story 2.6b): with `onEditTopics(materialId, edit)` (an active Project), the Topic list
+// offers rename, delete, merge, and add; without it the list is read-only. With 2+ Topics the "···"
+// menu also offers "Merge topics", which starts the list's merge mode (Ctrl+click or Space on a chip
+// starts it too); Cancel returns focus to "···", or to the chip that started it.
 function fileState(material) {
   if (material.status === 'processing') return 'processing'
   if (material.status === 'rejected') return 'rejected'
@@ -28,12 +33,14 @@ function tileLabel(material) {
   return ext ? ext.toUpperCase().slice(0, 4) : ''
 }
 
-export default function FileRow({ material, onRemove, onRemoveNow, removing = false }) {
+export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics, removing = false }) {
   const { t, i18n } = useTranslation()
   const trigger = useRef(null)
   const state = fileState(material)
   const removable = Boolean(material.id)
   const topics = state === 'ready' || state === 'warning' ? (material.topics ?? []) : []
+  const [mergeMode, setMergeMode] = useState(false)
+  const canMerge = Boolean(onEditTopics) && removable && topics.length >= 2
   const pages = material.warning_pages ?? []
   const pageList = new Intl.ListFormat(i18n.language, { style: 'long', type: 'conjunction' }).format(
     pages.map(String),
@@ -82,6 +89,11 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
                 // The dialog takes focus and later returns it to the trigger.
                 onCloseAutoFocus={(event) => event.preventDefault()}
               >
+                {canMerge && (
+                  <DropdownMenu.Item className={styles.item} onSelect={() => setMergeMode(true)}>
+                    {t('files.topics.mergeTopics')}
+                  </DropdownMenu.Item>
+                )}
                 <DropdownMenu.Item className={styles.item} onSelect={() => onRemove(material, trigger.current)}>
                   {t('files.remove.item')}
                 </DropdownMenu.Item>
@@ -102,7 +114,18 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
           {t(`files.reason.${material.reject_reason}`, { defaultValue: t('files.reason.processing_failed') })}
         </p>
       )}
-      {topics.length > 0 && <TopicList topics={topics} />}
+      {topics.length > 0 && (
+        <TopicList
+          topics={topics}
+          onEdit={onEditTopics && material.id ? (edit) => onEditTopics(material.id, edit) : undefined}
+          mergeMode={canMerge && mergeMode}
+          onMergeStart={canMerge ? () => setMergeMode(true) : undefined}
+          onMergeEnd={({ cancelled, returnFocus }) => {
+            setMergeMode(false)
+            if (cancelled && returnFocus) trigger.current?.focus()
+          }}
+        />
+      )}
     </li>
   )
 }

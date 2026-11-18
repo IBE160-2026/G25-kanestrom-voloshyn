@@ -7,6 +7,10 @@
 // - `remove(material)` removes a file (FR-20, AD-23): the row leaves only once the server has said 204
 //   (or `not_found`: it is gone already). Removed ids are remembered per Project, so a list request
 //   sent before the removal committed can't bring the row back when it answers later.
+// - `editTopics(materialId, edit)` sends one Topic edit (FR-22, AD-21: rename, delete, merge, or add)
+//   and, once the server answers, puts the file's whole Topic list from the answer in place through
+//   `setTopics`; a failed edit changes nothing and rejects with the ApiError. A `not_found` failure
+//   also fetches the list again, so a Topic or file that is gone leaves the screen.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
@@ -192,6 +196,41 @@ export function useProjectFiles(projectId) {
     [projectId, withoutRemoved],
   )
 
+  /** Replace one file's Topics (the server's answer to an edit), only while its Project is shown. */
+  const setTopics = useCallback((id, materialId, topics) => {
+    setLoaded((state) =>
+      state.id === id && state.materials
+        ? { id, materials: state.materials.map((m) => (m.id === materialId ? { ...m, topics } : m)) }
+        : state,
+    )
+  }, [])
+
+  /** Send one Topic edit; resolves with the file's new Topic list. `edit` is `{ type: 'rename', topicId,
+   * label }`, `{ type: 'delete', topicId }`, `{ type: 'merge', topicIds }`, or `{ type: 'add', label }`. */
+  const editTopics = useCallback(
+    async (materialId, edit) => {
+      const base = `/api/projects/${projectId}`
+      let request
+      if (edit.type === 'rename') request = [`${base}/topics/${edit.topicId}`, { method: 'PATCH', body: { label: edit.label } }]
+      else if (edit.type === 'delete') request = [`${base}/topics/${edit.topicId}`, { method: 'DELETE' }]
+      else if (edit.type === 'merge') request = [`${base}/topics/merge`, { method: 'POST', body: { topic_ids: edit.topicIds } }]
+      else if (edit.type === 'add') request = [`${base}/materials/${materialId}/topics`, { method: 'POST', body: { label: edit.label } }]
+      else throw new Error(`unknown Topic edit ${edit.type}`)
+      let result
+      try {
+        result = await apiFetch(...request)
+      } catch (error) {
+        // The Topic or file is gone (removed elsewhere): fetch the list again so stale chips leave.
+        if (error?.code === 'not_found') fetchList(projectId).catch(() => {})
+        throw error
+      }
+      const topics = Array.isArray(result?.topics) ? result.topics : []
+      setTopics(projectId, materialId, topics)
+      return topics
+    },
+    [projectId, setTopics, fetchList],
+  )
+
   return {
     materials,
     pending: pending.filter((item) => item.projectId === projectId),
@@ -200,5 +239,6 @@ export function useProjectFiles(projectId) {
     upload,
     retry,
     remove,
+    editTopics,
   }
 }
