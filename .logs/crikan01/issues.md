@@ -16,7 +16,7 @@
 - [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Implementer story 2.2 fra godkjent spec (ny `bmad-build`-økt, gren `feature/2-2-upload`).
 - [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.2b: fil-panelet legges sammen til fil-stripa (etter 2.2). (løst 2026-11-17, commit 33f18df)
 - [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Manuell nettlesersjekk av story 2.2, deretter merge av `feature/2-2-upload` til `main`. (løst 2026-11-17, merge 7b4c197)
-- [ ] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.5: meldingen `unsupported_file_type` nevner JPG/PNG/HEIC, som avvises frem til bildestøtte er bygget.
+- [x] 2026-11-17 [story-2-2-upload](995-2026-11-17-00-50-33-story-2-2-upload.md) — Story 2.5: meldingen `unsupported_file_type` nevner JPG/PNG/HEIC, som avvises frem til bildestøtte er bygget. (løst 2026-11-18, merge 17a7573)
 - [x] 2026-11-17 [story-2-2b-files-strip](994-2026-11-17-14-04-48-story-2-2b-files-strip.md) — Manuell nettlesersjekk av story 2.2b, deretter merge av `feature/2-2b-files-strip` til `main`. (løst 2026-11-17, merge 0d49e29)
 - [x] 2026-11-17 [story-2-3-privacy-notice](993-2026-11-17-14-22-44-story-2-3-privacy-notice.md) — Godkjenn feilteksten for `privacy_notice_required` (utkast i spec 2.3) og før den inn i EXPERIENCE.md. (løst 2026-11-17)
 - [x] 2026-11-17 [story-2-3-privacy-notice](993-2026-11-17-14-22-44-story-2-3-privacy-notice.md) — Manuell nettlesersjekk av story 2.3, deretter merge av `feature/2-3-privacy-notice` til `main`. (løst 2026-11-17, merge c140a1f)
@@ -28,3 +28,5 @@
 - [x] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Manuell nettlesersjekk av 2.7 (fjern klar, leser…- og avvist fil; fokus inn i dialogen). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.
 - [x] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner. (løst 2026-11-18, merge b4257c5)
+- [ ] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Prøv `extract_image_text` mot en ekte syns-modell (`LLM_VISION_MODEL`) når OpenRouter-nøkkelen er på plass.
+- [ ] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Epic 2 er ferdig: sett `epic-2` til done i sprint-status, eventuelt etter en retrospektiv.
