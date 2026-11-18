@@ -46,7 +46,7 @@ describe('Topic count and list', () => {
       'Topic 5',
       'Topic 6',
     ])
-    // Ungrouped: no group rows, and no editing yet (Story 2.6b).
+    // Ungrouped: no group rows; without an edit handler (read-only) no edit controls either.
     expect(within(li).queryAllByRole('button')).toEqual([])
     expect(within(li).queryByText(en.files.topics.grouped)).not.toBeInTheDocument()
   })
@@ -178,6 +178,6 @@ describe('Topic count and list', () => {
     const panel = await screen.findByRole('complementary', { name: /^Files · / })
     expect(await within(panel).findByText('4 topics')).toBeInTheDocument()
     expect(within(panel).getByText('Topic 4')).toBeInTheDocument()
-    expect(within(panel).getAllByText(/ topics?$/)).toHaveLength(1)
+    expect(within(panel).getAllByText(/^\d+ topics?$/)).toHaveLength(1)
   })
 })

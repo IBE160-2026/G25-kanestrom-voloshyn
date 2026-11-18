@@ -105,3 +105,128 @@
   font-size: var(--type-caption-size);
   color: var(--color-text-muted);
 }
+
+/* Editing (Story 2.6b; DESIGN.md › Topic chip; mock key-project-home.html › .chip .x, .editing, .add,
+   .sel). An editable chip holds its label button and the × to delete. */
+.editable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-right: var(--space-1);
+}
+
+.chipLabel {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.chipLabel:focus-visible,
+.remove:focus-visible,
+.add:focus-visible,
+.merge:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* Selected for Merge: the selected style. */
+.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+/* Being edited: primary border on the primary wash, with the caret. */
+.editing {
+  border-color: var(--color-primary);
+  background: var(--color-primary-wash);
+  padding-right: var(--space-2);
+}
+
+.input {
+  width: calc(var(--space-7) * 3);
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  caret-color: var(--color-primary);
+}
+
+/* The × that deletes a chip: a muted, small glyph in a 24×24 hit area (WCAG 2.5.8); the negative
+   block margin keeps the chip at caption height. */
+.remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-5);
+  height: var(--space-5);
+  margin: calc((var(--space-5) - var(--space-3)) / -2) calc(var(--space-1) * -1) calc((var(--space-5) - var(--space-3)) / -2) 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.remove svg {
+  width: var(--space-2);
+  height: var(--space-2);
+}
+
+.remove:hover {
+  color: var(--color-text);
+  background: var(--color-hover);
+}
+
+/* "+ Add topic" and Merge sit at the end of the list. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.add {
+  padding: 0 var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  cursor: pointer;
+}
+
+.add:hover,
+.merge:hover {
+  background: var(--color-hover);
+}
+
+/* Merge: a small ghost button. */
+.merge {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  cursor: pointer;
+}
+
+.error {
+  margin-top: var(--space-2);
+}

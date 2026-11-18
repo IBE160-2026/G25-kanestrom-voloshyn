@@ -46,3 +46,87 @@ async def list_for_materials(conn: AsyncConnection, material_ids: list[UUID]) ->
             (material_ids,),
         )
         return await cur.fetchall()
+
+
+# --- Student edits (Story 2.6b, FR-22) ---
+
+_TOPIC_COLUMNS = "t.id, t.material_id, t.label, t.group_label, t.position"
+
+
+async def get_many(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_ids: list[UUID]
+) -> list[dict[str, Any]]:
+    """The Topics among `topic_ids` whose Material belongs to this Account and Project and is not
+    removed; any other id is simply missing from the result."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            SELECT {_TOPIC_COLUMNS} FROM topics t
+            JOIN study_materials m ON m.id = t.material_id
+            WHERE t.id = ANY(%s) AND m.account_id = %s AND m.project_id = %s AND m.removed_at IS NULL
+            ORDER BY t.position
+            """,
+            (topic_ids, account_id, project_id),
+        )
+        return await cur.fetchall()
+
+
+async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_id: UUID) -> dict[str, Any] | None:
+    rows = await get_many(conn, account_id, project_id, [topic_id])
+    return rows[0] if rows else None
+
+
+async def count(conn: AsyncConnection, material_id: UUID) -> int:
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT count(*) FROM topics WHERE material_id = %s", (material_id,))
+        return (await cur.fetchone())[0]
+
+
+async def max_position(conn: AsyncConnection, material_id: UUID) -> int | None:
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT max(position) FROM topics WHERE material_id = %s", (material_id,))
+        return (await cur.fetchone())[0]
+
+
+async def update_label(conn: AsyncConnection, topic_id: UUID, label: str) -> None:
+    async with conn.cursor() as cur:
+        await cur.execute("UPDATE topics SET label = %s WHERE id = %s", (label, topic_id))
+
+
+async def delete(conn: AsyncConnection, topic_ids: list[UUID]) -> None:
+    """Delete these Topics; their Section links cascade."""
+    async with conn.cursor() as cur:
+        await cur.execute("DELETE FROM topics WHERE id = ANY(%s)", (topic_ids,))
+
+
+async def relink(conn: AsyncConnection, to_topic_id: UUID, from_topic_ids: list[UUID], orphans_only: bool = False) -> None:
+    """Link `to_topic_id` to the Sections of `from_topic_ids`. With `orphans_only`, only the Sections
+    no other Topic covers, so a delete keeps every Section covered without widening other Topics."""
+    orphan_filter = (
+        "AND NOT EXISTS (SELECT 1 FROM topic_sections o WHERE o.section_id = ts.section_id AND o.topic_id <> ALL(%s))"
+        if orphans_only
+        else ""
+    )
+    params: tuple = (to_topic_id, from_topic_ids, from_topic_ids) if orphans_only else (to_topic_id, from_topic_ids)
+    async with conn.cursor() as cur:
+        await cur.execute(
+            f"""
+            INSERT INTO topic_sections (topic_id, section_id)
+            SELECT %s, ts.section_id FROM topic_sections ts
+            WHERE ts.topic_id = ANY(%s) {orphan_filter}
+            ON CONFLICT DO NOTHING
+            """,
+            params,
+        )
+
+
+async def insert_one(
+    conn: AsyncConnection, material_id: UUID, label: str, position: int, origin: str = "student"
+) -> UUID:
+    """One Topic with no Sections and no group."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            "INSERT INTO topics (material_id, label, position, origin) VALUES (%s, %s, %s, %s) RETURNING id",
+            (material_id, label, position, origin),
+        )
+        return (await cur.fetchone())[0]

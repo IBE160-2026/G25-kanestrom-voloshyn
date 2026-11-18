@@ -16,6 +16,7 @@ from app.api import jobs as jobs_api
 from app.api import materials as materials_api
 from app.api import me as me_api
 from app.api import projects as projects_api
+from app.api import topics as topics_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
@@ -63,6 +64,7 @@ def _api_router() -> APIRouter:
     api.include_router(me_api.router)
     api.include_router(projects_api.router)
     api.include_router(materials_api.router)
+    api.include_router(topics_api.router)
     api.include_router(jobs_api.router)
 
     # Registered last, so it only catches paths no real API route matched.

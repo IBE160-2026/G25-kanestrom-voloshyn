@@ -98,7 +98,14 @@
       "count_other": "{{count}} emner",
       "group_one": "{{chapter}}, {{count}} emne",
       "group_other": "{{chapter}}, {{count}} emner",
-      "grouped": "Stor fil, noen emner er gruppert."
+      "grouped": "Stor fil, noen emner er gruppert.",
+      "add": "+ Legg til emne",
+      "merge": "Slå sammen",
+      "rename": "Gi emnet nytt navn",
+      "delete": "Slett emnet {{label}}",
+      "new": "Nytt emne",
+      "failed": "Vi fikk ikke endret emnene.",
+      "invalidName": "Gi emnet et navn."
     },
     "remove": {
       "menu": "Flere valg for {{name}}",
@@ -160,7 +167,10 @@
     "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny.",
     "privacy_notice_required": "Godta merknaden om hvordan filene dine brukes før du laster opp første gang.",
     "llm_unavailable": "KI-tjenesten svarer ikke akkurat nå.",
-    "llm_output_invalid": "Noe gikk galt."
+    "llm_output_invalid": "Noe gikk galt.",
+    "topic_limit_reached": "En fil kan ha høyst 100 emner.",
+    "topic_last_cannot_delete": "En fil må ha minst ett emne.",
+    "topic_merge_cross_material": "Bare emner fra samme fil kan slås sammen."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

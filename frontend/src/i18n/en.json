@@ -97,7 +97,14 @@
       "count_other": "{{count}} topics",
       "group_one": "{{chapter}}, {{count}} topic",
       "group_other": "{{chapter}}, {{count}} topics",
-      "grouped": "Large file, some topics are grouped."
+      "grouped": "Large file, some topics are grouped.",
+      "add": "+ Add topic",
+      "merge": "Merge",
+      "rename": "Rename topic",
+      "delete": "Delete topic {{label}}",
+      "new": "New topic",
+      "failed": "We couldn't change the topics.",
+      "invalidName": "Give the topic a name."
     },
     "remove": {
       "menu": "More options for {{name}}",
@@ -159,7 +166,10 @@
     "material_limit_reached": "A project can hold 10 files. Remove one to add another.",
     "privacy_notice_required": "Accept the note on how your files are used before your first upload.",
     "llm_unavailable": "The AI service isn't responding right now.",
-    "llm_output_invalid": "Something went wrong."
+    "llm_output_invalid": "Something went wrong.",
+    "topic_limit_reached": "A file can have at most 100 topics.",
+    "topic_last_cannot_delete": "A file needs at least one topic.",
+    "topic_merge_cross_material": "Only topics from the same file can be merged."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

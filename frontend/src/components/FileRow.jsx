@@ -14,6 +14,9 @@ import TopicList from './TopicList.jsx'
 // "Remove", which calls `onRemove(material, trigger)` to open the Remove file dialog. Rejected rows get
 // a ghost "Remove" that calls `onRemoveNow(material)` at once. Without the handlers (a read-only
 // Project) or an id (still uploading), the row offers neither.
+//
+// Topic edits (Story 2.6b): with `onEditTopics(materialId, edit)` (an active Project), the Topic list
+// offers rename, delete, merge, and add; without it the list is read-only.
 function fileState(material) {
   if (material.status === 'processing') return 'processing'
   if (material.status === 'rejected') return 'rejected'
@@ -28,7 +31,7 @@ function tileLabel(material) {
   return ext ? ext.toUpperCase().slice(0, 4) : ''
 }
 
-export default function FileRow({ material, onRemove, onRemoveNow, removing = false }) {
+export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics, removing = false }) {
   const { t, i18n } = useTranslation()
   const trigger = useRef(null)
   const state = fileState(material)
@@ -102,7 +105,12 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
           {t(`files.reason.${material.reject_reason}`, { defaultValue: t('files.reason.processing_failed') })}
         </p>
       )}
-      {topics.length > 0 && <TopicList topics={topics} />}
+      {topics.length > 0 && (
+        <TopicList
+          topics={topics}
+          onEdit={onEditTopics && material.id ? (edit) => onEditTopics(material.id, edit) : undefined}
+        />
+      )}
     </li>
   )
 }

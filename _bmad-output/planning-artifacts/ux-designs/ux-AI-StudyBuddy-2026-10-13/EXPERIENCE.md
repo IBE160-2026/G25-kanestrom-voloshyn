@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-11-17
+updated: 2026-11-18
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -143,6 +143,12 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Grouped-topics note | "Large file, some topics are grouped." | Stor fil, noen emner er gruppert. |
 | Topic list, merge | "Merge" [ASSUMPTION: label] | Slå sammen |
 | Topic list, group row (screen reader) | "{chapter}, {n} topics" ("{chapter}, 1 topic") [ASSUMPTION] | {chapter}, {n} emner ("{chapter}, 1 emne") |
+| Topic list, edit failed | "We couldn't change the topics." [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | Vi fikk ikke endret emnene. |
+| API error, topic limit (`topic_limit_reached`) | "A file can have at most 100 topics." [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | En fil kan ha høyst 100 emner. |
+| API error, last topic (`topic_last_cannot_delete`) | "A file needs at least one topic." [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | En fil må ha minst ett emne. |
+| API error, cross-file merge (`topic_merge_cross_material`) | "Only topics from the same file can be merged." [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | Bare emner fra samme fil kan slås sammen. |
+| Topic list, blank name | "Give the topic a name." [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | Gi emnet et navn. |
+| Topic list, screen-reader names | "Rename topic" · "Delete topic {label}" · "New topic" [ASSUMPTION: copy, approved 2026-11-18 with Story 2.6b] | Gi emnet nytt navn · Slett emnet {label} · Nytt emne |
 | History filter | "All" · "Chats" · "Quizzes" · "Flashcards" · "Summaries" [ASSUMPTION: from mock] | Alle · Samtaler · Quizer · Treningskort · Sammendrag |
 | History, empty | "Nothing here yet" | Ingenting her ennå |
 | History, loading (screen reader) | "Loading history" [ASSUMPTION: from mock] | Laster historikk |

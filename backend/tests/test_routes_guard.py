@@ -5,6 +5,7 @@ The guard is the `ActiveProject` dependency (`deps.active_project`, which calls
 is added to the allowlist below on purpose.
 """
 
+import pytest
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute, iter_route_contexts
 
@@ -102,3 +103,18 @@ def test_allowlist_names_only_existing_routes():
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     existing = {(method, route.path) for route in api_routes(app) for method in route.methods}
     assert ALLOWLIST <= existing
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("PATCH", "/api/projects/{project_id}/topics/{topic_id}"),
+        ("DELETE", "/api/projects/{project_id}/topics/{topic_id}"),
+        ("POST", "/api/projects/{project_id}/topics/merge"),
+        ("POST", "/api/projects/{project_id}/materials/{material_id}/topics"),
+    ],
+)
+def test_topic_edits_are_guarded(method, path):
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == path and method in r.methods)
+    assert active_project in _calls(route.dependant)
