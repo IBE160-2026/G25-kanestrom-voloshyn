@@ -2,6 +2,7 @@ import { DropdownMenu } from 'radix-ui'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import styles from './FileRow.module.css'
+import { IMAGE_TYPES } from '../pages/useProjectFiles.js'
 import TopicList from './TopicList.jsx'
 
 // File row (DESIGN.md › File row, File status; EXPERIENCE.md › State Patterns › Study Material):
@@ -25,11 +26,18 @@ function fileState(material) {
   return material.warning ? 'warning' : 'ready'
 }
 
-const TILE = { pdf: 'PDF', docx: 'DOCX', pptx: 'PPTX', txt: 'TXT', md: 'MD' }
+const TILE = { pdf: 'PDF', docx: 'DOCX', pptx: 'PPTX', txt: 'TXT', md: 'MD', jpg: 'JPG', png: 'PNG', heic: 'HEIC' }
+
+/** The rejection note's key: an unreadable photo (FR-7) has its own "too blurry" copy. */
+function reasonKey(material) {
+  if (material.reject_reason === 'unreadable' && IMAGE_TYPES.has(material.file_type)) return 'files.reason.unreadable_image'
+  return `files.reason.${material.reject_reason}`
+}
 
 function tileLabel(material) {
   if (material.file_type) return TILE[material.file_type] ?? material.file_type.toUpperCase()
-  const ext = String(material.file_name).split('.').pop()
+  const ext = String(material.file_name).split('.').pop().toLowerCase()
+  if (ext === 'jpeg') return TILE.jpg
   return ext ? ext.toUpperCase().slice(0, 4) : ''
 }
 
@@ -111,7 +119,7 @@ export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics,
       )}
       {state === 'rejected' && (
         <p className={`${styles.note} ${styles.noteError}`}>
-          {t(`files.reason.${material.reject_reason}`, { defaultValue: t('files.reason.processing_failed') })}
+          {t(reasonKey(material), { defaultValue: t('files.reason.processing_failed') })}
         </p>
       )}
       {topics.length > 0 && (

@@ -9,6 +9,7 @@ Logs carry task, model, duration, and outcome only; never keys, prompts, or mate
 """
 
 import asyncio
+import base64
 import logging
 import time
 from collections.abc import Sequence
@@ -22,7 +23,7 @@ from pydantic import BaseModel, ValidationError
 from app.config import ConfigError, LlmMode, Settings
 from app.llm import fixtures
 from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
-from app.llm.schemas import DetectedTopics, ProjectName
+from app.llm.schemas import DetectedTopics, ImageText, ProjectName
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +116,8 @@ class Gateway:
         if mode == "live":
             if not settings.llm_text_model:
                 raise ConfigError("LLM_TEXT_MODEL is required when LLM_MODE=live")
+            if not settings.llm_vision_model:
+                raise ConfigError("LLM_VISION_MODEL is required when LLM_MODE=live")
             if self._client is None:
                 key = settings.openrouter_api_key
                 self._client = openai.AsyncOpenAI(
@@ -191,6 +194,31 @@ class Gateway:
                 {"role": "user", "content": label_sections(texts)},
             ],
             fixture=lambda: fixtures.detect_topics(labels, target),
+        )
+
+    async def extract_image_text(self, jpeg: bytes, file_name: str) -> ImageText:
+        """The text in a photo of notes as Markdown, with its legibility (FR-7, AD-6).
+
+        Live, the JPEG goes to `LLM_VISION_MODEL` as a base64 `data:image/jpeg` content part. Mock mode
+        looks only at `file_name` (`fixtures.extract_image_text`); the bytes are never logged.
+        """
+        return await self._run(
+            task="extract_image_text",
+            schema=ImageText,
+            model=self._settings.llm_vision_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("extract_image_text")},
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(jpeg).decode("ascii")},
+                        }
+                    ],
+                },
+            ],
+            fixture=lambda: fixtures.extract_image_text(file_name),
         )
 
     # --- Shared paths ---

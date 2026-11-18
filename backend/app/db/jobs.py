@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 
 _COLUMNS = (
     "id, account_id, project_id, kind, params, status, progress_step, cancel_requested, result_ref, error_code, "
-    "created_at, finished_at, seen_at"
+    "created_at, finished_at, seen_at, vision_started_at"
 )
 ACTIVE = "status IN ('queued', 'running')"
 
@@ -48,6 +48,20 @@ async def claim(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
             (job_id,),
         )
         return await cur.fetchone()
+
+
+async def mark_vision_started(conn: AsyncConnection, job_id: UUID) -> bool:
+    """Stamp `vision_started_at` on a running job; False when it is no longer running or a cancel was
+    requested (the call must then not start)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE generation_jobs SET vision_started_at = now()
+            WHERE id = %s AND status = 'running' AND NOT cancel_requested
+            """,
+            (job_id,),
+        )
+        return cur.rowcount == 1
 
 
 async def get_for_update(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:

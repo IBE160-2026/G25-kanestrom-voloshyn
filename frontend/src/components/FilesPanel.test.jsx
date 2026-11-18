@@ -218,7 +218,7 @@ describe('Uploading', () => {
 
   it.each([
     ['unsupported-type.rtf', undefined, en.errors.unsupported_file_type],
-    ['notes-photo.png', undefined, en.errors.unsupported_file_type],
+    ['notes-photo.gif', undefined, en.errors.unsupported_file_type],
     ['big.pdf', 50 * 1024 * 1024 + 1, en.errors.file_too_large],
   ])('%s is refused with an Inline error and nothing is sent', async (name, size, message) => {
     await openProject()

@@ -74,8 +74,12 @@
     "stripCount": "{{n}} <of>av 10</of>",
     "attention": "En fil trenger oppmerksomheten din",
     "upload": "Last opp",
-    "types": "PDF, Word, PowerPoint, tekst eller Markdown · opptil 50 MB hver",
+    "types": "PDF, Word, PowerPoint, tekst, Markdown eller bilder (JPG, PNG, HEIC) · opptil 50 MB hver",
     "empty": "Ingen filer ennå. Notatene dine dukker opp her.",
+    "limit": {
+      "images_one": "{{count}} bilde igjen i dag",
+      "images_other": "{{count}} bilder igjen i dag"
+    },
     "status": {
       "processing": "Leser …",
       "ready": "Klar",
@@ -91,7 +95,8 @@
       "unreadable": "Vi fikk ikke lest nok tekst i denne filen. Den teller ikke blant de 10 filene dine.",
       "unparseable": "Filen kunne ikke åpnes. Den kan være skadet eller passordbeskyttet.",
       "interrupted": "Lesingen stoppet. Last opp filen på nytt.",
-      "processing_failed": "Lesingen stoppet. Last opp filen på nytt."
+      "processing_failed": "Lesingen stoppet. Last opp filen på nytt.",
+      "unreadable_image": "Bildet er for uskarpt til å leses, så vi kan ikke studere fra det. Et skarpere bilde i godt lys pleier å hjelpe."
     },
     "topics": {
       "count_one": "{{count}} emne",
@@ -173,7 +178,8 @@
     "llm_output_invalid": "Noe gikk galt.",
     "topic_limit_reached": "En fil kan ha høyst 100 emner.",
     "topic_last_cannot_delete": "En fil må ha minst ett emne.",
-    "topic_merge_cross_material": "Bare emner fra samme fil kan slås sammen."
+    "topic_merge_cross_material": "Bare emner fra samme fil kan slås sammen.",
+    "quota_exceeded": "Du har brukt dagens {{limit}} bilder. Prøv igjen i morgen."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

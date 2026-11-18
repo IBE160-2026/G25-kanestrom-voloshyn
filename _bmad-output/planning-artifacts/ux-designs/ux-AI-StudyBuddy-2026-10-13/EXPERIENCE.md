@@ -225,7 +225,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Top bar greeting | "Welcome, {first name}" | Velkommen, {first name} |
 | Upload drop zone | "Upload your notes to start" · "Upload from phone" | Last opp notatene dine for å starte · Last opp fra mobilen |
 | Upload drop zone, body ("browse" opens the file picker) | "Drop files here or browse. When a file is ready, you can ask about it and make quizzes, flashcards, and summaries." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Slipp filer her eller velg fra maskinen. Når en fil er klar, kan du spørre om den og lage quizer, treningskort og sammendrag. |
-| Supported-types caption (drop zone and Files panel) | "PDF, Word, PowerPoint, text, or Markdown · up to 50 MB each" [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | PDF, Word, PowerPoint, tekst eller Markdown · opptil 50 MB hver |
+| Supported-types caption (drop zone and Files panel) | "PDF, Word, PowerPoint, text, Markdown, or photos (JPG, PNG, HEIC) · up to 50 MB each" [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2; photos added 2026-11-18 with Story 2.5] | PDF, Word, PowerPoint, tekst, Markdown eller bilder (JPG, PNG, HEIC) · opptil 50 MB hver |
 | Files panel, empty | "No files yet. Your notes will show up here." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.2] | Ingen filer ennå. Notatene dine dukker opp her. |
 | Upload buttons | "Upload" · "Upload from phone" | Last opp · Last opp fra mobilen |
 | Privacy notice, title | "Before your first upload" [ASSUMPTION: copy] | Før du laster opp første gang |

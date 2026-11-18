@@ -80,15 +80,17 @@ async def enqueue(
     )
 
 
-async def cancel_for_material(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> None:
+async def cancel_for_material(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> list[dict[str, Any]]:
     """Cancel the work on a removed Material (AD-20, AD-23), in the caller's transaction.
 
-    A queued job is finished as `cancelled` at once and never runs. A running one gets
-    `cancel_requested`; the runner's save step then ends it `cancelled` without saving. The only
-    writer of `cancel_requested`.
+    A queued job is finished as `cancelled` at once and never runs; those jobs are returned, so the
+    caller can undo what was set aside for them (an image's quota unit). They get no terminal hook. A
+    running one gets `cancel_requested`; the runner's save step then ends it `cancelled` without
+    saving, through the terminal hook. The only writer of `cancel_requested`.
     """
-    await repo.cancel_queued_for(conn, account_id, material_id)
+    cancelled = await repo.cancel_queued_for(conn, account_id, material_id)
     await repo.request_cancel_running_for(conn, account_id, material_id)
+    return cancelled
 
 
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
@@ -98,6 +100,19 @@ async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: 
 async def mark_seen(conn: AsyncConnection, account_id: UUID, job_id: UUID) -> None:
     if not await repo.mark_seen(conn, account_id, job_id):
         raise JobNotFound()
+
+
+# --- From a running handler ---
+
+
+async def mark_vision_started(pool: AsyncConnectionPool, job_id: UUID) -> bool:
+    """Record, in its own short transaction, that a running job is about to make its metered vision
+    call (FR-7, AD-12). False when a cancel was requested or the job is no longer running: the handler
+    then skips the call, and the save step ends the job. `vision_started_at` stays on the row, so
+    `on_terminal` and the restart sweep can tell whether the call started."""
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            return await repo.mark_vision_started(conn, job_id)
 
 
 # --- Terminal transitions outside a request ---

@@ -38,6 +38,7 @@ from tests.test_materials import (  # noqa: F401 -- shared fixtures
 )
 
 MODEL = "test/text-model"
+VISION_MODEL = "test/vision-model"
 SECRET_LABEL = "Chlorophyll-secret-label"
 
 
@@ -63,7 +64,7 @@ def mock_gateway(**values) -> Gateway:
 def live_gateway(*outcomes, **values) -> tuple[Gateway, StubClient]:
     stub = StubClient(*outcomes)
     gateway = Gateway(
-        Settings(_env_file=None, llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, **values),
+        Settings(_env_file=None, llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, llm_vision_model=VISION_MODEL, **values),
         "live",
         client=stub,
     )

@@ -73,3 +73,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-6a-detect-and-show-topics.md`
   summary: Add a test that the materials list returns Topics in `position` order when storage order differs (Story 2.6b, once merge/delete/add change positions).
   evidence: Story 2.6a review (Verification Gap): insertion order equals position order today, so dropping `position` from the ORDER BY would pass every test.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-5-upload-photos-of-my-notes.md`
+  summary: Test that a pending (still uploading) `.jpeg` row shows the JPG tile.
+  evidence: Story 2.5 review (Verification Gap): only rows with `file_type` are rendered in tests; cosmetic on a short-lived row.

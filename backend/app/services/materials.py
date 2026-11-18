@@ -3,7 +3,8 @@
 The only writer of `study_materials.status`. Takes `conn` and never commits (AD-18).
 
 Upload (one file per request, AD-5):
-1. validate the type and size;
+1. validate the type and size; for an image, reserve one `image_extraction` unit of today's limit
+   (FR-7, AD-12) in its own short transaction, released again if the request rolls back;
 2. store the original in the private bucket, registering its deletion for a rollback;
 3. lock the Project row (`projects.require_active`, FOR UPDATE) and re-check the slot count, so two
    parallel uploads at 9 of 10 can't both pass;
@@ -17,6 +18,13 @@ its reason; a rejected Material's original is deleted after the commit. A Topic 
 the job, and the terminal hook rejects the Material (`processing_failed`) with nothing saved.
 After a `ready` commit, an unnamed Project is named from that Material's Sections (FR-4, AD-14).
 
+An image (FR-7) is normalized to JPEG (in a thread), then read by the gateway's `extract_image_text`
+with no transaction open; its text becomes one Section "Image", judged by its legibility and length,
+and from there it is handled like any other file. Right before the vision call the job's
+`vision_started_at` is stamped; that marker decides the reserved unit's fate. The unit is given
+back only when the call never started (removed or cancelled before it, a job that never reached it,
+a file that can't be decoded) or failed at the provider; once the call started it stays used.
+
 Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, and cancels the
 Material's job; the stored original is deleted after the commit.
 """
@@ -24,6 +32,7 @@ Material's job; the stored original is deleted after the commit.
 import logging
 import posixpath
 from collections.abc import Callable
+from datetime import date
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -34,9 +43,10 @@ from app import extraction
 from app.config import Settings
 from app.db import materials as repo
 from app.errors import AppError
-from app.extraction import integrity
-from app.llm import Gateway
-from app.services import identity, jobs, projects, topics
+from app.extraction import Extracted, ExtractedSection, images, integrity
+from app.extraction.types import clean
+from app.llm import Gateway, ProviderError
+from app.services import identity, jobs, projects, topics, usage
 from app.storage import Storage, material_path
 
 logger = logging.getLogger(__name__)
@@ -46,14 +56,21 @@ MAX_MATERIALS = 10
 MAX_BYTES = 50 * 1024 * 1024
 FILE_NAME_MAX = 255
 
-# Accepted extensions -> (file_type, content type). Images arrive with Story 2.5.
+# Accepted extensions -> (file_type, content type): documents (FR-6) and photos of notes (FR-7).
 DOCUMENT_TYPES = {
     ".pdf": ("pdf", "application/pdf"),
     ".docx": ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
     ".pptx": ("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
     ".txt": ("txt", "text/plain"),
     ".md": ("md", "text/markdown"),
+    ".jpg": ("jpg", "image/jpeg"),
+    ".jpeg": ("jpg", "image/jpeg"),
+    ".png": ("png", "image/png"),
+    ".heic": ("heic", "image/heic"),
 }
+IMAGE_TYPES = images.IMAGE_TYPES
+# The one Section an image becomes.
+IMAGE_SECTION_LABEL = "Image"
 
 # Reject reasons (AD-6): codes the SPA translates.
 UNREADABLE = "unreadable"
@@ -115,14 +132,24 @@ async def upload(
     raw_file_name: str | None,
     data: bytes,
     on_rollback: Callable[[Callable[[], Any]], None],
+    pool: AsyncConnectionPool,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Steps 1-4 of the upload pipeline (AD-5). Returns (material, job); the caller submits the job
-    after the commit. `on_rollback` registers work to run if the request transaction rolls back."""
+    after the commit. `on_rollback` registers work to run if the request transaction rolls back.
+    `pool` gives an image's quota reservation its own transaction."""
     # The Privacy notice gate comes first (AD-19): without acceptance nothing is validated, stored, or
     # inserted. (The request body itself has already been received by then.)
     await identity.require_privacy_ack(conn, account_id)
     file_name = clean_file_name(raw_file_name)
     file_type, content_type = validate(file_name, len(data))
+    params: dict[str, Any] = {"file_type": file_type}
+    if file_type in IMAGE_TYPES:
+        # Its own short transaction: no counter row lock is held while storing, so a removal (which
+        # releases under the Project lock) can't deadlock with an upload. The 26th image stops here.
+        day = await _reserve_image(pool, account_id)
+        on_rollback(lambda: _release_image(pool, account_id, day))
+        # The mock reads the outcome from the file name (AD-4).
+        params.update(usage_day=day.isoformat(), file_name=file_name)
 
     material_id = uuid4()
     path = material_path(account_id, project_id, material_id)
@@ -143,8 +170,38 @@ async def upload(
         file_type=file_type,
         size_bytes=len(data),
     )
-    job = await jobs.enqueue(conn, account_id, project_id, KIND, params={"file_type": file_type}, result_ref=material_id)
+    job = await jobs.enqueue(conn, account_id, project_id, KIND, params=params, result_ref=material_id)
     return material, job
+
+
+# --- The daily image limit (FR-7, AD-12) ---
+
+
+async def _reserve_image(pool: AsyncConnectionPool, account_id: UUID) -> date:
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            return await usage.reserve(conn, account_id, usage.IMAGE_EXTRACTION)
+
+
+async def _release_image(pool: AsyncConnectionPool, account_id: UUID, day: date) -> None:
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            await usage.release(conn, account_id, usage.IMAGE_EXTRACTION, day)
+
+
+def _image_unit(job: dict[str, Any]) -> date | None:
+    """The day of the unit an image job holds; None for a document."""
+    params = job.get("params") or {}
+    if params.get("file_type") not in IMAGE_TYPES or not params.get("usage_day"):
+        return None
+    return date.fromisoformat(params["usage_day"])
+
+
+async def _release_if_unread(conn: AsyncConnection, job: dict[str, Any]) -> None:
+    """Give back an image job's unit when its vision call never started (no `vision_started_at`)."""
+    day = _image_unit(job)
+    if day is not None and job.get("vision_started_at") is None:
+        await usage.release(conn, job["account_id"], usage.IMAGE_EXTRACTION, day)
 
 
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
@@ -172,7 +229,10 @@ async def remove(
     if material["removed_at"] is None:
         await repo.mark_removed(conn, account_id, material_id)
         await repo.empty_sections(conn, material_id)
-        await jobs.cancel_for_material(conn, account_id, material_id)
+        # A queued image job never reaches its vision call, so its unit comes back. A running one is
+        # ended by its save step, and its terminal hook decides.
+        for cancelled in await jobs.cancel_for_material(conn, account_id, material_id):
+            await _release_if_unread(conn, cancelled)
     path = material_path(account_id, project_id, material_id)
     return lambda: storage.delete(path)
 
@@ -195,22 +255,59 @@ def processing_kind(
         path = material_path(job["account_id"], job["project_id"], job["result_ref"])
         return lambda: storage.delete(path)
 
+    async def read_image(job: dict[str, Any], data: bytes) -> tuple[Extracted, integrity.Verdict] | None:
+        """Normalize (in a thread), then the vision call with no connection held (AD-18). None when a
+        cancel came first. Raises `extraction.Unparseable` for an image that can't be decoded."""
+        jpeg = await images.normalize(data, job["params"]["file_type"])
+        if not await jobs.mark_vision_started(pool, job["id"]):
+            return None
+        try:
+            read = await llm.extract_image_text(jpeg, job["params"].get("file_name", ""))
+        except ProviderError:
+            # The provider did no work: the unit comes back, and the job fails as usual.
+            try:
+                await _release_image(pool, job["account_id"], _image_unit(job))
+            except Exception as exc:  # noqa: BLE001 -- the job still fails with the provider error
+                logger.warning("Image unit release failed: %s", type(exc).__name__)
+            raise
+        text = clean(read.text)
+        extracted = Extracted(paged=True, sections=(ExtractedSection(IMAGE_SECTION_LABEL, text),))
+        return extracted, integrity.judge_image(read.legibility, text, thresholds)
+
+    async def nothing(conn: AsyncConnection) -> None:
+        return None
+
     async def run(job: dict[str, Any], data: bytes | None) -> jobs.SavePlan:
         account_id, material_id = job["account_id"], job["result_ref"]
         if data is None:
             raise RuntimeError("the upload is no longer in memory")
+        file_type = job["params"]["file_type"]
+        is_image = _image_unit(job) is not None
         try:
-            extracted = await extraction.extract(data, job["params"]["file_type"])
+            if is_image:
+                read = await read_image(job, data)
+                if read is None:
+                    # Cancelled before the vision call: the save step ends the job, and the terminal
+                    # hook gives the unit back.
+                    return jobs.SavePlan(apply=nothing, material_ids=(material_id,), result_ref=material_id)
+                extracted, verdict = read
+            else:
+                extracted = await extraction.extract(data, file_type)
+                verdict = integrity.judge(extracted, thresholds)
         except extraction.Unparseable:
             extracted, verdict = None, integrity.Verdict("rejected", UNPARSEABLE)
+            # An image that can't be decoded never reached the vision call: its unit comes back.
+            release_on_save = is_image
         else:
-            verdict = integrity.judge(extracted, thresholds)
+            release_on_save = False
 
         if verdict.outcome == "rejected":
             rejected: list[bool] = []
 
             async def save_rejected(conn: AsyncConnection) -> None:
                 rejected.append(await repo.set_rejected(conn, account_id, material_id, verdict.reason) is not None)
+                if release_on_save:
+                    await usage.release(conn, account_id, usage.IMAGE_EXTRACTION, _image_unit(job))
 
             delete = _delete_original(job)
 
@@ -253,9 +350,12 @@ def processing_kind(
         )
 
     async def on_terminal(conn: AsyncConnection, job: dict[str, Any]) -> jobs.AfterCommit | None:
-        """A failed, interrupted, or cancelled job rejects its Material, freeing the slot (AD-5)."""
+        """A failed, interrupted, or cancelled job rejects its Material, freeing the slot (AD-5). An
+        image job whose vision call never started gives its unit back (a provider error already did,
+        and its marker stays, so it isn't given back twice)."""
         if job.get("result_ref") is None:
             return None
+        await _release_if_unread(conn, job)
         rejected = await repo.set_rejected(conn, job["account_id"], job["result_ref"], _reject_reason(job))
         return _delete_original(job) if rejected is not None else None
 

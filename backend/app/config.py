@@ -4,8 +4,9 @@ import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,8 @@ class Settings(BaseSettings):
     openrouter_api_key: SecretStr | None = None
     # OpenRouter model id for text tasks; required when LLM_MODE=live (AD-3).
     llm_text_model: str | None = None
+    # OpenRouter model id for reading photos of notes (`extract_image_text`); required when LLM_MODE=live.
+    llm_vision_model: str | None = None
     # Seconds before a provider request gives up (AD-3).
     llm_timeout_seconds: float = Field(60, gt=0, le=600)
     # Milliseconds every mock task waits, so progress steps and cancel can be exercised (AD-4).
@@ -86,6 +89,21 @@ class Settings(BaseSettings):
     integrity_min_total_chars: int = Field(200, ge=0)
     # Non-paged files (.docx, .txt, .md): at least this many characters to accept without a warning.
     integrity_text_accept_chars: int = Field(1000, ge=0)
+    # Images: fewer characters of extracted text than this rejects the photo as unreadable.
+    integrity_min_image_chars: int = Field(50, ge=0)
+
+    # Daily limits count calendar days in this IANA time zone (AD-12).
+    quota_timezone: str = "Europe/Oslo"
+
+    @field_validator("quota_timezone")
+    @classmethod
+    def _known_timezone(cls, value: str) -> str:
+        """Fail at startup, not on the first upload, when the zone doesn't exist."""
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError(f"QUOTA_TIMEZONE is not a known IANA time zone: {value!r}") from None
+        return value
 
     # Built SPA served by FastAPI (AD-17).
     frontend_dist: Path = REPO_ROOT / "frontend" / "dist"

@@ -44,15 +44,18 @@ export function material(id, overrides = {}) {
 }
 
 const notFound = () => ({ code: 'not_found', params: {} })
-const TYPES = { pdf: 'pdf', docx: 'docx', pptx: 'pptx', txt: 'txt', md: 'md' }
+const TYPES = { pdf: 'pdf', docx: 'docx', pptx: 'pptx', txt: 'txt', md: 'md', jpg: 'jpg', jpeg: 'jpg', png: 'png', heic: 'heic' }
+const IMAGE_TYPES = new Set(['jpg', 'png', 'heic'])
+export const IMAGE_LIMIT = 25
 
 /**
  * Install the fake. `projects` is newest first, as the server sends it. `materials` maps a Project
  * id to its files; `jobs` lists jobs ({id, project_id, kind, status}). An upload adds a processing
- * file and a running job. `routes` overrides a handler by "METHOD /path" (for example
- * 'POST /api/projects'). Returns the live state.
+ * file and a running job. `imagesLeft` is today's image limit left (Story 2.5): an image upload uses
+ * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
+ * (for example 'POST /api/projects'). Returns the live state.
  */
-export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = [], routes = {} } = {}) {
+export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = [], routes = {}, imagesLeft = IMAGE_LIMIT } = {}) {
   const state = {
     me: { ...me },
     projects: projects.map((p) => ({ ...p })),
@@ -63,6 +66,7 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     removed: [], // ids of removed files (Story 2.7)
     topicEdits: 0, // Topic edits answered or refused (Story 2.6b)
     autoNames: {}, // { [projectId]: name } the next GET /api/projects/{id} returns (Story 2.4b)
+    imagesLeft, // today's image limit left (Story 2.5)
   }
 
   vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
@@ -87,6 +91,7 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
       state.me = { ...state.me, privacy_notice_accepted: true }
       return state.me
     }
+    if (path === '/api/usage' && method === 'GET') return { images_left_today: state.imagesLeft }
     if (path === '/api/projects' && method === 'GET') return state.projects
     if (path === '/api/projects' && method === 'POST') {
       state.created += 1
@@ -105,8 +110,13 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
       if (what === 'materials' && method === 'GET') return (state.materials[id] ?? []).map((m) => ({ ...m }))
       if (what === 'materials' && method === 'POST') {
         const file = body.get('file')
-        state.uploaded += 1
         const ext = String(file.name).split('.').pop().toLowerCase()
+        // Like the server: an image over today's limit is refused, with nothing added.
+        if (IMAGE_TYPES.has(TYPES[ext])) {
+          if (state.imagesLeft <= 0) throw { code: 'quota_exceeded', params: { limit: IMAGE_LIMIT } }
+          state.imagesLeft -= 1
+        }
+        state.uploaded += 1
         const created = material(`m-${state.uploaded}`, { file_name: file.name, file_type: TYPES[ext] ?? ext, status: 'processing' })
         state.materials[id] = [...(state.materials[id] ?? []), created]
         const job = { id: `j-${state.uploaded}`, project_id: id, kind: 'material_processing', status: 'running', result_ref: created.id }
