@@ -22,11 +22,11 @@
 - [x] 2026-11-17 [story-2-3-privacy-notice](993-2026-11-17-14-22-44-story-2-3-privacy-notice.md) — Manuell nettlesersjekk av story 2.3, deretter merge av `feature/2-3-privacy-notice` til `main`. (løst 2026-11-17, merge c140a1f)
 - [x] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Implementer story 2.4a (AI-gateway og testmodus) fra godkjent spec i en ny `bmad-build`-økt, gren `feature/2-4-auto-name`. (løst 2026-11-17)
 - [x] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Story 2.4b: automatisk prosjektnavn fra første klare fil (etter 2.4a). (løst 2026-11-17)
-- [ ] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Før 2.4b: test AI-gatewayen mot en ekte OpenRouter-modell (strict json_schema med lengdegrenser). Gjelder nå også `detect_topics` (2.6a).
+- [x] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Før 2.4b: test AI-gatewayen mot en ekte OpenRouter-modell (strict json_schema med lengdegrenser). Gjelder nå også `detect_topics` (2.6a). (løst 2026-11-18, testet live med openai/gpt-4o-mini)
 - [x] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — Manuell nettlesersjekk av 2.4b (navnet dukker opp uten omlasting; rename under navngiving). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — En ukjent frontend-test feilet én gang (mulig ustabil); følg med.
 - [x] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Manuell nettlesersjekk av 2.7 (fjern klar, leser…- og avvist fil; fokus inn i dialogen). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.
 - [x] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner. (løst 2026-11-18, merge b4257c5)
-- [ ] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Prøv `extract_image_text` mot en ekte syns-modell (`LLM_VISION_MODEL`) når OpenRouter-nøkkelen er på plass.
+- [x] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Prøv `extract_image_text` mot en ekte syns-modell (`LLM_VISION_MODEL`) når OpenRouter-nøkkelen er på plass. (løst 2026-11-18, testet live med openai/gpt-4o-mini)
 - [x] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Epic 2 er ferdig: sett `epic-2` til done i sprint-status, eventuelt etter en retrospektiv. (løst 2026-11-18, commit f9acc9d)
