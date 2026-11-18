@@ -76,3 +76,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-5-upload-photos-of-my-notes.md`
   summary: Test that a pending (still uploading) `.jpeg` row shows the JPG tile.
   evidence: Story 2.5 review (Verification Gap): only rows with `file_type` are rendered in tests; cosmetic on a short-lived row.
+- source_spec: none
+  summary: V2 idea (Cristoffer, 2026-11-18) — Ask AI model routing: a default model (e.g. `openai/gpt-4o-mini`) answers chat, and a small decision model (TypeSafe Jev 1.14 on OpenRouter, `typesafe/jev-1.14`) sends hard questions, or relevant questions needing knowledge beyond the material, to a stronger model.
+  evidence: Post-V1 only. Needs (1) a PRD change, because FR-16 answers only from the student's material and outside knowledge is a product change to agree with Ihor; (2) an architecture-spine amendment through `bmad-architecture` (a new component in the AD-3 gateway); (3) confirmation that TypeSafe stores no data and supports `zdr`, as AD-3 requires. Until then, a stronger chat model can simply be set in `.env`.
