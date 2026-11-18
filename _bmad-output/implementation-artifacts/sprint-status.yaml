@@ -44,7 +44,7 @@ development_status:
   1-6-sign-in-with-google: backlog
   epic-1-retrospective: optional
 
-  epic-2: in-progress
+  epic-2: done
   2-1-create-open-and-rename-projects: done
   2-2-upload-documents-and-watch-them-get-processed: done
   2-2b-collapse-the-files-panel-to-the-files-strip: done
