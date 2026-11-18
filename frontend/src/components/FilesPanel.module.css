@@ -56,6 +56,31 @@
   color: var(--color-text-muted);
 }
 
+/* Limit notice (DESIGN.md › Limit notice): caption text with a small muted dot; error colour at 0. */
+.limit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--type-caption-size);
+  color: var(--color-text);
+}
+
+.limitDot {
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-text-muted);
+}
+
+.limitOut {
+  color: var(--color-error);
+}
+
+.limitOut .limitDot {
+  background: var(--color-error);
+}
+
 .errors {
   display: flex;
   flex-direction: column;

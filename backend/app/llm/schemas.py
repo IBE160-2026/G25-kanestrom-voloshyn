@@ -1,6 +1,6 @@
 """What each typed task returns (AD-3). Live and mock output are both parsed through these models."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
@@ -45,3 +45,25 @@ class DetectedTopics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     topics: Annotated[list[DetectedTopic], Field(min_length=1, max_length=TOPICS_MAX)]
+
+
+Legibility = Literal["readable", "partial", "unreadable"]
+
+
+# A photo's transcription is cut to this many characters: more is never a page of notes.
+IMAGE_TEXT_MAX = 20_000
+
+
+class ImageText(BaseModel):
+    """`extract_image_text`: the text in a photo of notes as Markdown, and how legible the photo was
+    (FR-7, AD-6). `partial` when some of it couldn't be read; `unreadable` when almost none could."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    legibility: Legibility
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def _cap_text(cls, value: str) -> str:
+        return value[:IMAGE_TEXT_MAX]

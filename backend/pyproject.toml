@@ -13,6 +13,8 @@ dependencies = [
     "markitdown[docx,pptx]==0.1.9",
     "openai==3.52.0",
     "pdfplumber>=0.11,<0.12",
+    "pillow==13.0.0",
+    "pillow-heif==1.8.1",
     "psycopg-pool>=3.3.3",
     "psycopg[binary]>=3.3.8",
     "pydantic-settings>=2.16.2",

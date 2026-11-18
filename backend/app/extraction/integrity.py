@@ -4,6 +4,7 @@
 | --- | --- | --- | --- |
 | PDF, .pptx (paged) | >= 80 % readable pages | 30-80 % | < 30 %, or < 200 characters in total |
 | .docx, .txt, .md | >= 1,000 characters | 200-999 | < 200 |
+| Image (JPG, PNG, HEIC) | legibility `readable` | `partial` | `unreadable`, or < 50 characters |
 
 A readable page has at least `min_page_chars` characters. Every number comes from the settings.
 """
@@ -24,6 +25,7 @@ class Thresholds:
     paged_reject_ratio: float = 0.3
     min_total_chars: int = 200
     text_accept_chars: int = 1000
+    min_image_chars: int = 50
 
     @classmethod
     def from_settings(cls, settings: Settings) -> "Thresholds":
@@ -33,6 +35,7 @@ class Thresholds:
             paged_reject_ratio=settings.integrity_paged_reject_ratio,
             min_total_chars=settings.integrity_min_total_chars,
             text_accept_chars=settings.integrity_text_accept_chars,
+            min_image_chars=settings.integrity_min_image_chars,
         )
 
 
@@ -77,3 +80,12 @@ def judge_text(parts: list[str], t: Thresholds) -> Verdict:
 def judge(extracted: Extracted, t: Thresholds) -> Verdict:
     texts = [section.text for section in extracted.sections]
     return judge_paged(texts, t) if extracted.paged else judge_text(texts, t)
+
+
+def judge_image(legibility: str, text: str, t: Thresholds) -> Verdict:
+    """A photo of notes from the vision model's legibility and its extracted text (FR-7, AD-6)."""
+    if legibility == "unreadable" or _chars(text) < t.min_image_chars:
+        return UNREADABLE
+    if legibility == "partial":
+        return Verdict("accepted_with_warning")
+    return ACCEPTED

@@ -73,8 +73,12 @@
     "stripCount": "{{n}} <of>of 10</of>",
     "attention": "A file needs your attention",
     "upload": "Upload",
-    "types": "PDF, Word, PowerPoint, text, or Markdown · up to 50 MB each",
+    "types": "PDF, Word, PowerPoint, text, Markdown, or photos (JPG, PNG, HEIC) · up to 50 MB each",
     "empty": "No files yet. Your notes will show up here.",
+    "limit": {
+      "images_one": "{{count}} image left today",
+      "images_other": "{{count}} images left today"
+    },
     "status": {
       "processing": "Reading…",
       "ready": "Ready",
@@ -90,7 +94,8 @@
       "unreadable": "We couldn't read enough text in this file. It doesn't count toward your 10 files.",
       "unparseable": "This file couldn't be opened. It may be damaged or password-protected.",
       "interrupted": "Reading stopped. Upload the file again.",
-      "processing_failed": "Reading stopped. Upload the file again."
+      "processing_failed": "Reading stopped. Upload the file again.",
+      "unreadable_image": "This image is too blurry to read, so we can't study from it. A sharper photo in good light usually does the trick."
     },
     "topics": {
       "count_one": "{{count}} topic",
@@ -172,7 +177,8 @@
     "llm_output_invalid": "Something went wrong.",
     "topic_limit_reached": "A file can have at most 100 topics.",
     "topic_last_cannot_delete": "A file needs at least one topic.",
-    "topic_merge_cross_material": "Only topics from the same file can be merged."
+    "topic_merge_cross_material": "Only topics from the same file can be merged.",
+    "quota_exceeded": "You've used today's {{limit}} images. Try again tomorrow."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

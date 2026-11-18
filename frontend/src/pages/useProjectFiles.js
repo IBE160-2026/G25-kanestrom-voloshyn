@@ -11,12 +11,19 @@
 //   and, once the server answers, puts the file's whole Topic list from the answer in place through
 //   `setTopics`; a failed edit changes nothing and rejects with the ApiError. A `not_found` failure
 //   also fetches the list again, so a Topic or file that is gone leaves the screen.
+// - Photos of notes (FR-7) upload like any file. `imagesLeft` is today's remaining image limit from
+//   `GET /api/usage` (null until known), fetched when the Project opens and again after each image
+//   upload or image removal, and when a poll sees an image's job end (a unit may come back then);
+//   the server refuses the 26th image (`quota_exceeded`).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
 export const POLL_MS = 2000
 export const MAX_BYTES = 50 * 1024 * 1024
-export const ACCEPT = '.pdf,.docx,.pptx,.txt,.md'
+export const ACCEPT = '.pdf,.docx,.pptx,.txt,.md,.jpg,.jpeg,.png,.heic'
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic']
+/** The `file_type`s of photos of notes (FR-7). */
+export const IMAGE_TYPES = new Set(['jpg', 'png', 'heic'])
 const EXTENSIONS = ACCEPT.split(',')
 const ACTIVE = new Set(['queued', 'running'])
 const KIND = 'material_processing'
@@ -31,6 +38,8 @@ const RULES = new Set([
   'invalid_request',
   // The Privacy notice isn't accepted (Story 2.3): retrying sends the same refusal.
   'privacy_notice_required',
+  // Today's images are used up (FR-7): retrying today sends the same refusal.
+  'quota_exceeded',
 ])
 
 export function isRuleRefusal(error) {
@@ -43,6 +52,13 @@ export function precheck(file) {
   if (!EXTENSIONS.some((ext) => name.endsWith(ext))) return { code: 'unsupported_file_type', params: {} }
   if (file.size > MAX_BYTES) return { code: 'file_too_large', params: {} }
   return null
+}
+
+/** A photo of notes (FR-7), by its name or its file type. */
+export function isImage(fileOrMaterial) {
+  if (IMAGE_TYPES.has(fileOrMaterial?.file_type)) return true
+  const name = String(fileOrMaterial?.name ?? fileOrMaterial?.file_name ?? '').toLowerCase()
+  return IMAGE_EXTENSIONS.some((ext) => name.endsWith(ext))
 }
 
 /** Slot-holding files: Reading… and Ready count toward 10, Rejected doesn't (AD-5). */
@@ -59,6 +75,23 @@ export function useProjectFiles(projectId) {
   const [failures, setFailures] = useState([]) // [{ key, projectId, name, error, file }]
   const queue = useRef(Promise.resolve())
   const removedIds = useRef(new Map()) // { [projectId]: Set of removed Material ids }
+  const [imagesLeft, setImagesLeft] = useState(null) // today's image limit left (FR-7), null until known
+
+  // A failed fetch keeps the last value: the notice is a hint, and the server enforces the limit.
+  const fetchUsage = useCallback(
+    () =>
+      apiFetch('/api/usage')
+        .then((usage) => {
+          const n = usage?.images_left_today
+          if (Number.isInteger(n)) setImagesLeft(n)
+        })
+        .catch(() => {}),
+    [],
+  )
+
+  useEffect(() => {
+    fetchUsage()
+  }, [projectId, fetchUsage])
 
   const withoutRemoved = useCallback((id, list) => {
     const gone = removedIds.current.get(id)
@@ -67,6 +100,11 @@ export function useProjectFiles(projectId) {
   }, [])
 
   const materials = loaded.id === projectId ? loaded.materials : null
+  // Ids of image Materials ever listed, also once removed: their jobs' ends refresh the usage.
+  const imageIds = useRef(new Set())
+  useEffect(() => {
+    for (const m of materials ?? []) if (isImage(m)) imageIds.current.add(m.id)
+  }, [materials])
 
   const fetchList = useCallback(
     (id) =>
@@ -97,16 +135,17 @@ export function useProjectFiles(projectId) {
   const processing = Boolean(materials?.some((m) => m.status === 'processing'))
   useEffect(() => {
     if (!processing) return undefined
-    let live = true
-    const handle = { timer: null }
+    // `live` sits on the handle, so the cleanup changes an object, not a closed-over variable.
+    const handle = { timer: null, live: true }
     const tick = async () => {
       try {
         const jobs = await apiFetch(`/api/projects/${projectId}/jobs`)
-        if (!live) return
+        if (!handle.live) return
         const ours = (Array.isArray(jobs) ? jobs : []).filter((job) => job.kind === KIND)
         const finished = ours.filter((job) => !ACTIVE.has(job.status))
         if (finished.length > 0 || !ours.some((job) => ACTIVE.has(job.status))) {
           await fetchList(projectId)
+          if (finished.some((job) => imageIds.current.has(job.result_ref))) fetchUsage()
           for (const job of finished) {
             apiFetch(`/api/jobs/${job.id}/seen`, { method: 'POST' }).catch(() => {})
           }
@@ -114,14 +153,14 @@ export function useProjectFiles(projectId) {
       } catch {
         // a failed poll is retried on the next tick
       }
-      if (live) handle.timer = setTimeout(tick, POLL_MS)
+      if (handle.live) handle.timer = setTimeout(tick, POLL_MS)
     }
     handle.timer = setTimeout(tick, POLL_MS)
     return () => {
-      live = false
+      handle.live = false
       clearTimeout(handle.timer)
     }
-  }, [processing, projectId, fetchList])
+  }, [processing, projectId, fetchList, fetchUsage])
 
   const send = useCallback(async ({ key, projectId: id, file }) => {
     const form = new FormData()
@@ -140,8 +179,11 @@ export function useProjectFiles(projectId) {
       }
     } finally {
       setPending((list) => list.filter((item) => item.key !== key))
+      // Accepted or refused, the server's count is the truth for the Limit notice. Not awaited, so
+      // the next upload in the queue doesn't wait for it.
+      if (isImage(file)) fetchUsage()
     }
-  }, [])
+  }, [fetchUsage])
 
   /** Upload files one after another; each shows as Reading… at once. */
   const upload = useCallback(
@@ -192,8 +234,10 @@ export function useProjectFiles(projectId) {
       if (!removedIds.current.has(id)) removedIds.current.set(id, new Set())
       removedIds.current.get(id).add(material.id)
       setLoaded((state) => (state.id === id ? { id, materials: withoutRemoved(id, state.materials) } : state))
+      // A Reading… image removed before it was read gets its unit back.
+      if (isImage(material) && material.status === 'processing') fetchUsage()
     },
-    [projectId, withoutRemoved],
+    [projectId, withoutRemoved, fetchUsage],
   )
 
   /** Replace one file's Topics (the server's answer to an edit), only while its Project is shown. */
@@ -236,6 +280,7 @@ export function useProjectFiles(projectId) {
     pending: pending.filter((item) => item.projectId === projectId),
     failures: failures.filter((failure) => failure.projectId === projectId),
     loadError: loadError?.id === projectId ? loadError.error : null,
+    imagesLeft,
     upload,
     retry,
     remove,

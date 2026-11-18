@@ -2,6 +2,7 @@
 and the gateway parses it through the same schema as live output."""
 
 import math
+import posixpath
 import re
 from collections.abc import Sequence
 from typing import Any
@@ -50,3 +51,29 @@ def detect_topics(labels: Sequence[str], target: int) -> dict[str, Any]:
             }
         )
     return {"topics": topics}
+
+
+# Mock photo text (AD-4). Each readable or partial text is well over the 50-character minimum.
+IMAGE_READABLE_TEXT = """# Photosynthesis
+
+- Plants turn light energy into chemical energy in the chloroplasts.
+- Light reactions: water is split, oxygen is released, ATP and NADPH are made.
+- Calvin cycle: CO2 is fixed into sugar using ATP and NADPH.
+"""
+IMAGE_PARTIAL_TEXT = """# Cell respiration
+
+- Glucose is broken down to release energy as ATP.
+- Glycolysis happens in the cytoplasm; the rest of the page is hard to read.
+"""
+IMAGE_UNREADABLE_TEXT = "Cell"
+
+
+def extract_image_text(file_name: str) -> dict[str, Any]:
+    """The outcome comes from the file name only (AD-4): `*-partial.*` is partly legible,
+    `*-unreadable.*` is not legible, and any other name is readable."""
+    name = posixpath.basename(file_name.replace("\\", "/")).lower()
+    if "-unreadable." in name:
+        return {"legibility": "unreadable", "text": IMAGE_UNREADABLE_TEXT}
+    if "-partial." in name:
+        return {"legibility": "partial", "text": IMAGE_PARTIAL_TEXT}
+    return {"legibility": "readable", "text": IMAGE_READABLE_TEXT}

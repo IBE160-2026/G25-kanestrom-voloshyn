@@ -1,7 +1,8 @@
 """Study Materials (FR-6, FR-8, AD-5).
 
 - `POST /api/projects/{project_id}/materials`: upload one file (multipart field `file`); `202
-  {material, job_id}`. Requires an active Project (`ActiveProject`).
+  {material, job_id}`. Requires an active Project (`ActiveProject`). An image over today's limit is
+  `429 quota_exceeded {limit}` (FR-7).
 - `GET /api/projects/{project_id}/materials`: every non-removed Material with its last status and its
   Topics in order (FR-22).
 - `DELETE /api/projects/{project_id}/materials/{material_id}`: remove a Material (FR-20, AD-23); `204`,
@@ -76,6 +77,7 @@ async def upload_material(
         file.filename,
         data,
         lambda callback: on_rollback(request, callback),
+        request.app.state.pool,
     )
     # Started right after the commit, so the runner sees the job row; it doesn't depend on the
     # response being delivered (AD-20).

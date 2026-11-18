@@ -30,6 +30,7 @@ from app.llm import (
 
 TEST_DATA = Path(__file__).resolve().parents[2] / "test-data"
 MODEL = "test/text-model"
+VISION_MODEL = "test/vision-model"
 SECRET_TEXT = "Chlorophyll absorbs blue light"
 
 
@@ -71,7 +72,7 @@ class StubClient:
 def live(*outcomes) -> tuple[Gateway, StubClient]:
     client = StubClient(*outcomes)
     gateway = Gateway(
-        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL), "live", client=client
+        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, llm_vision_model=VISION_MODEL), "live", client=client
     )
     return gateway, client
 
@@ -210,7 +211,7 @@ def test_live_reply_without_message_is_retried_then_an_output_error():
 
     client = NoMessageClient()
     gateway = Gateway(
-        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL), "live", client=client
+        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, llm_vision_model=VISION_MODEL), "live", client=client
     )
     with pytest.raises(LLMOutputError):
         run(gateway.name_project(SECTIONS))
@@ -255,7 +256,7 @@ def test_live_without_text_model_fails_at_startup():
 
 def test_live_builds_an_openrouter_client_without_calling_it():
     gateway = create_gateway(
-        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, llm_timeout_seconds=12), "live"
+        settings(llm_mode="live", openrouter_api_key="sk-test", llm_text_model=MODEL, llm_vision_model=VISION_MODEL, llm_timeout_seconds=12), "live"
     )
     assert isinstance(gateway._client, openai.AsyncOpenAI)
     assert str(gateway._client.base_url).rstrip("/") == "https://openrouter.ai/api/v1"

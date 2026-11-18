@@ -16,16 +16,22 @@ import { useDropTarget } from './useDropTarget.js'
 // warning icon when a file is partly unreadable or rejected (Story 2.2b). "Upload from phone"
 // arrives with Epic 6.
 //
+// Daily image limit (FR-7): at 10 or fewer images left today, the Limit notice "{n} images left
+// today" shows under the Upload button (in the error colour at 0). Nothing shows above 10.
+//
 // Removing a file (Story 2.7, FR-20): a row's "···" → Remove opens the Remove file dialog, which shows
 // the live file (it closes if the file leaves the list); a Rejected row's "Remove" goes at once, several
 // may be in flight, and each failure shows its own Inline error ("Try again" unless the Project is
 // read-only). After a removal the row leaves, the count updates, and focus goes to the Upload button.
 // A read-only Project removes nothing. ProjectHome keys the panel by Project, so none of this state
 // carries over to another Project.
+// The Limit notice shows at this many images left today, or fewer (EXPERIENCE.md › Daily limits).
+const IMAGE_NOTICE_AT = 10
+
 export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle, onPrivacyInfo }) {
   const { t } = useTranslation()
   const heading = useId()
-  const { materials, pending, failures, loadError, upload, retry, remove, editTopics } = files
+  const { materials, pending, failures, loadError, upload, retry, remove, editTopics, imagesLeft = null } = files
   const canRemove = !readOnly && typeof remove === 'function'
   // Topic edits (Story 2.6b): only in an active Project; a read-only one shows the list without controls.
   const canEditTopics = !readOnly && typeof editTopics === 'function'
@@ -154,6 +160,12 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
           <button ref={uploadButton} type="button" className={styles.upload} onClick={onBrowse} disabled={readOnly}>
             {t('files.upload')}
           </button>
+          {!readOnly && imagesLeft !== null && imagesLeft <= IMAGE_NOTICE_AT && (
+            <p role="status" className={`${styles.limit} ${imagesLeft === 0 ? styles.limitOut : ''}`}>
+              <span className={styles.limitDot} aria-hidden="true" />
+              {t('files.limit.images', { count: imagesLeft })}
+            </p>
+          )}
           <p className={styles.hint}>{t('files.types')}</p>
           {onPrivacyInfo && (
             <button type="button" className={styles.privacyLink} onClick={onPrivacyInfo}>

@@ -216,7 +216,7 @@ def test_markdown_upload_is_ready(client, student):
 # --- Refusals: nothing stored ---
 
 
-@pytest.mark.parametrize("name", ["unsupported-type.rtf", "notes-photo.png", "no-extension"])
+@pytest.mark.parametrize("name", ["unsupported-type.rtf", "notes-photo.gif", "no-extension"])
 def test_unsupported_type_is_refused_and_nothing_is_stored(client, student, db, name):
     project_id = create_project(client, student["token"])
     response = upload(client, student["token"], project_id, name, data=b"some bytes")
