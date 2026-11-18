@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = Field(60, gt=0, le=600)
     # Milliseconds every mock task waits, so progress steps and cancel can be exercised (AD-4).
     llm_mock_delay_ms: int = Field(0, ge=0, le=600_000)
+    # Estimated tokens (characters / 4) of material one request may carry; above it a task like
+    # `detect_topics` is split into chunks and the results merged (AD-3).
+    llm_context_budget_tokens: int = Field(100_000, ge=1_000, le=2_000_000)
 
     # Database: direct Postgres URL (AD-16, AD-29).
     database_url: SecretStr = SecretStr("postgresql://postgres:postgres@127.0.0.1:54322/postgres")

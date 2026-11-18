@@ -38,6 +38,7 @@ export function material(id, overrides = {}) {
     warning: false,
     warning_pages: [],
     created_at: '2026-11-17T10:00:00Z',
+    topics: [],
     ...overrides,
   }
 }
@@ -163,6 +164,16 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
   return state
 }
 
+/** `n` Topics as the server lists them; with `groupSize`, grouped under "Part 1", "Part 2", ... */
+export function topics(n, { groupSize = null, prefix = 'Topic' } = {}) {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `t-${i + 1}`,
+    label: `${prefix} ${i + 1}`,
+    group_label: groupSize ? `Part ${Math.floor(i / groupSize) + 1}` : null,
+    position: i,
+  }))
+}
+
 /** The calls the SPA made with `method` to `path`. */
 export function callsTo(path, method = 'GET') {
   return vi
@@ -171,7 +182,8 @@ export function callsTo(path, method = 'GET') {
 }
 
 /**
- * Finish a file's processing in the fake: the Material gets `changes`, its job completes. With
+ * Finish a file's processing in the fake: the Material gets `changes` (for example `{ status: 'ready',
+ * topics: topics(3) }`), its job completes. With
  * `projectName`, the server auto-names the Project: the next GET /api/projects/{id} returns that name
  * (unless the Project is named by then).
  */

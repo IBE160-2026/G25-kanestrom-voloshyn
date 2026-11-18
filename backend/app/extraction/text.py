@@ -32,7 +32,7 @@ def decode(data: bytes) -> str:
         raise Unparseable("not text") from None
 
 
-def _words(text: str) -> int:
+def count_words(text: str) -> int:
     return len(text.split())
 
 
@@ -51,7 +51,7 @@ def _pack(parts: list[str], separator: str = "\n\n") -> list[str]:
         part = part.strip()
         if not part:
             continue
-        size = _words(part)
+        size = count_words(part)
         if size > TARGET_WORDS:
             if current:
                 chunks.append(separator.join(current))

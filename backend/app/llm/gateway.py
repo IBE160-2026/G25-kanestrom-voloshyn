@@ -22,7 +22,7 @@ from pydantic import BaseModel, ValidationError
 from app.config import ConfigError, LlmMode, Settings
 from app.llm import fixtures
 from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
-from app.llm.schemas import ProjectName
+from app.llm.schemas import DetectedTopics, ProjectName
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +32,8 @@ PROVIDER_PREFERENCES = {"require_parameters": True, "data_collection": "deny", "
 SCHEMA_ATTEMPTS = 2
 # A name comes from the start of the file; more text only costs tokens.
 NAME_PROJECT_MAX_CHARS = 12_000
+# Estimated tokens per character of material, for the context budget (AD-3).
+CHARS_PER_TOKEN = 4
 MOCK_MODEL = "mock"
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 
@@ -41,6 +43,13 @@ class SectionLike(Protocol):
 
     @property
     def text(self) -> str: ...
+
+
+class LabelledSection(SectionLike, Protocol):
+    """A Section with its source label, e.g. "Page 4"."""
+
+    @property
+    def label(self) -> str: ...
 
 
 @cache
@@ -61,6 +70,32 @@ def label_sections(texts: Sequence[str], max_chars: int | None = None) -> str:
             used += len(text)
         parts.append(f"[S{number}]\n{text}")
     return "\n\n".join(parts)
+
+
+def estimate_tokens(texts: Sequence[str]) -> int:
+    return sum(len(text) for text in texts) // CHARS_PER_TOKEN
+
+
+def plan_chunks(texts: Sequence[str], budget_tokens: int) -> list[tuple[int, int]]:
+    """Contiguous `(start, end)` runs of Sections whose estimated tokens stay within the budget; one
+    run when everything fits. A single Section over the budget is a run of its own."""
+    if estimate_tokens(texts) <= budget_tokens:
+        return [(0, len(texts))]
+    room = budget_tokens * CHARS_PER_TOKEN
+    chunks: list[tuple[int, int]] = []
+    start, used = 0, 0
+    for index, text in enumerate(texts):
+        if index > start and used + len(text) > room:
+            chunks.append((start, index))
+            start, used = index, 0
+        used += len(text)
+    chunks.append((start, len(texts)))
+    return chunks
+
+
+def chunk_target(target: int, size: int, total: int) -> int:
+    """A chunk's share of the target, in proportion to its Sections, at least 1."""
+    return max(1, round(target * size / total))
 
 
 def _response_format(schema: type[BaseModel]) -> dict[str, Any]:
@@ -109,6 +144,53 @@ class Gateway:
                 {"role": "user", "content": label_sections(texts, NAME_PROJECT_MAX_CHARS)},
             ],
             fixture=lambda: fixtures.name_project(texts),
+        )
+
+    async def detect_topics(self, sections: Sequence[LabelledSection], target: int) -> DetectedTopics:
+        """About `target` Topics covering the Sections, with 1-based Section numbers (FR-22, AD-21).
+
+        Live, the Sections are sent as `S1…Sn`. Above `LLM_CONTEXT_BUDGET_TOKENS` they go in contiguous
+        chunks, each asked for its proportional share of the target; each chunk's numbers are shifted
+        by its offset and the Topics concatenated in order. The merged result may then hold more than
+        100 Topics or skip Sections: the caller repairs it. Mock mode derives the Topics from the
+        Section count in one step (`fixtures.detect_topics`).
+        """
+        texts = [s.text for s in sections]
+        labels = [s.label for s in sections]
+        if self.mode == "mock":
+            return await self._detect_chunk(texts, labels, target, target)
+        chunks = plan_chunks(texts, self._settings.llm_context_budget_tokens)
+        if len(chunks) == 1:
+            return await self._detect_chunk(texts, labels, target, target)
+        merged = []
+        for start, end in chunks:
+            part = await self._detect_chunk(
+                texts[start:end], labels[start:end], chunk_target(target, end - start, len(texts)), target
+            )
+            # Only numbers inside this chunk are shifted; others would land on the next chunk's Sections.
+            # A Topic left with none is dropped by the caller's repair.
+            merged.extend(
+                topic.model_copy(
+                    update={"sections": [number + start for number in topic.sections if 1 <= number <= end - start]}
+                )
+                for topic in part.topics
+            )
+        # Already validated per chunk; together they may exceed the 100 the schema allows.
+        return DetectedTopics.model_construct(topics=merged)
+
+    async def _detect_chunk(self, texts: list[str], labels: list[str], target: int, total: int) -> DetectedTopics:
+        """`target` Topics for these Sections; `total` is the whole file's target (it decides grouping)."""
+        return await self._run(
+            task="detect_topics",
+            schema=DetectedTopics,
+            model=self._settings.llm_text_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("detect_topics")
+                    .replace("{target}", str(target))
+                    .replace("{total}", str(total))},
+                {"role": "user", "content": label_sections(texts)},
+            ],
+            fixture=lambda: fixtures.detect_topics(labels, target),
         )
 
     # --- Shared paths ---

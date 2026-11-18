@@ -92,6 +92,13 @@
       "interrupted": "Reading stopped. Upload the file again.",
       "processing_failed": "Reading stopped. Upload the file again."
     },
+    "topics": {
+      "count_one": "{{count}} topic",
+      "count_other": "{{count}} topics",
+      "group_one": "{{chapter}}, {{count}} topic",
+      "group_other": "{{chapter}}, {{count}} topics",
+      "grouped": "Large file, some topics are grouped."
+    },
     "remove": {
       "menu": "More options for {{name}}",
       "item": "Remove",

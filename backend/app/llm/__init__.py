@@ -6,9 +6,11 @@
 
 from app.llm.errors import LLMError, LLMOutputError, ProviderError, ProviderRateLimited, ProviderUnavailable
 from app.llm.gateway import Gateway, create_gateway
-from app.llm.schemas import ProjectName
+from app.llm.schemas import DetectedTopic, DetectedTopics, ProjectName
 
 __all__ = [
+    "DetectedTopic",
+    "DetectedTopics",
     "Gateway",
     "LLMError",
     "LLMOutputError",

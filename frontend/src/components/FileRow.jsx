@@ -2,10 +2,13 @@ import { DropdownMenu } from 'radix-ui'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import styles from './FileRow.module.css'
+import TopicList from './TopicList.jsx'
 
 // File row (DESIGN.md › File row, File status; EXPERIENCE.md › State Patterns › Study Material):
 // a file-type tile, the name, and the status line, with a muted note when partly unreadable and the
-// reason in the error colour when rejected. The Topic count arrives with Story 2.6.
+// reason in the error colour when rejected. A Ready file (also partly unreadable) shows its Topic count
+// ("{n} topics") as muted metadata and its Topic list under the row (Story 2.6a, FR-22); Reading… and
+// Rejected files show neither.
 //
 // Removal (Story 2.7, FR-20): Reading…, Ready, and partly-readable rows get a "···" Overflow menu with
 // "Remove", which calls `onRemove(material, trigger)` to open the Remove file dialog. Rejected rows get
@@ -30,6 +33,7 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
   const trigger = useRef(null)
   const state = fileState(material)
   const removable = Boolean(material.id)
+  const topics = state === 'ready' || state === 'warning' ? (material.topics ?? []) : []
   const pages = material.warning_pages ?? []
   const pageList = new Intl.ListFormat(i18n.language, { style: 'long', type: 'conjunction' }).format(
     pages.map(String),
@@ -45,6 +49,7 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
           <p className={styles.name} title={material.file_name}>
             {material.file_name}
           </p>
+          {topics.length > 0 && <p className={styles.meta}>{t('files.topics.count', { count: topics.length })}</p>}
           <p className={`${styles.status} ${styles[state]}`}>
             <span className={styles.dot} aria-hidden="true" />
             {t(`files.status.${state}`)}
@@ -97,6 +102,7 @@ export default function FileRow({ material, onRemove, onRemoveNow, removing = fa
           {t(`files.reason.${material.reject_reason}`, { defaultValue: t('files.reason.processing_failed') })}
         </p>
       )}
+      {topics.length > 0 && <TopicList topics={topics} />}
     </li>
   )
 }
