@@ -1,5 +1,5 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
-// 2.2) routes, installed on the mocked apiFetch. The test file must mock '../api/client.js'
+// 2.2) routes, and Quiz setup and generation (Story 3.1a), installed on the mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
@@ -53,9 +53,19 @@ export const IMAGE_LIMIT = 25
  * id to its files; `jobs` lists jobs ({id, project_id, kind, status}). An upload adds a processing
  * file and a running job. `imagesLeft` is today's image limit left (Story 2.5): an image upload uses
  * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
- * (for example 'POST /api/projects'). Returns the live state.
+ * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions`: a
+ * number, or a function of the scope (Story 3.1a). A quiz request adds a running `quiz` job at the
+ * `reading` step; `stepJob`, `finishQuiz`, and `failJob` move it on. Returns the live state.
  */
-export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = [], routes = {}, imagesLeft = IMAGE_LIMIT } = {}) {
+export function fakeApi({
+  me = PROFILE,
+  projects = [],
+  materials = {},
+  jobs = [],
+  routes = {},
+  imagesLeft = IMAGE_LIMIT,
+  capacity = 20,
+} = {}) {
   const state = {
     me: { ...me },
     projects: projects.map((p) => ({ ...p })),
@@ -67,6 +77,10 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
     topicEdits: 0, // Topic edits answered or refused (Story 2.6b)
     autoNames: {}, // { [projectId]: name } the next GET /api/projects/{id} returns (Story 2.4b)
     imagesLeft, // today's image limit left (Story 2.5)
+    capacity, // max_questions, or a function of the scope (Story 3.1a)
+    quizRequests: [], // bodies of POST .../quizzes
+    quizzes: {}, // { [quizId]: { id, requested_count, question_count } }
+    cancelled: [], // job ids a cancel was sent for
   }
 
   vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
@@ -98,6 +112,52 @@ export function fakeApi({ me = PROFILE, projects = [], materials = {}, jobs = []
       const created = project(`new-${state.created}`)
       state.projects.unshift(created)
       return created
+    }
+
+    // Quiz setup and generation (Story 3.1a).
+    const capacityCall = path.match(/^\/api\/projects\/([^/]+)\/capacity\?scope=(.*)$/)
+    if (capacityCall && method === 'GET') {
+      if (!state.projects.some((p) => p.id === capacityCall[1])) throw notFound()
+      const scope = JSON.parse(decodeURIComponent(capacityCall[2]))
+      const max = typeof state.capacity === 'function' ? state.capacity(scope) : state.capacity
+      return { max_questions: max }
+    }
+    const quizCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes(?:\/([^/]+))?$/)
+    if (quizCall) {
+      const [, id, quizId] = quizCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (quizId && method === 'GET') {
+        if (!state.quizzes[quizId]) throw notFound()
+        return { ...state.quizzes[quizId] }
+      }
+      if (!quizId && method === 'POST') {
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        if (!(state.materials[id] ?? []).some((m) => m.status === 'ready')) throw rule('insufficient_material')
+        state.quizRequests.push(body)
+        // Like the server: the frozen count is the asked one cut to the scope's capacity.
+        const max = typeof state.capacity === 'function' ? state.capacity(body.scope) : state.capacity
+        const job = {
+          id: `q-${state.quizRequests.length}`,
+          project_id: id,
+          kind: 'quiz',
+          status: 'running',
+          progress_step: 'reading',
+          result_ref: null,
+          error_code: null,
+          count: Math.min(body.count, max),
+        }
+        state.jobs.push(job)
+        return { job_id: job.id }
+      }
+    }
+    const cancelCall = path.match(/^\/api\/jobs\/([^/]+)\/cancel$/)
+    if (cancelCall && method === 'POST') {
+      const job = state.jobs.find((j) => j.id === cancelCall[1])
+      if (!job) throw notFound()
+      state.cancelled.push(job.id)
+      if (['queued', 'running'].includes(job.status)) Object.assign(job, { status: 'cancelled', progress_step: null })
+      return null
     }
 
     const files = path.match(/^\/api\/projects\/([^/]+)\/(materials|jobs)$/)
@@ -265,4 +325,26 @@ export function finish(state, materialId, changes = { status: 'ready' }, { proje
   }
   const job = state.jobs.find((j) => j.result_ref === materialId)
   if (job) job.status = 'completed'
+}
+
+/** Move a running quiz job to `step` ('reading', 'writing', or 'checking'). */
+export function stepJob(state, jobId, step) {
+  const job = state.jobs.find((j) => j.id === jobId)
+  Object.assign(job, { progress_step: step })
+}
+
+/** Complete a quiz job with a saved Quiz of `questionCount` questions (its `requested_count` is the job's
+ * frozen count). Returns the Quiz id. */
+export function finishQuiz(state, jobId, questionCount) {
+  const job = state.jobs.find((j) => j.id === jobId)
+  const quizId = `quiz-${jobId}`
+  state.quizzes[quizId] = { id: quizId, requested_count: job.count, question_count: questionCount }
+  Object.assign(job, { status: 'completed', progress_step: null, result_ref: quizId })
+  return quizId
+}
+
+/** Fail a quiz job with `code` (for example 'llm_unavailable'). */
+export function failJob(state, jobId, code = 'llm_unavailable') {
+  const job = state.jobs.find((j) => j.id === jobId)
+  Object.assign(job, { status: 'failed', progress_step: null, error_code: code })
 }

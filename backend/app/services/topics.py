@@ -16,12 +16,16 @@ so edits of one file run one at a time. Each returns the Material's whole Topic 
 keeps at least one Topic: a merge keeps all links on the surviving Topic, and a delete hands the
 Sections only the deleted Topic covered to its neighbour (the Topic before it, else the one after).
 
+Scope resolution (Epic 3, AD-7): `resolve_scope` is the only resolver of a Selection Scope, for every
+generator and for the capacity endpoint. It only reads; the caller guards and freezes the result.
+
 Logs carry counts only, never labels or text.
 """
 
 import logging
 import math
 from dataclasses import dataclass
+from typing import Any
 from uuid import UUID, uuid4
 
 from psycopg import AsyncConnection
@@ -32,6 +36,7 @@ from app.errors import AppError
 from app.extraction import Extracted
 from app.extraction.text import count_words
 from app.llm import DetectedTopics, Gateway, LLMOutputError
+from app.llm.gateway import estimate_tokens, items_for
 from app.llm.schemas import TOPICS_MAX
 from app.services import projects
 
@@ -66,6 +71,37 @@ class TopicLimitReached(AppError):
 class InvalidMergeRequest(AppError):
     def __init__(self) -> None:
         super().__init__(422, "invalid_request", "A merge needs at least two different Topics", {"fields": ["topic_ids"]})
+
+
+class InsufficientMaterial(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "insufficient_material", "There is no Ready material in this scope")
+
+
+class ScopeTooLarge(AppError):
+    def __init__(self, budget_tokens: int) -> None:
+        super().__init__(422, "scope_too_large", "The scope is over the context budget", {"max_tokens": budget_tokens})
+
+
+@dataclass(frozen=True)
+class ResolvedScope:
+    """A Selection Scope resolved to Sections (AD-7). `section_ids`, `topic_labels`, `material_ids`, and
+    `est_tokens` are the spine's fields; `words` feeds the capacity estimate."""
+
+    section_ids: tuple[UUID, ...]
+    topic_labels: tuple[str, ...]
+    material_ids: tuple[UUID, ...]
+    est_tokens: int
+    words: int
+
+    def max_items(self, words_per_item: int) -> int:
+        """The capacity (AD-7): `max(sections, words // words_per_item)`, at most 20."""
+        return items_for(len(self.section_ids), self.words, words_per_item)
+
+    def require_within(self, budget_tokens: int) -> None:
+        """`422 scope_too_large` when the material is over the context budget (AD-7)."""
+        if self.est_tokens > budget_tokens:
+            raise ScopeTooLarge(budget_tokens)
 
 
 @dataclass(frozen=True)
@@ -237,3 +273,47 @@ async def add(conn: AsyncConnection, account_id: UUID, project_id: UUID, materia
     last = await repo.max_position(conn, material_id)
     await repo.insert_one(conn, material_id, label, 0 if last is None else last + 1)
     return await _result(conn, material_id)
+
+
+# --- Scope resolution (AD-7) ---
+
+
+async def resolve_scope(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, scope: dict[str, Any]
+) -> ResolvedScope:
+    """Resolve `{"all_topics": true}` or `{"topic_ids": [...]}` to Sections (AD-7).
+
+    - `all_topics`: every Section of every Ready, non-removed Material; no focus labels.
+    - `topic_ids`: the Topics' Sections; a student Topic with no Sections stands for its whole Material.
+      Every chosen Topic's label is passed on as the focus.
+    A missing or foreign Project or Topic id, or one of a removed or not-Ready file, is `404 not_found`; a
+    scope with no Sections is `422 insufficient_material`. Removed Materials are never in scope.
+    """
+    await projects.get(conn, account_id, project_id)
+    if scope.get("all_topics") is True:
+        rows = await repo.scope_sections_all(conn, account_id, project_id)
+        labels: list[str] = []
+    else:
+        topic_ids = list(dict.fromkeys(scope.get("topic_ids") or []))
+        found = await repo.get_many(conn, account_id, project_id, topic_ids) if topic_ids else []
+        if not topic_ids or len(found) != len(topic_ids) or any(row["material_status"] != "ready" for row in found):
+            raise TopicNotFound()
+        empty = await repo.topics_without_sections(conn, topic_ids)
+        whole = list({row["material_id"] for row in found if row["id"] in empty})
+        rows = await repo.scope_sections_of(conn, account_id, project_id, topic_ids, whole)
+        by_id = {row["id"]: row for row in found}
+        labels = [by_id[topic_id]["label"] for topic_id in topic_ids]
+    if not rows:
+        raise InsufficientMaterial()
+    texts = [row["text"] for row in rows]
+    resolved = ResolvedScope(
+        section_ids=tuple(row["id"] for row in rows),
+        topic_labels=tuple(labels),
+        material_ids=tuple(dict.fromkeys(row["material_id"] for row in rows)),
+        est_tokens=estimate_tokens(texts),
+        words=sum(count_words(text) for text in texts),
+    )
+    logger.info(
+        "Scope: sections=%d materials=%d est_tokens=%d", len(rows), len(resolved.material_ids), resolved.est_tokens
+    )
+    return resolved

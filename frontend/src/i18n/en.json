@@ -66,6 +66,35 @@
       "body": "Drop files here or <browse>browse</browse>. When a file is ready, you can ask about it and make quizzes, flashcards, and summaries."
     }
   },
+  "tools": {
+    "quiz": "Quiz"
+  },
+  "activity": {
+    "back": "← Back to chat"
+  },
+  "quiz": {
+    "title": "Make a quiz",
+    "topics": "Which topics?",
+    "allTopics": "All topics",
+    "count": "How many questions?",
+    "make_one": "Make {{count}} question",
+    "make_other": "Make {{count}} questions",
+    "tooLittle_one": "There's only enough material for {{count}} question.",
+    "tooLittle_other": "There's only enough material for {{count}} questions.",
+    "makeInstead": "Make {{count}} instead",
+    "steps": {
+      "reading": "Reading your material",
+      "writing": "Writing questions",
+      "checking": "Checking answers"
+    },
+    "cancel": "Cancel",
+    "cancelled": "Cancelled. Your choices are kept.",
+    "failed": "We couldn't make the quiz.",
+    "ready_one": "Your quiz is ready: {{count}} question.",
+    "ready_other": "Your quiz is ready: {{count}} questions.",
+    "fewer_one": "Only {{count}} question was possible from this material.",
+    "fewer_other": "Only {{count}} questions were possible from this material."
+  },
   "files": {
     "header": "Files <muted>· {{n}} of 10</muted>",
     "show": "Show files",
@@ -178,7 +207,10 @@
     "topic_limit_reached": "A file can have at most 100 topics.",
     "topic_last_cannot_delete": "A file needs at least one topic.",
     "topic_merge_cross_material": "Only topics from the same file can be merged.",
-    "quota_exceeded": "You've used today's {{limit}} images. Try again tomorrow."
+    "quota_exceeded": "You've used today's {{limit}} images. Try again tomorrow.",
+    "scope_too_large": "That's a lot of material. Pick fewer topics or one file.",
+    "insufficient_material": "There isn't enough ready material for this yet.",
+    "material_removed": "The file this came from was removed."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

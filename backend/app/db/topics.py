@@ -50,7 +50,7 @@ async def list_for_materials(conn: AsyncConnection, material_ids: list[UUID]) ->
 
 # --- Student edits (Story 2.6b, FR-22) ---
 
-_TOPIC_COLUMNS = "t.id, t.material_id, t.label, t.group_label, t.position"
+_TOPIC_COLUMNS = "t.id, t.material_id, t.label, t.group_label, t.position, m.status AS material_status"
 
 
 async def get_many(
@@ -130,3 +130,44 @@ async def insert_one(
             (material_id, label, position, origin),
         )
         return (await cur.fetchone())[0]
+
+
+# --- Scope resolution (AD-7) ---
+
+# Sections in scope: of Ready, non-removed Materials only, in upload order, then page order.
+_SCOPE_SECTIONS = """
+    SELECT s.id, s.material_id, s.text FROM sections s
+    JOIN study_materials m ON m.id = s.material_id
+    WHERE m.account_id = %s AND m.project_id = %s AND m.removed_at IS NULL AND m.status = 'ready' AND ({where})
+    ORDER BY m.created_at, m.id, s.position
+"""
+
+
+async def scope_sections_all(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
+    """Every Section of every Ready, non-removed Material of the Project (`id`, `material_id`, `text`)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_SCOPE_SECTIONS.format(where="true"), (account_id, project_id))
+        return await cur.fetchall()
+
+
+async def scope_sections_of(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, topic_ids: list[UUID], whole_material_ids: list[UUID]
+) -> list[dict[str, Any]]:
+    """The Sections the Topics cover, plus every Section of `whole_material_ids` (a student Topic with no
+    Sections stands for its whole Material), each once."""
+    where = "s.id IN (SELECT section_id FROM topic_sections WHERE topic_id = ANY(%s)) OR s.material_id = ANY(%s)"
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_SCOPE_SECTIONS.format(where=where), (account_id, project_id, topic_ids, whole_material_ids))
+        return await cur.fetchall()
+
+
+async def topics_without_sections(conn: AsyncConnection, topic_ids: list[UUID]) -> set[UUID]:
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT t.id FROM topics t
+            WHERE t.id = ANY(%s) AND NOT EXISTS (SELECT 1 FROM topic_sections ts WHERE ts.topic_id = t.id)
+            """,
+            (topic_ids,),
+        )
+        return {row[0] for row in await cur.fetchall()}

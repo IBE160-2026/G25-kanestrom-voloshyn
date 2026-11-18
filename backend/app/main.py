@@ -16,13 +16,14 @@ from app.api import jobs as jobs_api
 from app.api import materials as materials_api
 from app.api import me as me_api
 from app.api import projects as projects_api
+from app.api import quizzes as quizzes_api
 from app.api import topics as topics_api
 from app.api import usage as usage_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
 from app.llm import create_gateway
-from app.services import jobs, materials, password_reset
+from app.services import jobs, materials, password_reset, quiz
 from app.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -66,6 +67,7 @@ def _api_router() -> APIRouter:
     api.include_router(projects_api.router)
     api.include_router(materials_api.router)
     api.include_router(topics_api.router)
+    api.include_router(quizzes_api.router)
     api.include_router(jobs_api.router)
     api.include_router(usage_api.router)
 
@@ -116,7 +118,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         storage = Storage(http, settings)
         app.state.storage = storage
         # In-process background jobs (AD-20, AD-29), then the restart sweep for the previous process.
-        kinds = {materials.KIND: materials.processing_kind(settings, storage, pool, llm)}
+        kinds = {
+            materials.KIND: materials.processing_kind(settings, storage, pool, llm),
+            quiz.KIND: quiz.quiz_kind(pool, llm),
+        }
         runner = jobs.Runner(pool, kinds, settings.jobs_max_concurrent)
         app.state.runner = runner
         sweep = asyncio.create_task(_sweep_until_done(pool, kinds))

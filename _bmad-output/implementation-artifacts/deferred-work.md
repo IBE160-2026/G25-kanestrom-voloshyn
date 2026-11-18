@@ -79,3 +79,9 @@
 - source_spec: none
   summary: V2 idea (Cristoffer, 2026-11-18) — Ask AI model routing: a default model (e.g. `openai/gpt-4o-mini`) answers chat, and a small decision model (TypeSafe Jev 1.14 on OpenRouter, `typesafe/jev-1.14`) sends hard questions, or relevant questions needing knowledge beyond the material, to a stronger model.
   evidence: Post-V1 only. Needs (1) a PRD change, because FR-16 answers only from the student's material and outside knowledge is a product change to agree with Ihor; (2) an architecture-spine amendment through `bmad-architecture` (a new component in the AD-3 gateway); (3) confirmation that TypeSafe stores no data and supports `zdr`, as AD-3 requires. Until then, a stronger chat model can simply be set in `.env`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1a-set-up-and-generate-a-quiz.md`
+  summary: Story 3.1b (sprint key 3-1-generate-a-quiz-from-my-topics) — when a Quiz finishes while the student is elsewhere, the notice "Your quiz on {topic} is ready · Open" appears in the chat; opening or dismissing it marks the job seen (FR-26, AD-20).
+  evidence: Split from Story 3.1 by Cristoffer on 2026-11-18 to keep each spec near the size limit; it builds on 3.1a's generation job.
+- source_spec: `_bmad-output/implementation-artifacts/spec-3-1a-set-up-and-generate-a-quiz.md`
+  summary: Add a Runner test that a shutdown `drain` cancelling a running generation job does not end it `cancelled` (the restart sweep fails it `interrupted`), plus the cancel-during-reading and cancel-at-return paths.
+  evidence: Story 3.1a review (Verification Gap, Blind Hunter): only the student cancel while writing is tested; the `_interrupted` guard in `Runner._steps` could regress silently.

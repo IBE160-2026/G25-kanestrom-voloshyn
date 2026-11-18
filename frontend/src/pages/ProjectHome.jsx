@@ -20,7 +20,7 @@ export const NAME_WAIT_MS = 30000
 // Project home (FR-4, FR-6, FR-8; DESIGN.md › Layout › Project home, mock key-project-home.html).
 // Opening it reads the Project through GET /api/projects/{id}, which records it as the last opened,
 // and lists its files. The chat column shows the Upload drop zone until a file is Ready (the chat
-// arrives with its own story), then the empty tool buttons row; the Files panel is on the right.
+// arrives with its own story); the tool buttons row holds Quiz; the Files panel is on the right.
 // Files are uploaded from the drop zone's "browse", the panel's Upload button, or a drop on either.
 // A static skeleton shows while it loads (EXPERIENCE.md › Project cold-load). A missing or foreign
 // Project goes back to /projects. A read-only Project lists its files but takes no uploads.
@@ -211,8 +211,18 @@ export default function ProjectHome() {
           )}
           {ready && anyReady && <div className={styles.thread} />}
           {!ready && !failed && <div className={`${styles.skeleton} ${styles.skeletonChat}`} aria-hidden="true" />}
-          {/* Tool buttons row: Quiz, Flashcards, and Summarize arrive with their stories. */}
-          <div className={styles.tools} data-testid="tools-row" />
+          {/* Tool buttons row: Quiz (Story 3.1a), disabled until a file is Ready and while read-only.
+              Flashcards and Summarize arrive with their stories. */}
+          <div className={styles.tools} data-testid="tools-row">
+            <button
+              type="button"
+              className={styles.tool}
+              disabled={!ready || !anyReady || readOnly}
+              onClick={() => navigate(`/projects/${projectId}/quiz`)}
+            >
+              {t('tools.quiz')}
+            </button>
+          </div>
         </div>
       </section>
       <FilesPanel

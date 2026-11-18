@@ -10,6 +10,7 @@ Logs carry task, model, duration, and outcome only; never keys, prompts, or mate
 
 import asyncio
 import base64
+import json
 import logging
 import time
 from collections.abc import Sequence
@@ -21,9 +22,10 @@ import openai
 from pydantic import BaseModel, ValidationError
 
 from app.config import ConfigError, LlmMode, Settings
+from app.extraction.text import count_words
 from app.llm import fixtures
 from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
-from app.llm.schemas import DetectedTopics, ImageText, ProjectName
+from app.llm.schemas import QUIZ_MAX, DetectedTopics, ImageText, ProjectName, QuizDraft
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,8 @@ NAME_PROJECT_MAX_CHARS = 12_000
 # Estimated tokens per character of material, for the context budget (AD-3).
 CHARS_PER_TOKEN = 4
 MOCK_MODEL = "mock"
+# A focus label in a request is cut to this many characters.
+FOCUS_LABEL_MAX = 100
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
 
 
@@ -73,8 +77,28 @@ def label_sections(texts: Sequence[str], max_chars: int | None = None) -> str:
     return "\n\n".join(parts)
 
 
+def focus_block(topic_labels: Sequence[str]) -> str:
+    """The "Focus topics:" block of a generation request: each label JSON-quoted on its own line and cut
+    to 100 characters; empty when there are none."""
+    if not topic_labels:
+        return ""
+    lines = [f"- {json.dumps(label[:FOCUS_LABEL_MAX], ensure_ascii=False)}" for label in topic_labels]
+    return "Focus topics:\n" + "\n".join(lines)
+
+
 def estimate_tokens(texts: Sequence[str]) -> int:
     return sum(len(text) for text in texts) // CHARS_PER_TOKEN
+
+
+def items_for(section_count: int, words: int, words_per_item: int, cap: int = QUIZ_MAX) -> int:
+    """How many items (Quiz questions) a scope supports (AD-7): `max(sections, words // words_per_item)`,
+    capped at `cap`. Deterministic, with no model call; the capacity endpoint and the mock fixtures both
+    use it, so they agree."""
+    return min(cap, max(section_count, words // words_per_item))
+
+
+def estimate_items(texts: Sequence[str], words_per_item: int, cap: int = QUIZ_MAX) -> int:
+    return items_for(len(texts), sum(count_words(text) for text in texts), words_per_item, cap)
 
 
 def plan_chunks(texts: Sequence[str], budget_tokens: int) -> list[tuple[int, int]]:
@@ -220,6 +244,38 @@ class Gateway:
             ],
             fixture=lambda: fixtures.extract_image_text(file_name),
         )
+
+    async def generate_quiz(
+        self, sections: Sequence[LabelledSection], count: int, topic_labels: Sequence[str] = ()
+    ) -> QuizDraft:
+        """Up to `count` (at most 20) multiple-choice questions from the Sections, each citing the 1-based
+        Section numbers it rests on (FR-10, AD-9). `topic_labels` asks the model to focus on those Topics.
+        The caller has already checked the scope against the context budget (AD-7), so this is one call.
+        Mock mode returns `min(count, capacity)` questions (`fixtures.generate_quiz`)."""
+        texts = [s.text for s in sections]
+        labels = [s.label for s in sections]
+        count = max(0, min(count, QUIZ_MAX))
+        mock_count = min(count, estimate_items(texts, self._settings.capacity_words_per_item))
+        # Student-written labels are data: quoted in the user message, never in the system prompt.
+        focus = focus_block(topic_labels)
+        material = label_sections(texts)
+        user = f"{focus}\n\n{material}" if focus else material
+        return await self._run(
+            task="generate_quiz",
+            schema=QuizDraft,
+            model=self._settings.llm_text_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("generate_quiz").replace("{count}", str(count))},
+                {"role": "user", "content": user},
+            ],
+            fixture=lambda: fixtures.generate_quiz(labels, texts, mock_count),
+        )
+
+    async def mock_pause(self) -> None:
+        """In mock mode, wait `LLM_MOCK_DELAY_MS`, so a job's other progress steps (reading, checking)
+        can be seen and cancelled like its model call (AD-4). Does nothing live."""
+        if self.mode == "mock" and self._settings.llm_mock_delay_ms > 0:
+            await asyncio.sleep(self._settings.llm_mock_delay_ms / 1000)
 
     # --- Shared paths ---
 

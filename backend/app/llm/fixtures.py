@@ -77,3 +77,32 @@ def extract_image_text(file_name: str) -> dict[str, Any]:
     if "-partial." in name:
         return {"legibility": "partial", "text": IMAGE_PARTIAL_TEXT}
     return {"legibility": "readable", "text": IMAGE_READABLE_TEXT}
+
+
+# Words of a Section a mock answer quotes.
+QUIZ_SNIPPET_WORDS = 12
+
+
+def generate_quiz(labels: Sequence[str], texts: Sequence[str], count: int) -> dict[str, Any]:
+    """`count` questions (the caller passes `min(requested, capacity)`, AD-4) cycling over the Sections:
+    question k cites Section `(k - 1) % n + 1`. Its correct answer quotes the start of that Section, and
+    the correct option sits at index `(k - 1) % 4`, so the service's shuffle is what places it."""
+    sections = len(texts)
+    questions = []
+    for k in range(1, count + 1 if sections else 1):
+        number = (k - 1) % sections + 1
+        label = labels[number - 1] or f"Section {number}"
+        snippet = " ".join(texts[number - 1].split()[:QUIZ_SNIPPET_WORDS]) or label
+        wrong = [f"{label} doesn't say this (claim {k}.{n})" for n in range(1, 4)]
+        correct_index = (k - 1) % 4
+        options = wrong[:correct_index] + [snippet] + wrong[correct_index:]
+        questions.append(
+            {
+                "question": f"Question {k}: Which statement comes from {label}?",
+                "options": options,
+                "correct_index": correct_index,
+                "explanation": f"{label} says: {snippet}",
+                "sections": [number],
+            }
+        )
+    return {"questions": questions}

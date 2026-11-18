@@ -4,6 +4,7 @@ import { SIGNED_OUT_CODES } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
 import InlineError from './InlineError.jsx'
 import styles from './TopicList.module.css'
+import { COLLAPSE_ABOVE, groupTopics } from './topicGroups.js'
 
 // Topic list (Story 2.6a/2.6b, FR-22, AD-21; DESIGN.md › Topic list, Topic chip, Grouped-topics note;
 // EXPERIENCE.md › Topic list): a Ready file's Topics as chips, in the server's order. Topics with a
@@ -28,7 +29,7 @@ import styles from './TopicList.module.css'
 // The action row (hint, Merge, Cancel, "+ Add topic") sits below the scrolling list, always visible.
 // A failed edit leaves the Topics as they were and shows the Inline error under the list: "Try again"
 // for a network or server failure, only the message for a refusal that names a rule.
-export const COLLAPSE_ABOVE = 20
+export { COLLAPSE_ABOVE }
 export const TOPICS_MAX = 100
 const LABEL_MAX = 100
 
@@ -42,18 +43,6 @@ const RULES = new Set([
   'topic_last_cannot_delete',
   'topic_merge_cross_material',
 ])
-
-/** Consecutive runs of Topics with the same group, in server order; ungrouped runs have label null. */
-function groupTopics(topics) {
-  const runs = []
-  for (const topic of topics) {
-    const label = topic.group_label ?? null
-    const last = runs[runs.length - 1]
-    if (last && last.label === label) last.items.push(topic)
-    else runs.push({ label, items: [topic] })
-  }
-  return runs
-}
 
 function ReadOnlyChips({ topics, id }) {
   return (

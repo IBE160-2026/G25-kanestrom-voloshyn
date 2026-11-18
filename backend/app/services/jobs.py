@@ -9,7 +9,10 @@ time, and keeps a reference to every task. A job runs in three steps (AD-18):
 3. the save transaction: lock the job row, abort (saving nothing) when the job was cancelled, the
    Project deleted, or a cited Material removed; otherwise apply the plan and mark it completed.
 
-A handler that raises fails the job (`processing_failed`). Feature services never write job rows;
+A handler that raises fails the job (`processing_failed`), or with the code of a `JobFailed` it raises.
+Handlers move `progress_step` (reading -> writing -> checking) through `set_progress`. A student's
+cancel (`request_cancel`) ends a queued job at once, or flags a running one; the runner then also
+interrupts the handler's task (`Runner.interrupt`), so an in-flight model call stops. Feature services never write job rows;
 they register a `JobKind` with a handler and an `on_terminal` hook, which runs in the same
 transaction as a job's failure or cancellation. At startup, `sweep_interrupted` fails every job left
 queued or running by the previous process (`interrupted`). Logs job id, kind, duration, and outcome.
@@ -34,6 +37,14 @@ logger = logging.getLogger(__name__)
 
 PROCESSING_FAILED = "processing_failed"
 INTERRUPTED = "interrupted"
+
+# Progress steps, in order (AD-20). `claim` starts every job at `reading`.
+READING = "reading"
+WRITING = "writing"
+CHECKING = "checking"
+
+# Kinds a student may cancel. `material_processing` ends only through file removal (AD-23).
+STUDENT_CANCELLABLE = ("quiz", "flashcards", "summary", "review_round")
 
 AfterCommit = Callable[[], Awaitable[None]]
 
@@ -61,6 +72,14 @@ class JobKind:
 class JobNotFound(AppError):
     def __init__(self) -> None:
         super().__init__(404, "not_found", "No such job")
+
+
+class JobFailed(Exception):
+    """Raised by a handler to fail its job with `code` (e.g. `llm_unavailable`, `insufficient_material`)."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
 
 
 # --- In the request transaction ---
@@ -102,6 +121,22 @@ async def mark_seen(conn: AsyncConnection, account_id: UUID, job_id: UUID) -> No
         raise JobNotFound()
 
 
+async def request_cancel(conn: AsyncConnection, account_id: UUID, job_id: UUID) -> bool:
+    """A student's cancel (AD-20), in the request transaction; bookkeeping, so no read-only guard.
+
+    A queued job is finished `cancelled` at once and never runs. A running one gets `cancel_requested`,
+    and its save step ends it `cancelled` without saving. A finished job is left as it is. `404` for
+    another Account's job or one a student can't cancel. Returns True when the caller should interrupt
+    the job's running task (`Runner.interrupt`) after the commit.
+    """
+    job = await repo.get(conn, account_id, job_id)
+    if job is None or job["kind"] not in STUDENT_CANCELLABLE:
+        raise JobNotFound()
+    if job["status"] == "queued" and await repo.cancel_queued(conn, job_id) is not None:
+        return False
+    return await repo.request_cancel(conn, job_id)
+
+
 # --- From a running handler ---
 
 
@@ -113,6 +148,21 @@ async def mark_vision_started(pool: AsyncConnectionPool, job_id: UUID) -> bool:
     async with pool.connection() as conn:
         async with conn.transaction():
             return await repo.mark_vision_started(conn, job_id)
+
+
+async def set_progress(pool: AsyncConnectionPool, job_id: UUID, step: str) -> bool:
+    """Move a running job to the next progress step, in its own short transaction (AD-20)."""
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            return await repo.set_progress(conn, job_id, step)
+
+
+async def should_stop(pool: AsyncConnectionPool, job_id: UUID) -> bool:
+    """True when a running handler should skip its model call: a cancel was requested or the job is no
+    longer running. The handler then returns a plan; the save step ends the job (AD-20)."""
+    async with pool.connection() as conn:
+        job = await repo.get_by_id(conn, job_id)
+    return job is None or job["status"] != "running" or job["cancel_requested"]
 
 
 # --- Terminal transitions outside a request ---
@@ -165,6 +215,9 @@ class Runner:
     max_concurrent: int = 3
     _tasks: set[asyncio.Task] = field(default_factory=set)
     _semaphore: asyncio.Semaphore | None = None
+    # Jobs whose handler is running, by id, and those a cancel interrupted.
+    _in_handler: dict[UUID, asyncio.Task] = field(default_factory=dict)
+    _interrupted: set[UUID] = field(default_factory=set)
 
     def submit(self, job: dict[str, Any], payload: Any = None) -> None:
         """Start the job as a task; `payload` is in-memory input (e.g. the uploaded bytes)."""
@@ -173,6 +226,15 @@ class Runner:
         task = asyncio.create_task(self._run(job["id"], job["kind"], payload), name=f"job-{job['id']}")
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+
+    def interrupt(self, job_id: UUID) -> None:
+        """Stop a cancelled job's handler (and its in-flight model call) now, instead of at its save
+        step (AD-20). Call after `cancel_requested` is committed; the save step then ends the job
+        `cancelled`. Does nothing when the handler isn't running in this process."""
+        task = self._in_handler.get(job_id)
+        if task is not None and job_id not in self._interrupted:
+            self._interrupted.add(job_id)
+            task.cancel()
 
     @property
     def running(self) -> int:
@@ -197,6 +259,9 @@ class Runner:
             outcome = "error"
             try:
                 outcome, after = await self._steps(job_id, kind_name, payload)
+            except JobFailed as exc:
+                logger.info("Job %s (%s) failed: %s", job_id, kind_name, exc.code)
+                outcome = await self._end_safely(job_id, "failed", exc.code)
             except Exception as exc:  # noqa: BLE001 -- a job task must never raise
                 logger.warning("Job %s (%s) failed: %s", job_id, kind_name, type(exc).__name__)
                 outcome = await self._end_safely(job_id, "failed", PROCESSING_FAILED)
@@ -218,8 +283,25 @@ class Runner:
         if job is None:
             return "skipped", None
 
-        # 2. The work, with no connection held (AD-18).
-        plan = await kind.run(job, payload)
+        # 2. The work, with no connection held (AD-18). A student's cancel may interrupt it; the save
+        # step below then sees `cancel_requested`.
+        plan: SavePlan | None
+        task = asyncio.current_task()
+        self._in_handler[job_id] = task
+        try:
+            plan = await kind.run(job, payload)
+        except asyncio.CancelledError:
+            if job_id not in self._interrupted:
+                raise  # shutdown: the restart sweep fails the job
+            plan = None
+        finally:
+            self._in_handler.pop(job_id, None)
+            if job_id in self._interrupted:
+                self._interrupted.discard(job_id)
+                # Withdraw our cancel, also when the handler finished before it landed, so the save
+                # step below isn't cancelled instead.
+                if task.cancelling():
+                    task.uncancel()
 
         # 3. The save transaction (AD-20).
         aborted_status: str | None = None
@@ -229,7 +311,8 @@ class Runner:
                 if locked is None or locked["status"] != "running":
                     return "skipped", None
                 if (
-                    locked["cancel_requested"]
+                    plan is None
+                    or locked["cancel_requested"]
                     or await repo.project_deleted(conn, locked["project_id"])
                     or await repo.any_material_removed(conn, list(plan.material_ids))
                 ):

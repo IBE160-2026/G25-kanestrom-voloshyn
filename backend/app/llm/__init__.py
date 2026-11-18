@@ -6,11 +6,12 @@
 
 from app.llm.errors import LLMError, LLMOutputError, ProviderError, ProviderRateLimited, ProviderUnavailable
 from app.llm.gateway import Gateway, create_gateway
-from app.llm.schemas import DetectedTopic, DetectedTopics, ImageText, ProjectName
+from app.llm.schemas import DetectedTopic, DetectedTopics, DraftQuestion, ImageText, ProjectName, QuizDraft
 
 __all__ = [
     "DetectedTopic",
     "DetectedTopics",
+    "DraftQuestion",
     "Gateway",
     "ImageText",
     "LLMError",
@@ -19,5 +20,6 @@ __all__ = [
     "ProviderError",
     "ProviderRateLimited",
     "ProviderUnavailable",
+    "QuizDraft",
     "create_gateway",
 ]
