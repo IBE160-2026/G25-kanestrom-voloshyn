@@ -67,3 +67,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-2-4a-llm-gateway-and-test-mode.md`
   summary: Verify that the live gateway's `strict: true` json_schema (with `minLength`/`maxLength` from Pydantic) is accepted by the chosen `LLM_TEXT_MODEL` under `require_parameters` and `zdr`, before Story 2.4b relies on it.
   evidence: medium, unverified — strict structured-output modes may reject those keywords, which would surface as `llm_unavailable`; settle it with one real OpenRouter call (or strip the keywords from the sent schema and keep local validation).
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6a-detect-and-show-topics.md`
+  summary: Story 2.6b (sprint key 2-6-see-and-edit-the-topics-in-each-file) — rename, merge (same file only, kept on the first Topic's id), delete (never the last), and add (refused past 100) Topics in an active Project, with `topic_last_cannot_delete`, `topic_limit_reached`, `topic_merge_cross_material`, chip interactions, and the Inline error (FR-22, AD-21).
+  evidence: Split from Story 2.6 by Cristoffer on 2026-11-18 to keep each spec near the size limit; it builds on 2.6a's tables and read-only Topic list.
+- source_spec: `_bmad-output/implementation-artifacts/spec-2-6a-detect-and-show-topics.md`
+  summary: Add a test that the materials list returns Topics in `position` order when storage order differs (Story 2.6b, once merge/delete/add change positions).
+  evidence: Story 2.6a review (Verification Gap): insertion order equals position order today, so dropping `position` from the ORDER BY would pass every test.

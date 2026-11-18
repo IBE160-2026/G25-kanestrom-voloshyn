@@ -50,6 +50,13 @@
   font-size: var(--type-caption-size);
 }
 
+/* Topic count: muted caption metadata (DESIGN.md › Topic count). */
+.meta {
+  margin-top: var(--space-1);
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
 .dot {
   flex: none;
   width: var(--space-2);

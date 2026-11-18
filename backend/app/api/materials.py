@@ -2,7 +2,8 @@
 
 - `POST /api/projects/{project_id}/materials`: upload one file (multipart field `file`); `202
   {material, job_id}`. Requires an active Project (`ActiveProject`).
-- `GET /api/projects/{project_id}/materials`: every non-removed Material with its last status.
+- `GET /api/projects/{project_id}/materials`: every non-removed Material with its last status and its
+  Topics in order (FR-22).
 - `DELETE /api/projects/{project_id}/materials/{material_id}`: remove a Material (FR-20, AD-23); `204`,
   also when it was already removed. Requires an active Project.
 """
@@ -22,6 +23,13 @@ from app.services import materials
 router = APIRouter(prefix="/projects/{project_id}/materials")
 
 
+class Topic(BaseModel):
+    id: UUID
+    label: str
+    group_label: str | None
+    position: int
+
+
 class Material(BaseModel):
     id: UUID
     file_name: str
@@ -32,6 +40,8 @@ class Material(BaseModel):
     warning: bool
     warning_pages: list[int]
     created_at: datetime
+    # Empty until the Material is Ready (FR-22, AD-21).
+    topics: list[Topic] = []
 
 
 class UploadAccepted(BaseModel):

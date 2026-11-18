@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 PROJECT_NAME_MAX = 100
 
@@ -13,3 +13,35 @@ class ProjectName(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=PROJECT_NAME_MAX)]
+
+
+TOPIC_LABEL_MAX = 100
+TOPICS_MAX = 100
+
+TopicLabel = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=TOPIC_LABEL_MAX)]
+
+
+class DetectedTopic(BaseModel):
+    """One Topic: a short label, an optional broader group (a chapter or part), and the 1-based
+    Section numbers (`S1…Sn` in the request) it covers."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: TopicLabel
+    # Required but nullable, so the JSON schema stays valid in strict mode.
+    group_label: TopicLabel | None
+    sections: Annotated[list[Annotated[int, Field(ge=1)]], Field(min_length=1)]
+
+    @field_validator("group_label", mode="before")
+    @classmethod
+    def _blank_group_is_none(cls, value: object) -> object:
+        """A blank group (`""` or whitespace) means no group, not invalid output."""
+        return None if isinstance(value, str) and not value.strip() else value
+
+
+class DetectedTopics(BaseModel):
+    """`detect_topics`: a Material's Topics, in order (FR-22, AD-21)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    topics: Annotated[list[DetectedTopic], Field(min_length=1, max_length=TOPICS_MAX)]

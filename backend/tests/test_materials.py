@@ -388,7 +388,8 @@ def test_reopened_project_lists_every_non_removed_file_with_its_last_status(clie
         ("integrity-reject.txt", "rejected"),
     ]
     assert set(listed[0]) == {
-        "id", "file_name", "file_type", "size_bytes", "status", "reject_reason", "warning", "warning_pages", "created_at"
+        "id", "file_name", "file_type", "size_bytes", "status", "reject_reason", "warning", "warning_pages", "created_at",
+        "topics",
     }
 
 

@@ -11,8 +11,10 @@ Upload (one file per request, AD-5):
    right after the commit and answers `202`.
 If anything after step 2 fails, or the commit does, the stored original is deleted after the rollback.
 
-Processing: extract (in a thread) -> Content Integrity -> one save transaction with the Sections and
-`ready`, or `rejected` with its reason; a rejected Material's original is deleted after the commit.
+Processing: extract (in a thread) -> Content Integrity -> Topics (`detect_topics`, no transaction open)
+-> one save transaction with the Sections, the Topics and their links, and `ready`, or `rejected` with
+its reason; a rejected Material's original is deleted after the commit. A Topic detection error fails
+the job, and the terminal hook rejects the Material (`processing_failed`) with nothing saved.
 After a `ready` commit, an unnamed Project is named from that Material's Sections (FR-4, AD-14).
 
 Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, and cancels the
@@ -34,7 +36,7 @@ from app.db import materials as repo
 from app.errors import AppError
 from app.extraction import integrity
 from app.llm import Gateway
-from app.services import identity, jobs, projects
+from app.services import identity, jobs, projects, topics
 from app.storage import Storage, material_path
 
 logger = logging.getLogger(__name__)
@@ -146,9 +148,12 @@ async def upload(
 
 
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
-    """Every non-removed Material of the Project with its last status (FR-8). A read: no guard."""
+    """Every non-removed Material of the Project with its last status (FR-8) and its Topics in order
+    (FR-22). A read: no guard."""
     await projects.get(conn, account_id, project_id)
-    return await repo.list_for_project(conn, account_id, project_id)
+    rows = await repo.list_for_project(conn, account_id, project_id)
+    by_material = await topics.list_for_materials(conn, [row["id"] for row in rows])
+    return [{**row, "topics": by_material.get(row["id"], [])} for row in rows]
 
 
 async def remove(
@@ -183,7 +188,7 @@ def processing_kind(
     settings: Settings, storage: Storage, pool: AsyncConnectionPool, llm: Gateway
 ) -> jobs.JobKind:
     """The handler and terminal hook for `material_processing`, bound to the settings, storage, the
-    pool, and the LLM gateway (for auto-naming after a ready commit)."""
+    pool, and the LLM gateway (for Topic detection, and auto-naming after a ready commit)."""
     thresholds = integrity.Thresholds.from_settings(settings)
 
     def _delete_original(job: dict[str, Any]) -> jobs.AfterCommit:
@@ -217,14 +222,18 @@ def processing_kind(
                 apply=save_rejected, material_ids=(material_id,), result_ref=material_id, after_commit=after_rejected
             )
 
+        # The LLM call happens here, with no connection held (AD-18); an error fails the job.
+        drafts = await topics.detect(llm, extracted)
         sections = [(section.label, section.text) for section in extracted.sections]
+        section_ids = [uuid4() for _ in sections]
         saved: list[bool] = []
 
         async def save_ready(conn: AsyncConnection) -> None:
             material = await repo.get_for_update(conn, account_id, material_id)
             if material is None or material["status"] != "processing":
                 return
-            await repo.insert_sections(conn, material_id, sections)
+            await repo.insert_sections(conn, material_id, sections, section_ids)
+            await topics.save(conn, material_id, drafts, section_ids)
             await repo.set_ready(
                 conn,
                 account_id,

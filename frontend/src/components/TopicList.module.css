@@ -1,0 +1,107 @@
+/* Topic list, Topic chip, and Grouped-topics note (DESIGN.md › Topic list; mock key-project-home.html ›
+   .topics, .tgroups). Indented under the file name like the row's notes. */
+.topics {
+  margin: var(--space-2) 0 0 calc(var(--space-6) + var(--space-3));
+}
+
+/* The list scrolls inside the file row. [ASSUMPTION: height, as DESIGN.md leaves it open] */
+.scroll {
+  max-height: calc(var(--space-7) * 5);
+  overflow-y: auto;
+  border-radius: var(--radius-md);
+}
+
+.scroll:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* Chips: a wrapping row of caption-size pills. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group .chips {
+  padding: var(--space-1) 0 var(--space-2) var(--space-5);
+}
+
+.chip {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-text);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+}
+
+/* Group rows: muted caption, chapter name, count, and a chevron; touch-target tall, hover fill. */
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupRow:hover {
+  background: var(--color-hover);
+}
+
+.groupRow:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--space-focus-ring-width) * -1);
+}
+
+.chevron {
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chevron {
+    transition: transform 0.15s ease;
+  }
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.groupName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+}
+
+.groupCount {
+  flex: none;
+}
+
+/* Grouped-topics note: muted caption, no icon, never a warning colour. */
+.note {
+  margin-top: var(--space-2);
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
