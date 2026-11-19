@@ -8,6 +8,7 @@ import MistakesCard from '../components/MistakesCard.jsx'
 import PrivacyNotice from '../components/PrivacyNotice.jsx'
 import QrDialog from '../components/QrDialog.jsx'
 import ReadyNotice from '../components/ReadyNotice.jsx'
+import { daysLeft } from '../components/daysLeft.js'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
@@ -40,6 +41,8 @@ export const NAME_WAIT_MS = 30000
 // "Upload from phone" (Story 6.2, FR-21), in the Files panel and the empty-Project drop zone, opens
 // the QR dialog (the Privacy notice first, until accepted); while it is open the files are polled, so
 // a batch from the phone shows up live. Closing it ends the phone link.
+// An archived Project shows the Archived banner, a deleted one the Deleted banner with its days left
+// (Stories 7.1, 7.2a); both have Restore, and both are read-only.
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -162,6 +165,7 @@ export default function ProjectHome() {
   const ready = project !== null && listed && me !== null && me !== undefined
   const readOnly = Boolean(project?.archived_at || project?.deleted_at)
   const archived = Boolean(project?.archived_at && !project?.deleted_at)
+  const deleted = Boolean(project?.deleted_at)
   // The Project whose restore is in flight, so another Project's banner is never busy.
   const [restoringId, setRestoringId] = useState(null)
   const restoring = restoringId === projectId
@@ -276,6 +280,15 @@ export default function ProjectHome() {
           {archived && (
             <div className={styles.banner} data-testid="archived-banner">
               <span className={styles.bannerLabel}>{t('project.archivedBanner')}</span>
+              <button type="button" className={styles.bannerRestore} onClick={restore} aria-busy={restoring}>
+                {t('projects.restore')}
+              </button>
+            </div>
+          )}
+          {/* Deleted banner (Story 7.2a, FR-24): read-only, with the days left, until Restore. */}
+          {deleted && (
+            <div className={styles.banner} data-testid="deleted-banner">
+              <span className={styles.bannerLabel}>{t('projects.daysLeft', { count: daysLeft(project) })}</span>
               <button type="button" className={styles.bannerRestore} onClick={restore} aria-busy={restoring}>
                 {t('projects.restore')}
               </button>

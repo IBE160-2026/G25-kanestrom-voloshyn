@@ -67,7 +67,17 @@
     "restore": "Gjenopprett",
     "archivedGroup": "Arkivert ({{count}})",
     "archivedUndo": "{{name}} er arkivert",
-    "undo": "Angre"
+    "undo": "Angre",
+    "delete": "Slett prosjekt",
+    "deletedGroup": "Slettede prosjekter ({{count}})",
+    "daysLeft_one": "Slettet · {{count}} dag igjen",
+    "daysLeft_other": "Slettet · {{count}} dager igjen",
+    "deleteDialog": {
+      "title": "Vil du slette {{name}}?",
+      "body": "{{name}} flyttes til Slettede prosjekter og slettes for godt etter 30 dager. Du kan gjenopprette det frem til da.",
+      "cancel": "Avbryt",
+      "confirm": "Slett prosjekt"
+    }
   },
   "project": {
     "archivedBanner": "Arkivert"

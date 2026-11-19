@@ -229,7 +229,10 @@ describe('Archived group', () => {
     await user.click(await findArchivedToggle())
 
     const menu = await openMenu(user, 'Chemistry')
-    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([en.projects.restore])
+    expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      en.projects.restore,
+      en.projects.delete,
+    ])
     await user.click(within(menu).getByRole('menuitem', { name: en.projects.restore }))
 
     await waitFor(() => expect(activeNames()).toEqual(['Biology', 'Chemistry', 'Anatomy']))
@@ -388,6 +391,7 @@ describe('Norwegian', () => {
     expect(within(menu).getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
       nb.projects.rename,
       nb.projects.archive,
+      nb.projects.delete,
     ])
     await user.click(within(menu).getByRole('menuitem', { name: 'Arkiver' }))
 

@@ -66,7 +66,17 @@
     "restore": "Restore",
     "archivedGroup": "Archived ({{count}})",
     "archivedUndo": "{{name}} archived",
-    "undo": "Undo"
+    "undo": "Undo",
+    "delete": "Delete project",
+    "deletedGroup": "Deleted projects ({{count}})",
+    "daysLeft_one": "Deleted · {{count}} day left",
+    "daysLeft_other": "Deleted · {{count}} days left",
+    "deleteDialog": {
+      "title": "Delete {{name}}?",
+      "body": "{{name}} moves to Deleted projects and is permanently deleted after 30 days. You can restore it until then.",
+      "cancel": "Cancel",
+      "confirm": "Delete project"
+    }
   },
   "project": {
     "archivedBanner": "Archived"

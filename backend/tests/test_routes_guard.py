@@ -31,8 +31,10 @@ ALLOWLIST = {
     ("POST", "/api/jobs/{job_id}/cancel"),
     # Closing the QR dialog revokes its phone link, also in a read-only Project (AD-24).
     ("DELETE", "/api/projects/{project_id}/phone-links/{link_id}"),
-    # Archive and restore change only `archived_at`; restore must work on a read-only Project (FR-23).
+    # Archive, delete, and restore change only `archived_at` / `deleted_at` (and cancel the jobs and
+    # phone links); restore must work on a read-only Project (FR-23, FR-24).
     ("POST", "/api/projects/{project_id}/archive"),
+    ("POST", "/api/projects/{project_id}/delete"),
     ("POST", "/api/projects/{project_id}/restore"),
 }
 

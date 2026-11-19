@@ -105,11 +105,31 @@ async def cancel_for_material(conn: AsyncConnection, account_id: UUID, material_
     A queued job is finished as `cancelled` at once and never runs; those jobs are returned, so the
     caller can undo what was set aside for them (an image's quota unit). They get no terminal hook. A
     running one gets `cancel_requested`; the runner's save step then ends it `cancelled` without
-    saving, through the terminal hook. The only writer of `cancel_requested`.
+    saving, through the terminal hook. With `cancel_for_project` and `request_cancel`, the only writers
+    of `cancel_requested`.
     """
     cancelled = await repo.cancel_queued_for(conn, account_id, material_id)
     await repo.request_cancel_running_for(conn, account_id, material_id)
     return cancelled
+
+
+async def cancel_for_project(
+    conn: AsyncConnection, kinds: dict[str, JobKind], account_id: UUID, project_id: UUID
+) -> tuple[list[AfterCommit | None], list[UUID]]:
+    """Cancel every job of a deleted Project (FR-24, AD-20, AD-22), in the caller's transaction.
+
+    A queued job is finished `cancelled` at once and its kind's terminal hook runs in the same
+    transaction (giving back what was set aside for it, e.g. an image's quota unit). A running one gets
+    `cancel_requested`; its id is returned, for `Runner.interrupt` after the commit, and its save step
+    ends it `cancelled` without saving, through the terminal hook. Returns (the hooks' after-commit
+    steps, the running ids).
+    """
+    after = [
+        await _terminal_hook(kinds, conn, job)
+        for job in await repo.cancel_queued_for_project(conn, account_id, project_id)
+    ]
+    running = await repo.request_cancel_running_for_project(conn, account_id, project_id)
+    return after, running
 
 
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:

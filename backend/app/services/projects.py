@@ -1,10 +1,11 @@
-"""Projects service: create, list, open, rename, archive and restore, auto-naming, and the read-only
-guard (FR-4, FR-5, FR-23, AD-14, AD-22). The only writer of `archived_at`.
+"""Projects service: create, list, open, rename, archive, delete and restore, auto-naming, and the
+read-only guard (FR-4, FR-5, FR-23, FR-24, AD-14, AD-22). The only writer of `archived_at` and `deleted_at`.
 
 Takes `conn`, never commits (AD-18); the exception is `auto_name_if_unnamed`, an after-commit step that
 takes the pool. Every call is scoped by `account_id` (AD-2).
 """
 
+import inspect
 import logging
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -114,8 +115,8 @@ async def rename(conn: AsyncConnection, account_id: UUID, project_id: UUID, raw_
 
 
 async def _lock_not_deleted(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
-    """The Project, locked; `404` when missing or foreign, `409 project_read_only` when deleted (a
-    deleted Project's restore is Story 7.2's)."""
+    """The Project, locked; `404` when missing or foreign, `409 project_read_only` when deleted (archive
+    only: a deleted Project can be restored, not archived)."""
     project = await repo.get_for_update(conn, account_id, project_id)
     if project is None:
         raise ProjectNotFound()
@@ -137,15 +138,56 @@ async def archive(
     if project["archived_at"] is not None:
         return project, _nothing
     delete_photos = await phone.revoke_for_project(conn, storage, account_id, project_id)
-    return await repo.set_archived(conn, account_id, project_id, True), delete_photos
+    return await repo.set_archived(conn, account_id, project_id), delete_photos
+
+
+async def delete(
+    conn: AsyncConnection, storage: Storage, kinds: dict[str, Any], account_id: UUID, project_id: UUID
+) -> tuple[dict[str, Any], Callable[[], Any], list[UUID]]:
+    """Delete the Project into Deleted projects (FR-24): idempotent bookkeeping that sets `deleted_at`
+    and keeps `archived_at`. In the same transaction its open phone links are revoked (AD-24) and its
+    jobs cancelled (AD-20): a queued one ends `cancelled` at once through its kind's terminal hook, a
+    running one gets `cancel_requested`. Mistakes, History, Topics, and Ready files stay; a file whose
+    reading was queued or running is rejected (its hook gives back its image unit) and its stored
+    original or staged photos are deleted after the commit. Returns (Project, the after-commit step for
+    the photo and file deletes, the running job ids to interrupt after the commit).
+    """
+    # Imported here: both import this module.
+    from app.services import jobs, phone
+
+    project = await repo.get_for_update(conn, account_id, project_id)
+    if project is None:
+        raise ProjectNotFound()
+    if project["deleted_at"] is not None:
+        return project, _nothing, []
+    steps = [await phone.revoke_for_project(conn, storage, account_id, project_id)]
+    job_steps, running = await jobs.cancel_for_project(conn, kinds, account_id, project_id)
+    steps += job_steps
+    deleted = await repo.set_deleted(conn, account_id, project_id)
+
+    async def after() -> None:
+        for step in steps:
+            if step is None:
+                continue
+            try:
+                result = step()
+                if inspect.isawaitable(result):
+                    await result
+            except Exception as exc:  # noqa: BLE001 -- the delete has committed; cleanup is best effort
+                logger.warning("After-delete step failed: %s", type(exc).__name__)
+
+    return deleted, after, running
 
 
 async def restore(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
-    """Restore an archived Project (FR-23): clears `archived_at` only; idempotent."""
-    project = await _lock_not_deleted(conn, account_id, project_id)
-    if project["archived_at"] is None:
+    """Restore an archived or deleted Project to the active list (FR-23, FR-24): clears both
+    `archived_at` and `deleted_at`; idempotent."""
+    project = await repo.get_for_update(conn, account_id, project_id)
+    if project is None:
+        raise ProjectNotFound()
+    if is_active(project):
         return project
-    return await repo.set_archived(conn, account_id, project_id, False)
+    return await repo.set_restored(conn, account_id, project_id)
 
 
 def _nothing() -> None:

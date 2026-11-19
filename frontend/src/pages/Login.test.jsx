@@ -222,7 +222,8 @@ describe('Login form', () => {
     await user.click(f.submit)
 
     expect(signIn).toHaveBeenCalledTimes(1)
-    expect(apiFetch).toHaveBeenCalledTimes(2)
+    // Only after-sign-in is repeated; the Projects page may already be loading its own data.
+    expect(vi.mocked(apiFetch).mock.calls.filter(([path]) => path === '/api/auth/after-sign-in')).toHaveLength(2)
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
   })
 

@@ -9,7 +9,8 @@ from uuid import UUID
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
-_COLUMNS = "id, name, name_source, archived_at, deleted_at, created_at"
+# `purge_at`: when a deleted Project is permanently deleted (FR-24: 30 days after `deleted_at`).
+_COLUMNS = "id, name, name_source, archived_at, deleted_at, deleted_at + interval '30 days' AS purge_at, created_at"
 
 
 async def insert(conn: AsyncConnection, account_id: UUID) -> dict[str, Any]:
@@ -84,18 +85,45 @@ async def set_auto_name(
         return await cur.fetchone()
 
 
-async def set_archived(
-    conn: AsyncConnection, account_id: UUID, project_id: UUID, archived: bool
-) -> dict[str, Any] | None:
-    """Archive (keeping the first `archived_at`) or restore the Project (FR-23); touches nothing else."""
+async def set_deleted(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any] | None:
+    """Delete the Project (FR-24), keeping the first `deleted_at` and `archived_at`; touches nothing else."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             f"""
-            UPDATE projects
-            SET archived_at = CASE WHEN %s THEN coalesce(archived_at, now()) ELSE NULL END
+            UPDATE projects SET deleted_at = coalesce(deleted_at, now())
             WHERE id = %s AND account_id = %s
             RETURNING {_COLUMNS}
             """,
-            (archived, project_id, account_id),
+            (project_id, account_id),
+        )
+        return await cur.fetchone()
+
+
+async def set_restored(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any] | None:
+    """Restore the Project to the active list (FR-23, FR-24): clears both `archived_at` and `deleted_at`."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE projects SET archived_at = NULL, deleted_at = NULL
+            WHERE id = %s AND account_id = %s
+            RETURNING {_COLUMNS}
+            """,
+            (project_id, account_id),
+        )
+        return await cur.fetchone()
+
+
+async def set_archived(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID
+) -> dict[str, Any] | None:
+    """Archive the Project, keeping the first `archived_at` (FR-23); touches nothing else."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE projects SET archived_at = coalesce(archived_at, now())
+            WHERE id = %s AND account_id = %s
+            RETURNING {_COLUMNS}
+            """,
+            (project_id, account_id),
         )
         return await cur.fetchone()

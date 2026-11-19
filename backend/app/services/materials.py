@@ -341,6 +341,25 @@ async def remove(
 # --- The material_processing job (AD-5, AD-20) ---
 
 
+async def end_unfinished(conn: AsyncConnection, storage: Storage, job: dict[str, Any]) -> jobs.AfterCommit | None:
+    """A `material_processing` job that failed, was interrupted, or was cancelled (its terminal hook,
+    and a queued job a Project delete cancelled): rejects its Material, freeing the slot (AD-5). An
+    image job whose vision call never started gives its unit back (a provider error already did, and
+    its marker stays, so it isn't given back twice); a batch job gives back the units of the photos
+    whose call never started, and its staged photos are deleted. Returns the after-commit step."""
+    if job.get("result_ref") is None:
+        return None
+    account_id, material_id = job["account_id"], job["result_ref"]
+    await _release_if_unread(conn, job)
+    rejected = await repo.set_rejected(conn, account_id, material_id, _reject_reason(job))
+    if _is_batch(job):
+        return delete_paths(storage, await _photo_paths(conn, account_id, material_id))
+    if rejected is None:
+        return None
+    path = material_path(account_id, job["project_id"], material_id)
+    return lambda: storage.delete(path)
+
+
 def _reject_reason(job: dict[str, Any]) -> str:
     return jobs.INTERRUPTED if job.get("error_code") == jobs.INTERRUPTED else jobs.PROCESSING_FAILED
 
@@ -554,16 +573,6 @@ def processing_kind(
         )
 
     async def on_terminal(conn: AsyncConnection, job: dict[str, Any]) -> jobs.AfterCommit | None:
-        """A failed, interrupted, or cancelled job rejects its Material, freeing the slot (AD-5). An
-        image job whose vision call never started gives its unit back (a provider error already did,
-        and its marker stays, so it isn't given back twice); a batch job gives back the units of the
-        photos whose call never started, and its staged photos are deleted."""
-        if job.get("result_ref") is None:
-            return None
-        await _release_if_unread(conn, job)
-        rejected = await repo.set_rejected(conn, job["account_id"], job["result_ref"], _reject_reason(job))
-        if _is_batch(job):
-            return delete_paths(storage, await _photo_paths(conn, job["account_id"], job["result_ref"]))
-        return _delete_original(job) if rejected is not None else None
+        return await end_unfinished(conn, storage, job)
 
     return jobs.JobKind(run=run, on_terminal=on_terminal)

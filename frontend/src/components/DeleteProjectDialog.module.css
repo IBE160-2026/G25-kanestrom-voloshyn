@@ -1,0 +1,94 @@
+/* Confirm dialog (delete project) (DESIGN.md › Confirm dialog (delete project), Modal dialog): surface
+   panel on the scrim, title-sm title, body text, ghost Cancel and the final Button (primary) "Delete
+   project", right-aligned. A soft delete, so the final button is not red (Color-role rule 3). */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  z-index: 50;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 480px as the Remove file dialog: no dialog-width token exists. */
+  width: min(480px, calc(100vw - 2 * var(--space-4)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text);
+  z-index: 51;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  overflow-wrap: anywhere;
+}
+
+.body {
+  margin: 0;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.primary,
+.ghost {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+}
+
+/* Hover: the hover wash over the fill (no separate hover colour token exists for either button). */
+.primary:hover:not(:disabled) {
+  background-image: linear-gradient(var(--color-hover), var(--color-hover));
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+/* The Focus ring (global.css), stated here so it never depends on the cascade order. */
+.primary:focus-visible,
+.ghost:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* 0.38 as the Remove file dialog's busy buttons: no opacity token exists. */
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.38;
+  cursor: progress;
+}

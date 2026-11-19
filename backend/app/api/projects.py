@@ -4,8 +4,10 @@
 - `POST /api/projects`: a new Project with no name (`201`).
 - `GET /api/projects/{project_id}`: opens the Project, which becomes the one login lands on.
 - `PATCH /api/projects/{project_id}`: rename; requires an active Project (`ActiveProject`).
-- `POST /api/projects/{project_id}/archive` and `/restore` (FR-23): idempotent bookkeeping, so no
-  `ActiveProject`; both return the Project. Archive also revokes the Project's phone links.
+- `POST /api/projects/{project_id}/archive`, `/delete`, and `/restore` (FR-23, FR-24): idempotent
+  bookkeeping, so no `ActiveProject`; each returns the Project. Archive and delete revoke the Project's
+  phone links; delete also cancels its jobs. Restore clears both `archived_at` and `deleted_at`.
+  A deleted Project carries `purge_at`, 30 days after `deleted_at`.
 """
 
 from datetime import datetime
@@ -29,6 +31,8 @@ class Project(BaseModel):
     name_source: Literal["auto", "student"] | None
     archived_at: datetime | None
     deleted_at: datetime | None
+    # When a deleted Project is permanently deleted (FR-24); null unless deleted.
+    purge_at: datetime | None
     created_at: datetime
 
 
@@ -72,6 +76,20 @@ async def archive_project(request: Request, project_id: UUID, user: UserAuth, co
     project, delete_photos = await projects.archive(conn, request.app.state.storage, user.account_id, project_id)
     # The revoked links' staged photos are deleted only once the archive has committed.
     after_commit(request, delete_photos)
+    return to_project(project)
+
+
+@router.post("/{project_id}/delete", response_model=Project)
+async def delete_project(request: Request, project_id: UUID, user: UserAuth, conn: Conn) -> Project:
+    runner = request.app.state.runner
+    project, cleanup, running = await projects.delete(
+        conn, request.app.state.storage, runner.kinds, user.account_id, project_id
+    )
+    # Only once the delete has committed: the discarded staged photos go, and the running jobs (now
+    # `cancel_requested`) are interrupted, so an in-flight model call stops (AD-20).
+    after_commit(request, cleanup)
+    for job_id in running:
+        after_commit(request, lambda job_id=job_id: runner.interrupt(job_id))
     return to_project(project)
 
 
