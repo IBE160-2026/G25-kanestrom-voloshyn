@@ -32,3 +32,5 @@
 - [x] 2026-11-18 [story-2-5-photos](987-2026-11-18-14-19-03-story-2-5-photos.md) — Epic 2 er ferdig: sett `epic-2` til done i sprint-status, eventuelt etter en retrospektiv. (løst 2026-11-18, commit f9acc9d)
 - [ ] 2026-11-19 [story-3-1a-3-2-quiz](986-2026-11-19-03-47-16-story-3-1a-3-2-quiz.md) — Skriv mobilsvarene for 3.1a inn i spec og EXPERIENCE.md når Cristoffer sier fra.
 - [x] 2026-11-19 [story-3-1a-3-2-quiz](986-2026-11-19-03-47-16-story-3-1a-3-2-quiz.md) — Story 3.1b: varsel «Your quiz on {topic} is ready · Open» i chatten. (løst 2026-11-19, merge 9330d59)
+- [ ] 2026-11-19 [story-3-3-mistakes](984-2026-11-19-04-39-23-story-3-3-mistakes.md) — Nettlesersjekk av 3.3, deretter push og merge av `feature/3-3-mistakes`.
+- [ ] 2026-11-19 [story-3-3-mistakes](984-2026-11-19-04-39-23-story-3-3-mistakes.md) — 3.4/3.5: velg midlertidig ferdig-skjerm (ny tekst) eller bygg 3.4 og 3.5 sammen.
