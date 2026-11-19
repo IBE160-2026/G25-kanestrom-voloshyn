@@ -58,9 +58,9 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1a-set-up-and-generate-a-quiz: in-progress
+  3-1a-set-up-and-generate-a-quiz: done
   3-1-generate-a-quiz-from-my-topics: backlog
-  3-2-take-the-quiz-with-immediate-sourced-feedback: review
+  3-2-take-the-quiz-with-immediate-sourced-feedback: done
   3-3-my-wrong-answers-become-mistakes-and-the-project-shows-how-m: backlog
   3-4-start-a-mistake-review-round: backlog
   3-5-clear-mistakes-in-review: backlog
