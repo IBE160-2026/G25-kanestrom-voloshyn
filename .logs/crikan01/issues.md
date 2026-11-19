@@ -8,7 +8,7 @@
 - [ ] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Ihor ser over PRD-endringene etter Bårds tilbakemelding.
 - [x] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Kodegjennomgang av story 1.1–1.4 (`bmad-code-review`). (delvis løst 2026-11-16: 1.4 gjennomgått i [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md); resten videreført der)
 - [x] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Kodegjennomgang av story 1.1 (1.4, 1.3b, 1.3 og 1.2 ferdig 2026-11-16). (løst 2026-11-16: alle 1.1–1.4 gjennomgått)
-- [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — `ResetPassword.test.jsx` › «another link starts from a clean screen…» er ustabil (story 1.5, si fra til Ihor): `getByLabelText` på linje 279 før skjemaet er rendret; bør være `findByLabelText`.
+- [x] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — `ResetPassword.test.jsx` › «another link starts from a clean screen…» er ustabil (story 1.5, si fra til Ihor): `getByLabelText` på linje 279 før skjemaet er rendret; bør være `findByLabelText`. (løst 2026-11-19, merge 1.5)
 - [x] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Dokumenter LAN-oppsett for mobildemo (`SUPABASE_PUBLIC_URL`, redirect-liste) før Epic 6. (løst 2026-11-16, README › Mobil på lokalnettet, commit 385cf32)
 - [x] 2026-11-16 [prd-feedback-and-manual-checks](998-2026-11-16-18-46-36-prd-feedback-and-manual-checks.md) — Arkitektur-spinens `scope` sier «FR-1 to FR-29»; må bli FR-30 (spinen er final, krever godkjenning via `bmad-architecture`). (løst 2026-11-16, godkjent av Cristoffer, commit 13d1f1f)
 - [ ] 2026-11-16 [code-review-epic-1](997-2026-11-16-19-23-35-code-review-epic-1.md) — Test QR-opplastingen fra ekte telefon (`/u/<token>`, uten innlogging) når Epic 6 er bygget. Nettverksdelen er bekreftet 2026-11-16 (appen og innlogging virker fra telefon).
@@ -24,7 +24,7 @@
 - [x] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Story 2.4b: automatisk prosjektnavn fra første klare fil (etter 2.4a). (løst 2026-11-17)
 - [x] 2026-11-17 [story-2-4a-llm-gateway](992-2026-11-17-14-47-23-story-2-4a-llm-gateway.md) — Før 2.4b: test AI-gatewayen mot en ekte OpenRouter-modell (strict json_schema med lengdegrenser). Gjelder nå også `detect_topics` (2.6a). (løst 2026-11-18, testet live med openai/gpt-4o-mini)
 - [x] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — Manuell nettlesersjekk av 2.4b (navnet dukker opp uten omlasting; rename under navngiving). (løst 2026-11-17)
-- [ ] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — En ukjent frontend-test feilet én gang (mulig ustabil); følg med.
+- [x] 2026-11-17 [story-2-4b-auto-name](991-2026-11-17-19-55-00-story-2-4b-auto-name.md) — En ukjent frontend-test feilet én gang (mulig ustabil); følg med. (løst 2026-11-19, merge 1.5)
 - [x] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Manuell nettlesersjekk av 2.7 (fjern klar, leser…- og avvist fil; fokus inn i dialogen). (løst 2026-11-17)
 - [ ] 2026-11-17 [story-2-7-remove-file](990-2026-11-17-21-00-00-story-2-7-remove-file.md) — Vitest feiler fra bash med liten `c:` i arbeidsmappen («failed to find the runner»); kjør fra PowerShell.
 - [x] 2026-11-18 [story-2-6a-topics](989-2026-11-18-11-27-41-story-2-6a-topics.md) — Story 2.6b: endre navn på, slå sammen, slette og legge til emner. (løst 2026-11-18, merge b4257c5)
@@ -37,3 +37,5 @@
 - [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Push av main (3.3, 3.4 og 3.5) når Cristoffer sier fra.
 - [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Ny tekst for en runde som feiler fordi ingen feil var igjen (krever godkjenning).
 - [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Prøv `generate_practice` mot en ekte modell.
+- [ ] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Avgjør med Ihor om en fullført tilbakestilling også bekrefter e-posten.
+- [ ] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Story 1.6: lag Google OAuth-klient og legg nøklene i `.env`.
