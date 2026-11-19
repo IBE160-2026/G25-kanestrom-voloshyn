@@ -41,3 +41,5 @@
 - [x] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Story 1.6: lag Google OAuth-klient og legg nøklene i `.env`. (løst 2026-11-19)
 - [ ] 2026-11-19 [story-1-6-google-sign-in](981-2026-11-19-16-37-17-story-1-6-google-sign-in.md) — Avgjør med Ihor hva som skjer med prosjekter laget før en Google-overtakelse.
 - [ ] 2026-11-19 [story-1-6-google-sign-in](981-2026-11-19-16-37-17-story-1-6-google-sign-in.md) — Avtal med Ihor hvem som tar hvilke stories fremover.
+- [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — Teksten for en mobilbunke der ingen bilder kunne leses (entallsform «image») trenger godkjenning.
+- [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — «Send photos» / «Send bilder» på mobilsiden: den norske teksten trenger godkjenning i EXPERIENCE.md.
