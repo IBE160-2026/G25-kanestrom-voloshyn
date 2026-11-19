@@ -37,13 +37,13 @@ ALL_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
 # Any query parameter named `...token` or `token_hash`: the email links (`token=`, `token_hash=`)
 # and Supabase session values (`access_token=`, `refresh_token=`).
-_TOKEN_QUERY = re.compile(r"(?<=[?&])([A-Za-z_]*token(?:_hash)?=)[^&\s]*")
+_TOKEN_QUERY = re.compile(r"(?<=[?&])((?:[a-z_]*token(?:_hash)?|code)=)[^&\s]*", re.IGNORECASE)
 _REDACTED = "[redacted]"
 _REPLACEMENT = r"\1" + _REDACTED
 
 
 class _RedactTokens(logging.Filter):
-    """Blanks token query values (`token=`, `token_hash=`, `access_token=`, ...) in access-log lines (AD-19)."""
+    """Blanks token query values (`token=`, `token_hash=`, `access_token=`, `code=`, any case) in access-log lines (AD-19)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.args, tuple):

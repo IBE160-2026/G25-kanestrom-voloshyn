@@ -10,7 +10,7 @@ from psycopg.rows import dict_row
 
 
 async def find_for_reset(conn: AsyncConnection, email: str) -> dict[str, Any] | None:
-    """The Account with this email (case-insensitive), or None.
+    """The Account with this email, or None. `email` must be lower-cased (GoTrue stores it so).
 
     Returns `account_id`, `has_email_identity`, and the profile's `first_name` and `language`
     (both None when the Account has no profile yet). SSO users and soft-deleted users are skipped,
@@ -27,7 +27,7 @@ async def find_for_reset(conn: AsyncConnection, email: str) -> dict[str, Any] | 
                    p.language
             FROM auth.users u
             LEFT JOIN profiles p ON p.account_id = u.id
-            WHERE lower(u.email) = lower(%s)
+            WHERE u.email = %s
               AND u.is_sso_user = false
               AND u.deleted_at IS NULL
             LIMIT 1

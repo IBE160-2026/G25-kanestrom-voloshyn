@@ -87,3 +87,13 @@
   font-weight: var(--type-button-weight);
   text-decoration: none;
 }
+
+.primaryLink:hover,
+.primaryLink:focus-visible {
+  text-decoration: underline;
+}
+
+.primaryLink:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}

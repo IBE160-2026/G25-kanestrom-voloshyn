@@ -1,5 +1,6 @@
 // Login screen and the EN | NO toggle (Story 1.2 matrix rows 5-6), the Create account link
 // (Story 1.3), and the login form, return route, and language after sign-in (Story 1.4).
+import { readFileSync } from 'node:fs'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -454,5 +455,11 @@ describe('Signed out and return route', () => {
     await router.navigate('/', { replace: true, state: { sessionExpired: true } })
 
     await expectNotice(nb.session.expired)
+  })
+
+  it('"Forgot password?" has a visible focus state, from tokens only', () => {
+    const css = readFileSync('src/pages/Login.module.css', 'utf8')
+    expect(css).toMatch(/\.inlineLink:focus-visible\s*\{[^}]*outline: var\(--space-focus-ring-width\) solid var\(--color-primary\)/)
+    expect(css).toMatch(/\.inlineLink:hover,\s*\.inlineLink:focus-visible\s*\{[^}]*text-decoration: underline/)
   })
 })
