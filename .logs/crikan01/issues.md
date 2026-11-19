@@ -34,8 +34,10 @@
 - [x] 2026-11-19 [story-3-1a-3-2-quiz](986-2026-11-19-03-47-16-story-3-1a-3-2-quiz.md) — Story 3.1b: varsel «Your quiz on {topic} is ready · Open» i chatten. (løst 2026-11-19, merge 9330d59)
 - [x] 2026-11-19 [story-3-3-mistakes](984-2026-11-19-04-39-23-story-3-3-mistakes.md) — Nettlesersjekk av 3.3, deretter push og merge av `feature/3-3-mistakes`. (løst 2026-11-19)
 - [x] 2026-11-19 [story-3-3-mistakes](984-2026-11-19-04-39-23-story-3-3-mistakes.md) — 3.4/3.5: velg midlertidig ferdig-skjerm (ny tekst) eller bygg 3.4 og 3.5 sammen. (løst 2026-11-19)
-- [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Push av main (3.3, 3.4 og 3.5) når Cristoffer sier fra.
+- [x] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Push av main (3.3, 3.4 og 3.5) når Cristoffer sier fra. (løst 2026-11-19)
 - [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Ny tekst for en runde som feiler fordi ingen feil var igjen (krever godkjenning).
 - [ ] 2026-11-19 [story-3-4-3-5-mistake-review](983-2026-11-19-12-13-29-story-3-4-3-5-mistake-review.md) — Prøv `generate_practice` mot en ekte modell.
 - [ ] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Avgjør med Ihor om en fullført tilbakestilling også bekrefter e-posten.
-- [ ] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Story 1.6: lag Google OAuth-klient og legg nøklene i `.env`.
+- [x] 2026-11-19 [story-1-5-password-reset](982-2026-11-19-12-49-53-story-1-5-password-reset.md) — Story 1.6: lag Google OAuth-klient og legg nøklene i `.env`. (løst 2026-11-19)
+- [ ] 2026-11-19 [story-1-6-google-sign-in](981-2026-11-19-16-37-17-story-1-6-google-sign-in.md) — Avgjør med Ihor hva som skjer med prosjekter laget før en Google-overtakelse.
+- [ ] 2026-11-19 [story-1-6-google-sign-in](981-2026-11-19-16-37-17-story-1-6-google-sign-in.md) — Avtal med Ihor hvem som tar hvilke stories fremover.
