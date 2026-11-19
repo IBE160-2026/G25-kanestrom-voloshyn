@@ -79,9 +79,9 @@ development_status:
   5-2-resume-an-unfinished-quiz-and-run-things-again: backlog
   epic-5-retrospective: optional
 
-  epic-6: in-progress
-  6-1-show-a-qr-code-that-lets-my-phone-upload-into-this-project: review
-  6-2-send-photos-from-my-phone-as-one-study-material: review
+  epic-6: done
+  6-1-show-a-qr-code-that-lets-my-phone-upload-into-this-project: done
+  6-2-send-photos-from-my-phone-as-one-study-material: done
   epic-6-retrospective: optional
 
   epic-7: backlog
