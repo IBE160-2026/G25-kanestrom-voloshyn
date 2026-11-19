@@ -36,9 +36,10 @@ export default function RequireSession() {
 
   useEffect(
     () =>
-      onSignedOut(() => {
+      onSignedOut((code) => {
         rememberRoute(hereRef.current)
-        navigate('/', { replace: true, state: { sessionExpired: true } })
+        const state = code === 'google_takeover' ? { googleTakeover: true } : { sessionExpired: true }
+        navigate('/', { replace: true, state })
       }),
     [navigate],
   )

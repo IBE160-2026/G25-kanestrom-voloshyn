@@ -7,6 +7,7 @@ import ErrorLine from './ErrorLine.jsx'
 import ProjectName from './ProjectName.jsx'
 import Sidebar from './Sidebar.jsx'
 import TopBar from './TopBar.jsx'
+import UndoMessage from './UndoMessage.jsx'
 import styles from './AppShell.module.css'
 
 // Below this width the Sidebar starts collapsed, whatever the saved preference (DESIGN.md › Layout).
@@ -37,6 +38,25 @@ export default function AppShell() {
   const [createError, setCreateError] = useState(null) // { apiError, attempt }
   const createAttempt = useRef(0)
   const inFlight = useRef(false)
+  // The one-time Google takeover notice (AD-19): when the profile says so, its live region mounts
+  // empty and the text follows, so it is announced; it is marked seen at once and shows 6 s. The
+  // flag is latched, so a later `me` without it (a refresh, the seen answer) doesn't cut it short.
+  const [takeoverPending, setTakeoverPending] = useState(false)
+  if (me?.notice_google_takeover === true && !takeoverPending) setTakeoverPending(true)
+  const [takeoverShown, setTakeoverShown] = useState(false)
+  const takeoverSeen = useRef(false)
+  const closeTakeover = useCallback(() => setTakeoverShown(false), [])
+
+  useEffect(() => {
+    if (!takeoverPending) return
+    if (!takeoverSeen.current) {
+      takeoverSeen.current = true
+      // A failed save only means it may show once more next time.
+      apiFetch('/api/me/notices/google-takeover/seen', { method: 'POST' }).catch(() => {})
+    }
+    const timer = setTimeout(() => setTakeoverShown(true), 0)
+    return () => clearTimeout(timer)
+  }, [takeoverPending])
 
   useEffect(() => {
     let live = true
@@ -167,6 +187,11 @@ export default function AppShell() {
           <Outlet
             context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted }}
           />
+          {takeoverPending && (
+            <div role="status" className={styles.undo}>
+              {takeoverShown && <UndoMessage onClose={closeTakeover}>{t('account.googleTakeover')}</UndoMessage>}
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -458,7 +458,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - Verification never gates normal use, only Google linking.
   - **Google (FR-19):**
     - **Verified email Account:** Supabase's automatic identity linking is accepted, so the student is signed in and linked (PRD FR-19 as amended 2026-11-02).
-    - **Unverified email Account — takeover, enforced by `user_auth`.** On any request where the Account has a Google identity, `email_verified_at IS NULL`, and `google_takeover_at IS NULL`, it runs once: set a random password through the admin API, delete every other `auth.sessions` row, and set `google_takeover_at` and `notice_google_takeover`.
+    - **Unverified email Account — takeover, enforced by `user_auth`.** On any request where the Account has a Google identity, `email_verified_at IS NULL`, and `google_takeover_at IS NULL`, it runs once: set a random password through the admin API (which ends every session, the caller's included; the student signs in with Google again), and set `google_takeover_at`, `notice_google_takeover`, and `email_verified_at`. A Google-created Account is marked verified on its first sign-in (amended 2026-11-19, approved by Cristoffer).
     - A Google identity already linked elsewhere → `google_identity_in_use`.
     - Settings' "Link Google" (`linkIdentity`) is offered only while `email_verified_at` is set. The backend re-checks after linking: a link made without verification is removed through the admin API (`email_not_verified`).
     - EXPERIENCE.md shows this flow: a verified Account is signed in and linked at once, with no password step (updated 2026-11-02).

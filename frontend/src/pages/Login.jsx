@@ -7,18 +7,22 @@ import { takeRememberedRoute } from '../auth/returnTo.js'
 import panel from '../components/AuthForm.module.css'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
+import GoogleButton from '../components/GoogleButton.jsx'
 import { LANGUAGES, setLanguage } from '../i18n/index.js'
 import styles from './Login.module.css'
 
 // The Projects page; it forwards to the last opened Project when there is one (FR-8).
 const HOME = '/projects'
+// Error line kinds /auth/callback can hand over (login.errors.*).
+const GOOGLE_ERRORS = ['failed', 'identityInUse']
 
 // Login screen (FR-2, DESIGN.md › Login screen): email and password through supabase-js, then
 // POST /api/auth/after-sign-in, whose profile carries the Account's language (FR-29). Every
 // refusal shows one message that never says whether the email exists. After the session ended
 // mid-use, it shows the signed-out notice and returns to the remembered route; after a password
 // reset, the password-changed notice. "Forgot password?" leads to the reset request (FR-3).
-// The Google button arrives with Story 1.6.
+// "Sign in with Google" (FR-19) shows when Google is configured; a failed Google sign-in comes
+// back here from /auth/callback with its error in the history state, shown in the Error line.
 export default function Login() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -28,7 +32,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(null) // { kind: 'credentials' | 'failed', attempt }
+  const [error, setError] = useState(null) // { kind: 'credentials' | 'failed' | 'identityInUse', attempt }
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null) // the catalogue key of the notice shown, or null
   const inFlight = useRef(false)
@@ -36,13 +40,18 @@ export default function Login() {
   // Set once signIn succeeded but after-sign-in did not: a retry only repeats after-sign-in, so
   // the email and password are locked (read-only) meanwhile.
   const [signedIn, setSignedIn] = useState(false)
-  // A notice handed over by navigation: the session ended mid-use, or the password was reset.
+  // A notice handed over by navigation: a Google takeover ended the session, the session ended
+  // mid-use, or the password was reset.
   const noticeKey =
-    location.state?.passwordChanged === true
-      ? 'reset.saved'
-      : location.state?.sessionExpired === true
-        ? 'session.expired'
-        : null
+    location.state?.googleTakeover === true
+      ? 'account.googleTakeover'
+      : location.state?.passwordChanged === true
+        ? 'reset.saved'
+        : location.state?.sessionExpired === true
+          ? 'session.expired'
+          : null
+  // A failed Google sign-in handed over by /auth/callback (AuthCallback.jsx).
+  const googleError = GOOGLE_ERRORS.includes(location.state?.googleError) ? location.state.googleError : null
 
   // Still signed in (sessions last 30 days): go straight in. A refused session has been signed
   // out locally before it comes back here, so this cannot loop.
@@ -68,6 +77,17 @@ export default function Login() {
     }, 0)
     return () => clearTimeout(timer)
   }, [noticeKey, location.pathname, location.search, navigate])
+
+  // The same for a failed Google sign-in: shown in the Error line, then the history state is cleared.
+  useEffect(() => {
+    if (!googleError) return
+    const timer = setTimeout(() => {
+      attempt.current += 1
+      setError({ kind: googleError, attempt: attempt.current })
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [googleError, location.pathname, location.search, navigate])
 
   function fail(kind, field) {
     // A new attempt number remounts the Error line, so a repeated message is announced again.
@@ -146,6 +166,7 @@ export default function Login() {
         <p role="status" className={showNotice ? styles.notice : undefined}>
           {showNotice ? t(notice) : null}
         </p>
+        <GoogleButton onFail={() => fail('failed')} />
         {field('email', 'email', 'email', email, setEmail)}
         {field(
           'password',

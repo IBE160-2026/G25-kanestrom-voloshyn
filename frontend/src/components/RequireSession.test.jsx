@@ -54,6 +54,18 @@ describe('RequireSession', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(en.session.expired))
   })
 
+  it('a Google takeover mid-use shows Login with the takeover line instead', async () => {
+    const { router } = renderRoute('/projects')
+    await screen.findByRole('button', { name: 'Welcome, Emma' })
+
+    vi.mocked(hasSession).mockResolvedValue(false)
+    await act(async () => registeredListener()('google_takeover'))
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(en.account.googleTakeover))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('removes its listener when the signed-in page closes', async () => {
     const remove = vi.fn()
     vi.mocked(onSignedOut).mockImplementation(() => remove)

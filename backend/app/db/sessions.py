@@ -31,3 +31,12 @@ async def delete_others(conn: AsyncConnection, account_id: UUID, keep_session_id
         (account_id, keep_session_id),
     )
     return cur.rowcount
+
+
+async def delete_all(conn: AsyncConnection, account_id: UUID) -> None:
+    """End every session of the Account (the Google takeover, AD-19); refresh tokens go with them.
+
+    Supabase Auth already ends them when the takeover sets a password; this keeps the rule from
+    depending on that.
+    """
+    await conn.execute("DELETE FROM auth.sessions WHERE user_id = %s", (account_id,))

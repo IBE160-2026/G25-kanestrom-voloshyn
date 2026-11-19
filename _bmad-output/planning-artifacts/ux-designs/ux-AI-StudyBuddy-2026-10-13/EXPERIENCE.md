@@ -204,6 +204,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Login, tagline | "Study from your own notes, with sources" | Studer fra dine egne notater, med kilder |
 | Login, privacy line | "Your files are only used to create your study material." | Filene dine brukes bare til å lage studiematerialet ditt. |
 | Login, actions | "Sign in with Google" · "Log in" · "Forgot password?" · "Create account" | Logg inn med Google · Logg inn · Glemt passordet? · Opprett konto |
+| Auth panel, divider | "or" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer with Story 1.6] | eller |
 | Login and Create account, fields | "First name" · "Email" · "Password" [ASSUMPTION: labels] | Fornavn · E-post · Passord |
 | Login, invalid email or password | "Wrong email or password." [ASSUMPTION: copy; generic, FR-2] | Feil e-post eller passord. |
 | Sign-in failure or cancel | "Sign-in didn't work. Try again." | Innloggingen fungerte ikke. Prøv igjen. |

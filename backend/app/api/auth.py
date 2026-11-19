@@ -1,7 +1,9 @@
 """Auth routes (AD-1, AD-19).
 
 - `POST /api/auth/after-sign-in`: the SPA calls it after sign-up and after every sign-in. On the
-  first call for an email Account it also sends the verification email, after the commit.
+  first call for an email Account it also sends the verification email, after the commit. For a
+  Google Account it fills an unset first name from Google; as for every `user_auth` route, any
+  Google takeover has already run (AD-19, the fast path).
 - `GET /api/auth/verify?token=`: the emailed link; redirects to the SPA's result screen.
 - `POST /api/auth/password-reset`: always the same `202`; the reset email goes out in a detached task.
 - `POST /api/auth/after-password-reset`: the SPA calls it after a completed reset; ends every
@@ -47,7 +49,10 @@ async def after_sign_in(
     request: Request,
     background: BackgroundTasks,
 ) -> Me:
-    profile = await identity.after_sign_in(conn, user.account_id, body.first_name, body.language)
+    # The sign-up name wins; a Google Account without one takes its Google first name (FR-19).
+    first_name = body.first_name or user.google_first_name
+    google_created = "google" in user.providers and "email" not in user.providers
+    profile = await identity.after_sign_in(conn, user.account_id, first_name, body.language, google_created)
     # Nothing is issued unless Supabase reported an address to send it to.
     token = None
     if user.email:
@@ -63,7 +68,7 @@ async def after_sign_in(
             profile["language"] or body.language or "en",
             token,
         )
-    return to_me(profile)
+    return to_me(profile, user)
 
 
 @router.get("/verify", include_in_schema=False)
