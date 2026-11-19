@@ -36,8 +36,34 @@
   align-self: flex-start;
   margin-top: auto;
   padding: 0 var(--space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
 }
 
 .undo:empty {
   padding: 0;
+}
+
+/* The Undo message's "Undo": a primary text action (DESIGN.md › components › undo-message). */
+.undoAction {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.undoAction:hover {
+  background: var(--color-hover);
+}
+
+.undoAction:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
 }

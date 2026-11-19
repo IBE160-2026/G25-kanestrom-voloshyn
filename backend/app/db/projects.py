@@ -82,3 +82,20 @@ async def set_auto_name(
             (name, project_id, account_id),
         )
         return await cur.fetchone()
+
+
+async def set_archived(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, archived: bool
+) -> dict[str, Any] | None:
+    """Archive (keeping the first `archived_at`) or restore the Project (FR-23); touches nothing else."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE projects
+            SET archived_at = CASE WHEN %s THEN coalesce(archived_at, now()) ELSE NULL END
+            WHERE id = %s AND account_id = %s
+            RETURNING {_COLUMNS}
+            """,
+            (archived, project_id, account_id),
+        )
+        return await cur.fetchone()

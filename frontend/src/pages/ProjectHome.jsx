@@ -59,8 +59,17 @@ export default function ProjectHome() {
   const projectFiles = useProjectFiles(projectId, { live: phoneOpen })
   const quizNotices = useQuizNotices(projectId)
   const mistakes = useMistakes(projectId)
-  const { me, activeProjects, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
-    useOutletContext()
+  const {
+    me,
+    projects,
+    activeProjects,
+    upsertProject,
+    markOpened,
+    forgetProject,
+    saveFilesCollapsed,
+    markPrivacyAccepted,
+    restoreProject,
+  } = useOutletContext()
 
   // Privacy notice (Story 2.3, FR-6, §5.3): until the Account has accepted it, Upload, "browse", and
   // a drop open it first; "Got it, upload" saves the acceptance and continues that action.
@@ -144,12 +153,26 @@ export default function ProjectHome() {
     }
   }, [projectId, upsertProject, markOpened, forgetProject, navigate])
 
-  const project = loaded?.id === projectId ? loaded.project : null
+  // The shell's copy wins once loaded, so archiving or restoring from the Sidebar or the Undo
+  // message shows here at once (Story 7.1).
+  const project = loaded?.id === projectId ? (projects?.find((p) => p.id === projectId) ?? loaded.project) : null
   const failed = error?.id === projectId ? error.apiError : null
   const listed = files.materials !== null || files.loadError !== null
   // The profile must have loaded too: until then it isn't known whether the notice is needed.
   const ready = project !== null && listed && me !== null && me !== undefined
   const readOnly = Boolean(project?.archived_at || project?.deleted_at)
+  const archived = Boolean(project?.archived_at && !project?.deleted_at)
+  // The Project whose restore is in flight, so another Project's banner is never busy.
+  const [restoringId, setRestoringId] = useState(null)
+  const restoring = restoringId === projectId
+  const restore = async () => {
+    if (restoring) return
+    const id = projectId
+    setRestoringId(id)
+    // The shell's copy of the Project updates on success, which this page shows.
+    await restoreProject?.(id)
+    setRestoringId((current) => (current === id ? null : current))
+  }
   const anyReady = (files.materials ?? []).some((m) => m.status === 'ready')
 
   // Auto-naming (Story 2.4b, FR-4, AD-14): the server names an unnamed Project after a file turns
@@ -249,6 +272,15 @@ export default function ProjectHome() {
       />
       <section className={styles.chat}>
         <div className={styles.chatInner}>
+          {/* Archived banner (Story 7.1, FR-23): read-only until Restore. */}
+          {archived && (
+            <div className={styles.banner} data-testid="archived-banner">
+              <span className={styles.bannerLabel}>{t('project.archivedBanner')}</span>
+              <button type="button" className={styles.bannerRestore} onClick={restore} aria-busy={restoring}>
+                {t('projects.restore')}
+              </button>
+            </div>
+          )}
           {/* Mistakes card (Story 3.3): only in an active Project, never at 0. */}
           {project !== null && !readOnly && (
             <MistakesCard count={mistakes.outstanding} onStart={() => navigate(`/projects/${projectId}/review`)} />

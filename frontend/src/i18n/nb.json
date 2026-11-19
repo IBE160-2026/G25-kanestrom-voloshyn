@@ -62,7 +62,15 @@
     "rename": "Gi nytt navn",
     "more": "Flere valg for {{name}}",
     "hide": "Skjul prosjekter",
-    "show": "Vis prosjekter"
+    "show": "Vis prosjekter",
+    "archive": "Arkiver",
+    "restore": "Gjenopprett",
+    "archivedGroup": "Arkivert ({{count}})",
+    "archivedUndo": "{{name}} er arkivert",
+    "undo": "Angre"
+  },
+  "project": {
+    "archivedBanner": "Arkivert"
   },
   "projectHome": {
     "dropZone": {

@@ -4,15 +4,18 @@
 - `POST /api/projects`: a new Project with no name (`201`).
 - `GET /api/projects/{project_id}`: opens the Project, which becomes the one login lands on.
 - `PATCH /api/projects/{project_id}`: rename; requires an active Project (`ActiveProject`).
+- `POST /api/projects/{project_id}/archive` and `/restore` (FR-23): idempotent bookkeeping, so no
+  `ActiveProject`; both return the Project. Archive also revokes the Project's phone links.
 """
 
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, ConfigDict
 
+from app.api.conn import after_commit
 from app.api.deps import ActiveProject, Conn
 from app.auth import UserAuth
 from app.services import projects
@@ -62,3 +65,16 @@ async def rename_project(
     # ActiveProject has already run require_active; rename runs it again inside the service, so the
     # guard holds for any other caller too (AD-22).
     return to_project(await projects.rename(conn, user.account_id, project["id"], body.name))
+
+
+@router.post("/{project_id}/archive", response_model=Project)
+async def archive_project(request: Request, project_id: UUID, user: UserAuth, conn: Conn) -> Project:
+    project, delete_photos = await projects.archive(conn, request.app.state.storage, user.account_id, project_id)
+    # The revoked links' staged photos are deleted only once the archive has committed.
+    after_commit(request, delete_photos)
+    return to_project(project)
+
+
+@router.post("/{project_id}/restore", response_model=Project)
+async def restore_project(project_id: UUID, user: UserAuth, conn: Conn) -> Project:
+    return to_project(await projects.restore(conn, user.account_id, project_id))

@@ -129,6 +129,23 @@ async def revoke_by_token(conn: AsyncConnection, storage: Storage, link: PhoneLi
     return await _revoke(conn, storage, link.account_id, link.link_id)
 
 
+async def revoke_for_project(
+    conn: AsyncConnection, storage: Storage, account_id: UUID, project_id: UUID
+) -> Callable[[], Any]:
+    """Revoke every open link of the Project (archive, AD-22/AD-24): each goes through `_revoke`, so its
+    open batches are discarded. Returns one after-commit step that deletes all their staged photos."""
+    deletes = [
+        await _revoke(conn, storage, account_id, link_id)
+        for link_id in await repo.open_link_ids_for_project(conn, account_id, project_id)
+    ]
+
+    async def delete_all() -> None:
+        for delete in deletes:
+            await delete()
+
+    return delete_all
+
+
 async def _revoke(conn: AsyncConnection, storage: Storage, account_id: UUID, link_id: UUID) -> Callable[[], Any]:
     """Revoke the link and discard its open batches: their units come back now, their staged photos go
     after the commit. A batch a finalize is committing is waited for, then left alone (finalized)."""
