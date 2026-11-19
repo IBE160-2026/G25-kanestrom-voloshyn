@@ -1,0 +1,406 @@
+/* Taking a Quiz (DESIGN.md › Layout › Activities, Activity header, Progress bar, Answer option, Feedback
+   panel, Key hint, Source label, Score summary; mock key-quiz-feedback.html states 1-2). */
+.activity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Activity header: as on Quiz setup. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-content-x);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-ui-size);
+  cursor: pointer;
+}
+
+.back:hover {
+  background: var(--color-hover);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+/* Activity content centres at the reading width. */
+.quiz {
+  width: 100%;
+  max-width: var(--space-reading-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-content-x) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--type-body-size);
+}
+
+/* Progress: a muted "{n} of {total}" line over the 4px Progress bar. */
+.progressLine {
+  align-self: flex-end;
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+}
+
+.bar {
+  height: var(--space-1);
+  margin-bottom: var(--space-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.question {
+  margin-bottom: var(--space-3);
+  font-size: var(--type-question-size);
+  font-weight: var(--type-question-weight);
+  line-height: var(--type-question-line-height);
+  letter-spacing: var(--type-question-letter-spacing);
+  overflow-wrap: anywhere;
+}
+
+/* Answer options: surface rows, key hint left, tag right. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  width: 100%;
+  min-height: var(--space-touch-target-min);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font: inherit;
+  font-size: var(--type-body-reading-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover:not(:disabled) {
+  background: var(--color-hover);
+  border-color: var(--color-border-strong);
+}
+
+.option:disabled {
+  cursor: default;
+}
+
+/* The answer reveal: a subtle transition, instant under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .option {
+    transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  }
+}
+
+.optionText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tag {
+  flex: none;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-button-weight);
+}
+
+.correct {
+  background: var(--color-correct-wash);
+  border-color: var(--color-correct-edge);
+}
+
+.correct .tag,
+.correct .key {
+  color: var(--color-correct);
+  border-color: var(--color-correct-edge);
+}
+
+.mistake {
+  background: var(--color-mistake-wash);
+  border-color: var(--color-mistake-edge);
+}
+
+.mistake .tag,
+.mistake .key {
+  color: var(--color-mistake);
+  border-color: var(--color-mistake-edge);
+}
+
+.dim {
+  opacity: 0.55;
+}
+
+/* Key hint: a small outlined key cap; desktop only. */
+.key {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  font-family: inherit;
+  font-size: var(--type-key-hint-size);
+  font-weight: var(--type-key-hint-weight);
+  line-height: 1;
+}
+
+.onPrimary {
+  color: var(--color-on-primary);
+  border-color: var(--color-on-primary);
+}
+
+@media (hover: none) {
+  .key,
+  .hints {
+    display: none;
+  }
+}
+
+.error {
+  width: 100%;
+}
+
+.live:empty {
+  display: none;
+}
+
+/* Feedback panel: a surface panel with a correct or mistake left edge. */
+.feedback {
+  margin-top: var(--space-3);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.feedbackCorrect {
+  border-left: var(--space-accent-edge-width) solid var(--color-correct);
+}
+
+.feedbackMistake {
+  border-left: var(--space-accent-edge-width) solid var(--color-mistake);
+}
+
+.feedbackHead {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.stays {
+  margin-top: var(--space-1);
+  color: var(--color-mistake);
+  font-size: var(--type-ui-size);
+}
+
+.why {
+  margin-top: var(--space-3);
+  font-size: var(--type-body-reading-size);
+  line-height: var(--type-body-reading-line-height);
+  overflow-wrap: anywhere;
+}
+
+/* Source labels: muted pills. */
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}
+
+/* Below the panel, right-aligned: muted key hints and the primary button. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.hints {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+.hints > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.primary,
+.ghost {
+  min-height: var(--space-touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.ghost {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.ghost:hover {
+  background: var(--color-hover);
+}
+
+.back:focus-visible,
+.option:focus-visible,
+.primary:focus-visible,
+.ghost:focus-visible,
+.score:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* Score summary: the score in display type with a muted "of {total} correct". */
+.score {
+  margin-bottom: var(--space-5);
+  font-weight: var(--type-display-weight);
+}
+
+.scoreNumber {
+  font-size: var(--type-display-size);
+  line-height: var(--type-display-line-height);
+  letter-spacing: var(--type-display-letter-spacing);
+}
+
+.scoreRest {
+  color: var(--color-text-muted);
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-question-weight);
+}
+
+.missed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miss {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.missQuestion {
+  margin-bottom: var(--space-1);
+  font-size: var(--type-body-size);
+  overflow-wrap: anywhere;
+}
+
+.missAnswers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+}
+
+.yours {
+  color: var(--color-mistake);
+}
+
+.right {
+  color: var(--color-correct);
+}
+
+/* The quiz-end note: a card with a mistake left edge. */
+.note {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-accent-edge-width) solid var(--color-mistake);
+  border-radius: var(--radius-lg);
+  font-size: var(--type-body-size);
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+/* Skeleton (DESIGN.md › Skeleton): a static block while the Quiz loads. */
+.skeleton {
+  width: 100%;
+  min-height: calc(var(--space-7) * 5);
+  background: var(--color-border);
+  border-radius: var(--radius-xl);
+}

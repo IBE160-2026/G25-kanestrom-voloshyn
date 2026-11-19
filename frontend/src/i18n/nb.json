@@ -91,10 +91,23 @@
     "cancel": "Avbryt",
     "cancelled": "Avbrutt. Valgene dine er lagret.",
     "failed": "Vi fikk ikke laget quizen.",
-    "ready_one": "Quizen din er klar: {{count}} spørsmål.",
-    "ready_other": "Quizen din er klar: {{count}} spørsmål.",
     "fewer_one": "Bare {{count}} spørsmål var mulig ut fra materialet.",
-    "fewer_other": "Bare {{count}} spørsmål var mulig ut fra materialet."
+    "fewer_other": "Bare {{count}} spørsmål var mulig ut fra materialet.",
+    "progress": "{{n}} av {{total}}",
+    "yourAnswer": "Ditt svar",
+    "correctAnswer": "Riktig svar",
+    "correct": "Riktig",
+    "notQuite": "Ikke helt",
+    "staysInReview": "Det ligger fortsatt i repetisjonen din.",
+    "next": "Neste spørsmål",
+    "seeResults": "Se resultatet",
+    "keys": {
+      "answer": "svar",
+      "next": "neste"
+    },
+    "score": "<score>{{correct}}</score> <muted>av {{total}} riktige</muted>",
+    "missedStay": "Spørsmål du bommet på, ligger i repetisjonen din.",
+    "newQuiz": "Ny quiz"
   },
   "files": {
     "header": "Filer <muted>· {{n}} av 10</muted>",

@@ -1,5 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
-// 2.2) routes, and Quiz setup and generation (Story 3.1a), installed on the mocked apiFetch. The test file must mock '../api/client.js'
+// 2.2) routes, Quiz setup and generation (Story 3.1a), and taking a Quiz (Story 3.2), installed on the
+// mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
 import { apiFetch } from '../api/client.js'
@@ -55,7 +56,8 @@ export const IMAGE_LIMIT = 25
  * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
  * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions`: a
  * number, or a function of the scope (Story 3.1a). A quiz request adds a running `quiz` job at the
- * `reading` step; `stepJob`, `finishQuiz`, and `failJob` move it on. Returns the live state.
+ * `reading` step; `stepJob`, `finishQuiz`, and `failJob` move it on. `quizzes` lists stored Quizzes
+ * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2). Returns the live state.
  */
 export function fakeApi({
   me = PROFILE,
@@ -65,6 +67,7 @@ export function fakeApi({
   routes = {},
   imagesLeft = IMAGE_LIMIT,
   capacity = 20,
+  quizzes = [],
 } = {}) {
   const state = {
     me: { ...me },
@@ -79,7 +82,8 @@ export function fakeApi({
     imagesLeft, // today's image limit left (Story 2.5)
     capacity, // max_questions, or a function of the scope (Story 3.1a)
     quizRequests: [], // bodies of POST .../quizzes
-    quizzes: {}, // { [quizId]: { id, requested_count, question_count } }
+    quizzes: Object.fromEntries(quizzes.map((q) => [q.id, structuredClone(q)])), // { [quizId]: quiz(...) }
+    answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
   }
 
@@ -122,14 +126,34 @@ export function fakeApi({
       const max = typeof state.capacity === 'function' ? state.capacity(scope) : state.capacity
       return { max_questions: max }
     }
+    // Taking a Quiz (Story 3.2): like the server, scored here, saved once, the key hidden until answered.
+    const answerCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes\/([^/]+)\/questions\/([^/]+)\/answer$/)
+    if (answerCall && method === 'POST') {
+      const [, id, quizId, questionId] = answerCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+      if (!['a', 'b', 'c', 'd'].includes(body?.option_id)) throw rule('invalid_request', { fields: ['option_id'] })
+      const question = state.quizzes[quizId]?.project_id === id && state.quizzes[quizId].questions.find((q) => q.id === questionId)
+      if (!question) throw notFound()
+      state.answers.push({ question_id: questionId, ...body })
+      question.answered ??= { submitted_option_id: body.option_id, is_correct: body.option_id === question.correct_option_id }
+      return shownQuestion(question)
+    }
     const quizCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes(?:\/([^/]+))?$/)
     if (quizCall) {
       const [, id, quizId] = quizCall
       const owner = state.projects.find((p) => p.id === id)
       if (!owner) throw notFound()
       if (quizId && method === 'GET') {
-        if (!state.quizzes[quizId]) throw notFound()
-        return { ...state.quizzes[quizId] }
+        const found = state.quizzes[quizId]
+        if (!found || found.project_id !== id) throw notFound()
+        return {
+          id: found.id,
+          requested_count: found.requested_count,
+          question_count: found.questions.length,
+          questions: found.questions.map(shownQuestion),
+        }
       }
       if (!quizId && method === 'POST') {
         if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
@@ -244,6 +268,49 @@ export function fakeApi({
 
 const rule = (code, params = {}) => ({ code, params })
 
+/** A stored Question as the server shows it: the key, explanation, and sources only once answered. */
+function shownQuestion(q) {
+  return {
+    id: q.id,
+    position: q.position,
+    question: q.question,
+    options: q.options.map((o) => ({ ...o })),
+    answer: q.answered
+      ? {
+          ...q.answered,
+          correct_option_id: q.correct_option_id,
+          explanation: q.explanation,
+          sources: q.sources.map((label) => ({ label })),
+        }
+      : null,
+  }
+}
+
+/**
+ * A stored Quiz of `n` Questions in Project `projectId`: Question i reads "Question {i}?" with options
+ * "Option {i}A".."Option {i}D", explanation "Because {i}.", source "notes.pdf · Page {i}" (1-based).
+ * `correct` is each Question's correct option id. `answered` maps a 0-based index to the submitted
+ * option id. `requested` is the frozen count (default `n`).
+ */
+export function quiz(id, projectId, { n = 3, requested = n, correct = 'b', answered = {} } = {}) {
+  return {
+    id,
+    project_id: projectId,
+    requested_count: requested,
+    questions: Array.from({ length: n }, (_, i) => ({
+      id: `${id}-q${i + 1}`,
+      position: i,
+      question: `Question ${i + 1}?`,
+      options: ['a', 'b', 'c', 'd'].map((o) => ({ id: o, text: `Option ${i + 1}${o.toUpperCase()}` })),
+      correct_option_id: correct,
+      explanation: `Because ${i + 1}.`,
+      sources: [`notes.pdf · Page ${i + 1}`],
+      answered:
+        answered[i] === undefined ? null : { submitted_option_id: answered[i], is_correct: answered[i] === correct },
+    })),
+  }
+}
+
 function editTopics(state, method, path, body, [, projectId, second, third]) {
   const owner = state.projects.find((p) => p.id === projectId)
   if (!owner) throw notFound()
@@ -338,7 +405,7 @@ export function stepJob(state, jobId, step) {
 export function finishQuiz(state, jobId, questionCount) {
   const job = state.jobs.find((j) => j.id === jobId)
   const quizId = `quiz-${jobId}`
-  state.quizzes[quizId] = { id: quizId, requested_count: job.count, question_count: questionCount }
+  state.quizzes[quizId] = quiz(quizId, job.project_id, { n: questionCount, requested: job.count })
   Object.assign(job, { status: 'completed', progress_step: null, result_ref: quizId })
   return quizId
 }

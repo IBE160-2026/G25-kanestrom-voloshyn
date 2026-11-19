@@ -100,7 +100,11 @@ def test_a_mock_quiz_of_10_from_all_topics_saves_10_cited_questions(client, stud
     assert (step, error) == (None, None)
     response = client.get(f"/api/projects/{project}/quizzes/{quiz_id}", headers=bearer(student["token"]))
     assert response.status_code == 200, response.text
-    assert response.json() == {"id": str(quiz_id), "requested_count": 10, "question_count": 10}
+    body = response.json()
+    assert {k: body[k] for k in ("id", "requested_count", "question_count")} == {
+        "id": str(quiz_id), "requested_count": 10, "question_count": 10,
+    }
+    assert [q["position"] for q in body["questions"]] == list(range(10))
 
     questions = questions_of(db, quiz_id)
     assert [q[0] for q in questions] == list(range(10))

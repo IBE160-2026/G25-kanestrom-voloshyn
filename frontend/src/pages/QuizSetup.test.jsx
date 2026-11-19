@@ -152,8 +152,8 @@ describe('Quiz setup', () => {
     expect([1, 5, 6, 10, 14, 20].map(requestCount)).toEqual([5, 5, 10, 10, 20, 20])
   })
 
-  it('shows the Progress steps in turn, polling every 2 s, then the Quiz ready panel', async () => {
-    const { state } = await startQuiz()
+  it('shows the Progress steps in turn, polling every 2 s, then lands on question 1', async () => {
+    const { state, router } = await startQuiz()
     const steps = en.quiz.steps
 
     await waitFor(() => expect(stepStates()).toEqual([[steps.reading, 'now'], [steps.writing, 'pending'], [steps.checking, 'pending']]))
@@ -169,7 +169,8 @@ describe('Quiz setup', () => {
 
     finishQuiz(state, 'q-1', 10)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/projects/a/quizzes/quiz-q-1')
     expect(screen.queryByText(en.quiz.fewer_other.replace('{{count}}', 10))).not.toBeInTheDocument()
     expect(callsTo('/api/jobs/q-1/seen', 'POST')).toHaveLength(1)
   })
@@ -202,19 +203,17 @@ describe('Quiz setup', () => {
     finishQuiz(state, 'q-1', 6)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 6) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
     expect(screen.getByText(en.quiz.fewer_other.replace('{{count}}', 6))).toBeInTheDocument()
   })
 
-  it('"← Back to chat" on the ready panel goes back to the Project', async () => {
+  it('the finished Quiz replaces the setup in the history, so Back returns to the chat', async () => {
     const { state, router } = await startQuiz()
     finishQuiz(state, 'q-1', 10)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    const panel = (await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).closest('section')
+    await screen.findByRole('heading', { name: 'Question 1?' })
 
-    fireEvent.click(within(panel).getByRole('button', { name: en.activity.back }))
-
-    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a'))
+    expect(router.state.historyAction).toBe('REPLACE')
   })
 
   it('Cancel returns to setup with the choices kept and "Cancelled. Your choices are kept."', async () => {
@@ -336,7 +335,7 @@ describe('Quiz setup', () => {
     expect(screen.getByText('Sjekker svarene')).toBeInTheDocument()
     finishQuiz(state, 'q-1', 6)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(await screen.findByRole('heading', { name: 'Quizen din er klar: 6 spørsmål.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
   })
 
   it('shows "Vi fikk ikke laget quizen." on a failure in Norwegian', async () => {
@@ -356,15 +355,10 @@ describe('Quiz setup', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
   })
 
-  it('moves focus to the Progress steps, then to the ready panel heading', async () => {
-    const { state } = await startQuiz()
+  it('moves focus to the Progress steps', async () => {
+    await startQuiz()
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
-
-    finishQuiz(state, 'q-1', 10)
-    await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    const heading = await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })
-    await waitFor(() => expect(heading).toHaveFocus())
   })
 
   it('after a cancel, focus returns to the setup heading', async () => {
@@ -377,14 +371,14 @@ describe('Quiz setup', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: en.quiz.title })).toHaveFocus())
   })
 
-  it('a Cancel that finds the Quiz already saved shows the ready panel, not "Cancelled"', async () => {
+  it('a Cancel that finds the Quiz already saved opens it, not "Cancelled"', async () => {
     const { state } = await startQuiz()
     await screen.findByText(en.quiz.steps.reading)
     finishQuiz(state, 'q-1', 10)
 
     fireEvent.click(screen.getByRole('button', { name: en.quiz.cancel }))
 
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
     expect(screen.queryByText(en.quiz.cancelled)).not.toBeInTheDocument()
   })
 

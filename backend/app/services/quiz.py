@@ -15,7 +15,10 @@ the scope's capacity, the same estimate the capacity endpoint gives. The job use
    Project deleted, or a Material of the scope removed. Archived Projects still save (AD-20).
 
 A provider error fails the job with `llm_unavailable`, invalid output with `llm_output_invalid`, and no
-usable question with `insufficient_material`. No answering, scoring, or Mistakes here (Stories 3.2, 3.3).
+usable question with `insufficient_material`.
+
+Taking the Quiz (Story 3.2): `get` serves the Questions with the answer key hidden until answered, and
+`answer` scores and saves one answer, idempotently, with no model call. No Mistakes here (Story 3.3).
 Logs carry counts only, never material text.
 """
 
@@ -96,12 +99,62 @@ async def request(
 
 
 async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id: UUID) -> dict[str, Any]:
-    """`{id, requested_count, question_count}`. A read: no guard. Questions are served from Story 3.2."""
+    """`{id, requested_count, question_count, questions}` (FR-11, AD-9). A read: no guard, so a read-only
+    Project's Quiz still opens. An unanswered Question carries no answer key, explanation, or sources;
+    an answered one carries `answer`."""
     await projects.get(conn, account_id, project_id)
     quiz = await repo.get(conn, account_id, project_id, quiz_id)
     if quiz is None:
         raise QuizNotFound()
-    return quiz
+    rows = await repo.questions_for(conn, account_id, quiz_id)
+    answers = await repo.answers_for(conn, account_id, [row["id"] for row in rows])
+    answered = [row for row in rows if row["id"] in answers]
+    labels = await repo.source_labels(conn, account_id, _section_ids(answered))
+    return {
+        **quiz,
+        "questions": [_question(row, answers.get(row["id"]), labels) for row in rows],
+    }
+
+
+async def answer(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id: UUID, question_id: UUID, option_id: str
+) -> dict[str, Any]:
+    """Score and save one answer (FR-11, AD-9): `option_id == correct_option_id`, with no model call.
+    A content mutation, so the read-only guard comes first (AD-22). Idempotent: when the Question already
+    has an answer, the stored one is returned unchanged, whatever option was sent now. `option_id` is
+    already one of a-d (the request model owns that rule). Returns the answered Question."""
+    await projects.require_active(conn, account_id, project_id)
+    row = await repo.question(conn, account_id, project_id, quiz_id, question_id)
+    if row is None:
+        raise QuizNotFound()
+    stored = await repo.insert_answer(conn, account_id, question_id, option_id, option_id == row["correct_option_id"])
+    labels = await repo.source_labels(conn, account_id, list(row["source_section_ids"]))
+    return _question(row, stored, labels)
+
+
+def _section_ids(rows: Sequence[dict[str, Any]]) -> list[UUID]:
+    return list(dict.fromkeys(section_id for row in rows for section_id in row["source_section_ids"]))
+
+
+def _question(row: dict[str, Any], stored: dict[str, Any] | None, labels: dict[UUID, str]) -> dict[str, Any]:
+    """The Question as the student sees it: the answer key only once answered."""
+    shown: dict[str, Any] = {
+        "id": row["id"],
+        "position": row["position"],
+        "question": row["question"],
+        "options": [{"id": option["id"], "text": option["text"]} for option in row["options"]],
+        "answer": None,
+    }
+    if stored is not None:
+        names = dict.fromkeys(labels[s] for s in row["source_section_ids"] if s in labels)
+        shown["answer"] = {
+            "submitted_option_id": stored["submitted_option_id"],
+            "is_correct": stored["is_correct"],
+            "correct_option_id": row["correct_option_id"],
+            "explanation": row["explanation"],
+            "sources": [{"label": label} for label in names],
+        }
+    return shown
 
 
 # --- Checking (pure) ---

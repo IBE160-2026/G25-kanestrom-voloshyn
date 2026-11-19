@@ -24,16 +24,16 @@ import { COUNTS, requestCount } from './quizCounts.js'
 //   Opening the page while a quiz job of this Project is still running (leaving and coming back, or a
 //   reload) shows that job's progress instead of a new setup.
 // - Cancel sends the cancel, then reads the job again: cancelled -> back to setup with the choices kept
-//   and "Cancelled. Your choices are kept."; completed meanwhile -> the Quiz ready panel; still running
+//   and "Cancelled. Your choices are kept."; completed meanwhile -> the Quiz page; still running
 //   -> it stays on the progress view until the next poll sees it end. A failed cancel request shows the
 //   Inline error on the progress view.
 // - A failed job or request shows the Inline error on the setup with "Try again" (which starts a new job
 //   from the same choices); a rule (`scope_too_large`, `insufficient_material`, `material_removed`, ...)
 //   shows only its message.
-// - Done: the Quiz ready panel with its question count, and the "only {n} were possible" line when
-//   there are fewer than the frozen count (Story 3.2 replaces it with the first question).
-// - Focus moves with the view: to the progress steps, to the ready panel's heading, and back to the
-//   setup heading after a cancel (or to "Try again" after a failure).
+// - Done: the page moves on to the Quiz page (Story 3.2), which opens at the first question and says
+//   when fewer questions were possible. It replaces the setup in the history, so Back returns to chat.
+// - Focus moves with the view: to the progress steps, and back to the setup heading after a cancel (or
+//   to "Try again" after a failure).
 // - Archived or deleted: read-only, nothing can be made.
 export const POLL_MS = 2000
 export const DEFAULT_COUNT = 10
@@ -62,9 +62,8 @@ export default function QuizSetup() {
   const [count, setCount] = useState(DEFAULT_COUNT)
   const [capacity, setCapacity] = useState(null) // { key, max } or { key, error }
   const [open, setOpen] = useState(() => new Map()) // group rows the student toggled
-  const [phase, setPhase] = useState('setup') // setup | sending | generating | done
+  const [phase, setPhase] = useState('setup') // setup | sending | generating
   const [job, setJob] = useState(null) // { id, reached: index of the furthest step seen }
-  const [quiz, setQuiz] = useState(null) // { id, requested_count, question_count }
   const [failure, setFailure] = useState(null) // { message, retry }
   const [cancelled, setCancelled] = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -73,7 +72,6 @@ export default function QuizSetup() {
   const errorBox = useRef(null)
   const setupHeading = useRef(null)
   const progressRegion = useRef(null)
-  const readyHeading = useRef(null)
   const shownPhase = useRef(null)
 
   useEffect(() => {
@@ -144,11 +142,9 @@ export default function QuizSetup() {
       return false
     }
     if (found?.status === 'completed') {
-      const made = await apiFetch(`/api/projects/${projectId}/quizzes/${found.result_ref}`)
-      if (!isLive()) return true
-      setJob((current) => (current?.id === jobId ? { ...current, reached: STEPS.length } : current))
-      setQuiz(made)
-      setPhase('done')
+      await seen()
+      if (isLive()) navigate(`/projects/${projectId}/quizzes/${found.result_ref}`, { replace: true })
+      return true
     } else if (found?.status === 'cancelled') {
       setCancelled(true)
       setPhase('setup')
@@ -191,14 +187,13 @@ export default function QuizSetup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, projectId])
 
-  // Focus follows the view (EXPERIENCE.md › Accessibility): the progress steps, the ready panel, or
-  // the setup heading after a cancel ("Try again" takes it after a failure, below).
+  // Focus follows the view (EXPERIENCE.md › Accessibility): the progress steps, or the setup heading
+  // after a cancel ("Try again" takes it after a failure, below).
   useEffect(() => {
     const previous = shownPhase.current
     shownPhase.current = phase
     if (previous === null || previous === phase) return
     if (phase === 'generating') progressRegion.current?.focus()
-    else if (phase === 'done') readyHeading.current?.focus()
     else if (phase === 'setup' && previous === 'generating' && !failure?.retry) setupHeading.current?.focus()
   }, [phase, failure])
 
@@ -262,7 +257,7 @@ export default function QuizSetup() {
     : new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(
         topics.filter((topic) => chosen.includes(topic.id)).map((topic) => topic.label),
       )
-  const showScope = phase === 'generating' || phase === 'done'
+  const showScope = phase === 'generating'
 
   function chip(topic) {
     const selected = !allTopics && chosen.includes(topic.id)
@@ -448,18 +443,6 @@ export default function QuizSetup() {
           )}
           <button type="button" className={styles.ghost} onClick={cancel} disabled={cancelling}>
             {t('quiz.cancel')}
-          </button>
-        </section>
-      )}
-
-      {phase === 'done' && quiz && (
-        <section className={styles.setup} role="status">
-          <h2 ref={readyHeading} tabIndex={-1} className={styles.heading}>
-            {t('quiz.ready', { count: quiz.question_count })}
-          </h2>
-          {quiz.question_count < quiz.requested_count && <p className={styles.muted}>{t('quiz.fewer', { count: quiz.question_count })}</p>}
-          <button type="button" className={styles.ghost} onClick={backToChat}>
-            {t('activity.back')}
           </button>
         </section>
       )}
