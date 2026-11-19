@@ -64,6 +64,55 @@ async def mark_vision_started(conn: AsyncConnection, job_id: UUID) -> bool:
         return cur.rowcount == 1
 
 
+async def set_progress(conn: AsyncConnection, job_id: UUID, step: str) -> bool:
+    """Move a running job to `step`; False when it is no longer running."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            "UPDATE generation_jobs SET progress_step = %s WHERE id = %s AND status = 'running'", (step, job_id)
+        )
+        return cur.rowcount == 1
+
+
+async def get(conn: AsyncConnection, account_id: UUID, job_id: UUID) -> dict[str, Any] | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(f"SELECT {_COLUMNS} FROM generation_jobs WHERE id = %s AND account_id = %s", (job_id, account_id))
+        return await cur.fetchone()
+
+
+async def get_by_id(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(f"SELECT {_COLUMNS} FROM generation_jobs WHERE id = %s", (job_id,))
+        return await cur.fetchone()
+
+
+async def cancel_queued(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
+    """Finish one queued job as `cancelled`, so it never runs. `SKIP LOCKED` as in `cancel_queued_for`: a
+    job `claim` holds is caught by the cancel request on the running row instead."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET status = 'cancelled', progress_step = NULL, finished_at = now()
+            WHERE id IN (
+                SELECT id FROM generation_jobs WHERE id = %s AND status = 'queued' FOR UPDATE SKIP LOCKED
+            )
+            RETURNING {_COLUMNS}
+            """,
+            (job_id,),
+        )
+        return await cur.fetchone()
+
+
+async def request_cancel(conn: AsyncConnection, job_id: UUID) -> bool:
+    """Set `cancel_requested` on an active job; its save step then ends it `cancelled` (AD-20)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            f"UPDATE generation_jobs SET cancel_requested = true WHERE id = %s AND {ACTIVE} AND NOT cancel_requested",
+            (job_id,),
+        )
+        return cur.rowcount == 1
+
+
 async def get_for_update(conn: AsyncConnection, job_id: UUID) -> dict[str, Any] | None:
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(f"SELECT {_COLUMNS} FROM generation_jobs WHERE id = %s FOR UPDATE", (job_id,))

@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # Estimated tokens (characters / 4) of material one request may carry; above it a task like
     # `detect_topics` is split into chunks and the results merged (AD-3).
     llm_context_budget_tokens: int = Field(100_000, ge=1_000, le=2_000_000)
+    # Words of material per Quiz question in the deterministic capacity estimate (AD-7); at least one
+    # question per Section either way.
+    capacity_words_per_item: int = Field(80, ge=1, le=10_000)
 
     # Database: direct Postgres URL (AD-16, AD-29).
     database_url: SecretStr = SecretStr("postgresql://postgres:postgres@127.0.0.1:54322/postgres")

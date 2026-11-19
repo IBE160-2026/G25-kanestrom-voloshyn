@@ -1,0 +1,385 @@
+/* Quiz setup and generation (DESIGN.md › Layout › Activities, Activity header, Topic scope picker, Count
+   picker, Too-little-material note, Progress steps; mock key-quiz-feedback.html states 0a-0c). */
+.activity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Activity header: a bar with a hairline below, outlined "← Back to chat", then the title. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-content-x);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.back {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-ui-size);
+  cursor: pointer;
+}
+
+.back:hover {
+  background: var(--color-hover);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.scope {
+  color: var(--color-text-muted);
+  font-weight: var(--type-body-weight);
+}
+
+/* Setup screens centre at the setup width. */
+.setup,
+.generating {
+  width: 100%;
+  max-width: var(--space-setup-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-content-x);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.heading {
+  font-size: var(--type-question-size);
+  font-weight: var(--type-question-weight);
+  line-height: var(--type-question-line-height);
+  letter-spacing: var(--type-question-letter-spacing);
+}
+
+.muted,
+.cancelled {
+  color: var(--color-text-muted);
+  font-size: var(--type-body-size);
+}
+
+.field {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+/* Muted caption label above each picker. */
+.label {
+  margin-bottom: var(--space-2);
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* Topic scope picker: a wrapping row of selectable Topic chips, "All topics" first. */
+.picker {
+  max-height: calc(var(--space-7) * 7);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.file {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.fileName {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.groupChips {
+  padding: var(--space-1) 0 var(--space-2) var(--space-5);
+}
+
+.chip {
+  max-width: 100%;
+  min-height: var(--space-touch-target-min);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--color-hover);
+}
+
+/* Selected: primary border on primary-subtle. */
+.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+.selected:hover {
+  background: var(--color-primary-subtle);
+}
+
+/* Group rows, as in the Topic list. */
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.groupRow:hover {
+  background: var(--color-hover);
+}
+
+.chevron {
+  flex: none;
+  width: var(--space-2);
+  height: var(--space-2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chevron {
+    transition: transform 0.15s ease;
+  }
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.groupName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+}
+
+/* Count picker: three outlined boxes in one row, also in a narrow window. */
+.counts {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.count {
+  flex: 0 1 calc(var(--space-7) * 2);
+  min-height: var(--space-touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-muted);
+  font-size: var(--type-title-sm-size);
+  font-weight: var(--type-title-sm-weight);
+  cursor: pointer;
+}
+
+.count:hover {
+  background: var(--color-hover);
+}
+
+.countOn {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+.count:has(.radio:focus-visible) {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* The native radio stays for keyboard and screen readers; the box shows the state. */
+.radio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+/* Too-little-material note: a muted caption with the offer as a primary-coloured action. Never an
+   error colour. */
+.note {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+.offer {
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.error {
+  width: 100%;
+}
+
+.primary,
+.ghost {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.primary:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.ghost {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.ghost:hover {
+  background: var(--color-hover);
+}
+
+.back:focus-visible,
+.chip:focus-visible,
+.groupRow:focus-visible,
+.offer:focus-visible,
+.primary:focus-visible,
+.ghost:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* Progress steps: done steps carry a check, the current step is text-coloured with a primary marker,
+   pending steps are muted. */
+.steps {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  color: var(--color-text-muted);
+  font-size: var(--type-body-size);
+}
+
+.step + .step {
+  border-top: 1px solid var(--color-border);
+}
+
+.mark {
+  flex: none;
+  width: var(--space-5);
+  height: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+}
+
+.done {
+  color: var(--color-text);
+}
+
+.done .mark {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.now {
+  color: var(--color-text);
+}
+
+.now .mark {
+  border-color: var(--color-primary);
+}
+
+.now .mark::after {
+  content: '';
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+}
+
+.pending {
+  color: var(--color-text-muted);
+}
+
+/* Skeleton (DESIGN.md › Skeleton): a static block while the Project loads. */
+.skeleton {
+  width: 100%;
+  min-height: calc(var(--space-7) * 5);
+  background: var(--color-border);
+  border-radius: var(--radius-xl);
+}

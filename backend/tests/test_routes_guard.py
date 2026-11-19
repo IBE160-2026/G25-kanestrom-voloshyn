@@ -25,6 +25,7 @@ ALLOWLIST = {
     ("POST", "/api/me/privacy-notice"),
     ("POST", "/api/projects"),
     ("POST", "/api/jobs/{job_id}/seen"),
+    ("POST", "/api/jobs/{job_id}/cancel"),
 }
 
 # The /api catch-all only answers 404 not_found (AD-17).
@@ -118,3 +119,16 @@ def test_topic_edits_are_guarded(method, path):
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     route = next(r for r in api_routes(app) if r.path == path and method in r.methods)
     assert active_project in _calls(route.dependant)
+
+
+def test_quiz_generation_is_guarded():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/quizzes" and "POST" in r.methods)
+    assert active_project in _calls(route.dependant)
+
+
+def test_job_cancel_is_allowlisted_bookkeeping():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/jobs/{job_id}/cancel" and "POST" in r.methods)
+    assert active_project not in _calls(route.dependant)
+    assert ("POST", "/api/jobs/{job_id}/cancel") in ALLOWLIST

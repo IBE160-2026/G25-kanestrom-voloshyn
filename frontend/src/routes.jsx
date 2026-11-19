@@ -7,6 +7,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
 import ProjectHome from './pages/ProjectHome.jsx'
 import Projects from './pages/Projects.jsx'
+import QuizSetup from './pages/QuizSetup.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 
 export const routes = [
@@ -25,6 +26,7 @@ export const routes = [
         children: [
           { path: '/projects', element: <Projects /> },
           { path: '/projects/:projectId', element: <ProjectHome /> },
+          { path: '/projects/:projectId/quiz', element: <QuizSetup /> },
         ],
       },
     ],

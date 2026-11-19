@@ -67,6 +67,35 @@
       "body": "Slipp filer her eller <browse>velg fra maskinen</browse>. Når en fil er klar, kan du spørre om den og lage quizer, treningskort og sammendrag."
     }
   },
+  "tools": {
+    "quiz": "Quiz"
+  },
+  "activity": {
+    "back": "← Tilbake til samtalen"
+  },
+  "quiz": {
+    "title": "Lag en quiz",
+    "topics": "Hvilke emner?",
+    "allTopics": "Alle emner",
+    "count": "Hvor mange spørsmål?",
+    "make_one": "Lag {{count}} spørsmål",
+    "make_other": "Lag {{count}} spørsmål",
+    "tooLittle_one": "Det er bare nok materiale til {{count}} spørsmål.",
+    "tooLittle_other": "Det er bare nok materiale til {{count}} spørsmål.",
+    "makeInstead": "Lag {{count}} i stedet",
+    "steps": {
+      "reading": "Leser materialet ditt",
+      "writing": "Skriver spørsmål",
+      "checking": "Sjekker svarene"
+    },
+    "cancel": "Avbryt",
+    "cancelled": "Avbrutt. Valgene dine er lagret.",
+    "failed": "Vi fikk ikke laget quizen.",
+    "ready_one": "Quizen din er klar: {{count}} spørsmål.",
+    "ready_other": "Quizen din er klar: {{count}} spørsmål.",
+    "fewer_one": "Bare {{count}} spørsmål var mulig ut fra materialet.",
+    "fewer_other": "Bare {{count}} spørsmål var mulig ut fra materialet."
+  },
   "files": {
     "header": "Filer <muted>· {{n}} av 10</muted>",
     "show": "Vis filer",
@@ -179,7 +208,10 @@
     "topic_limit_reached": "En fil kan ha høyst 100 emner.",
     "topic_last_cannot_delete": "En fil må ha minst ett emne.",
     "topic_merge_cross_material": "Bare emner fra samme fil kan slås sammen.",
-    "quota_exceeded": "Du har brukt dagens {{limit}} bilder. Prøv igjen i morgen."
+    "quota_exceeded": "Du har brukt dagens {{limit}} bilder. Prøv igjen i morgen.",
+    "scope_too_large": "Det er mye materiale. Velg færre emner eller én fil.",
+    "insufficient_material": "Det er ikke nok ferdig materiale til dette ennå.",
+    "material_removed": "Filen dette kom fra, er fjernet."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

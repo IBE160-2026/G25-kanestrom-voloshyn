@@ -17,12 +17,12 @@ beforeEach(() => {
 })
 
 describe('Project home', () => {
-  it('shows the drop zone, an empty tools row, and the Files panel "Files · 0 of 10"', async () => {
+  it('shows the drop zone, a disabled Quiz in the tools row, and the Files panel "Files · 0 of 10"', async () => {
     fakeApi({ projects: [project('a')] })
     renderRoute('/projects/a')
 
     expect(await screen.findByRole('heading', { level: 2, name: en.projectHome.dropZone.heading })).toBeInTheDocument()
-    expect(screen.getByTestId('tools-row')).toBeEmptyDOMElement()
+    expect(within(screen.getByTestId('tools-row')).getByRole('button', { name: en.tools.quiz })).toBeDisabled()
     const files = screen.getByRole('complementary', { name: 'Files · 0 of 10' })
     expect(within(files).getByRole('heading', { level: 2 })).toHaveTextContent('Files · 0 of 10')
   })

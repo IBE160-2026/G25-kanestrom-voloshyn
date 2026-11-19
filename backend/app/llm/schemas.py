@@ -67,3 +67,37 @@ class ImageText(BaseModel):
     @classmethod
     def _cap_text(cls, value: str) -> str:
         return value[:IMAGE_TEXT_MAX]
+
+
+# At most this many Quiz questions per request, server-enforced (AD-12).
+QUIZ_MAX = 20
+QUIZ_OPTIONS = 4
+
+
+class DraftQuestion(BaseModel):
+    """One multiple-choice question as the model writes it: four options with the index of the correct
+    one, an explanation, and the 1-based Section numbers (`S1…Sn`) it rests on. The service shuffles
+    the options and maps the numbers back to Section ids (AD-9)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    # A blank or repeated option drops that question in the service's check, not the whole reply.
+    options: Annotated[list[str], Field(min_length=QUIZ_OPTIONS, max_length=QUIZ_OPTIONS)]
+    correct_index: Annotated[int, Field(ge=0, le=QUIZ_OPTIONS - 1)]
+    explanation: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    # May be empty: an uncited question is dropped by the service, not retried.
+    sections: list[int]
+
+
+class QuizDraft(BaseModel):
+    """`generate_quiz`: up to 20 questions (FR-10, AD-9). Extra questions are cut, not refused."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    questions: Annotated[list[DraftQuestion], Field(max_length=QUIZ_MAX)]
+
+    @field_validator("questions", mode="before")
+    @classmethod
+    def _cap(cls, value: object) -> object:
+        return value[:QUIZ_MAX] if isinstance(value, list) else value

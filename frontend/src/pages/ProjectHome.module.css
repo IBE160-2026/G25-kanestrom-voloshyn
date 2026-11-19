@@ -86,13 +86,40 @@
   display: none;
 }
 
-/* Tool buttons row: empty until Quiz, Flashcards, and Summarize arrive. */
+/* Tool buttons row: ghost buttons (Quiz; Flashcards and Summarize arrive with their stories). */
 .tools {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   min-height: var(--space-touch-target-min);
   margin-top: var(--space-2);
+}
+
+.tool {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.tool:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.tool:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.tool:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
 }
 
 /* Skeleton (DESIGN.md › Skeleton): static border-coloured blocks, no shimmer. */
