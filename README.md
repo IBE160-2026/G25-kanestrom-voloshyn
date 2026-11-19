@@ -39,6 +39,24 @@ Har du glemt passordet, velg «Forgot password?» («Glemt passordet?» på nors
 
 `LLM_MODE` kan stå tom: i utvikling uten nøkkel blir den `mock`. SMTP-verdiene i `.env` kan stå tomme lokalt; standardverdiene sender til Mailpit. Google-innlogging er skjult til `SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true` og begge Google-verdiene er satt.
 
+### Google-innlogging (valgfritt)
+
+Uten Google-nøkler vises ingen «Sign in with Google»-knapp, og alt annet virker som før. Sensor trenger ikke dette. Slik slår du det på lokalt:
+
+1. I [Google Cloud Console](https://console.cloud.google.com/): opprett eller velg et prosjekt, sett opp «OAuth consent screen» (type «External», legg deg selv til som testbruker), og opprett så en «OAuth client ID» av typen «Web application».
+2. Legg til `http://127.0.0.1:54321/auth/v1/callback` under «Authorized redirect URIs». Det er den lokale Supabase-adressen Google sender tilbake til; Supabase sender deretter videre til appens `/auth/callback`.
+3. Sett verdiene i den lokale `.env` (aldri commit dem):
+   ```sh
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED=true
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID=<klient-ID fra Google>
+   SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET=<klienthemmelighet fra Google>
+   ```
+4. Start Supabase på nytt (`npx supabase stop && npx supabase start`) og appen (`docker compose up --build`), slik at begge leser `.env`.
+
+Knappen vises da på innloggingssiden og på «Create account». Start Google-innloggingen fra <http://localhost:8000> eller <http://127.0.0.1:8000>, ikke fra adressen i lokalnettet; bare disse adressene står som tillatte returadresser i `supabase/config.toml`. Har du allerede en konto med samme e-postadresse og har bekreftet den, logger Google inn på den kontoen, og passordet virker fortsatt. Er e-postadressen ikke bekreftet, tar Google-innloggingen over kontoen: det gamle passordet slutter å virke, alle andre økter blir logget ut, og du ser meldingen «Your account now signs in with Google.» én gang. En Google-identitet med en annen e-postadresse enn kontoens blir fjernet fra en ubekreftet konto og tar den aldri over.
+
+I et Supabase Cloud-prosjekt må innstillingen «Require current password when updating» stå av, slik `secure_password_change = false` gjør lokalt. Ellers kan ikke overtakelsen sette det nye tilfeldige passordet, og innloggingen svarer med en feil. «Manual linking» må stå på (som `enable_manual_linking = true` lokalt), ellers kan ikke appen fjerne en Google-identitet med feil e-postadresse.
+
 ### Mobil på lokalnettet (opplasting fra telefon)
 
 QR-koden for opplasting fra telefon (FR-21) peker på `APP_PUBLIC_URL`. Standardverdien er `http://localhost:8000`, og på telefonen betyr «localhost» telefonen selv. For å demonstrere med en ekte telefon må appen derfor nås på datamaskinens adresse i lokalnettet:

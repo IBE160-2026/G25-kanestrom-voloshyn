@@ -12,9 +12,12 @@
     "password": "Passord",
     "submit": "Logg inn",
     "forgotPassword": "Glemt passordet?",
+    "google": "Logg inn med Google",
+    "or": "eller",
     "errors": {
       "credentials": "Feil e-post eller passord.",
-      "failed": "Innloggingen fungerte ikke. Prøv igjen."
+      "failed": "Innloggingen fungerte ikke. Prøv igjen.",
+      "googleInUse": "Denne Google-kontoen er allerede koblet til en annen Study Buddy-konto."
     }
   },
   "signup": {
@@ -224,7 +227,8 @@
     "welcome": "Velkommen, {{firstName}}",
     "menu": "Kontomeny",
     "language": "Språk",
-    "logOut": "Logg ut"
+    "logOut": "Logg ut",
+    "googleTakeover": "Kontoen din logger nå inn med Google."
   },
   "verify": {
     "success": "E-postadressen din er bekreftet.",

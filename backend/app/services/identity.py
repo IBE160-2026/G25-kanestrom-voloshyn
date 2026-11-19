@@ -45,6 +45,12 @@ async def set_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, An
     return await get_profile(conn, account_id)
 
 
+async def clear_google_takeover_notice(conn: AsyncConnection, account_id: UUID) -> dict[str, Any]:
+    """The one-time Google takeover notice has been shown (AD-19). Idempotent."""
+    await profiles.clear_google_takeover_notice(conn, account_id)
+    return await get_profile(conn, account_id)
+
+
 class PrivacyNoticeRequired(AppError):
     def __init__(self) -> None:
         super().__init__(403, "privacy_notice_required", "Accept the privacy notice before the first upload")

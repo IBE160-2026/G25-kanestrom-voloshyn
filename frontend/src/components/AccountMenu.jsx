@@ -50,7 +50,7 @@ export default function AccountMenu({ me, onSaveError }) {
     // silence the save-failure alert in the top bar while the menu is open.
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger className={styles.trigger} aria-label={firstName ? undefined : t('account.menu')}>
-        <Avatar firstName={firstName} />
+        <Avatar firstName={firstName} pictureUrl={me?.picture_url ?? null} />
         {firstName && <span className={styles.welcome}>{t('account.welcome', { firstName })}</span>}
         <svg className={styles.chevron} viewBox="0 0 10 6" aria-hidden="true" focusable="false">
           <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" />

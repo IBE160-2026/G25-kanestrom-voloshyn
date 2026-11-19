@@ -7,6 +7,8 @@ import ErrorLine from './ErrorLine.jsx'
 import ProjectName from './ProjectName.jsx'
 import Sidebar from './Sidebar.jsx'
 import TopBar from './TopBar.jsx'
+import UndoMessage from './UndoMessage.jsx'
+import { markTakeoverNoticeShown, takeoverNoticeShown } from './takeoverNotice.js'
 import styles from './AppShell.module.css'
 
 // Below this width the Sidebar starts collapsed, whatever the saved preference (DESIGN.md › Layout).
@@ -37,6 +39,24 @@ export default function AppShell() {
   const [createError, setCreateError] = useState(null) // { apiError, attempt }
   const createAttempt = useRef(0)
   const inFlight = useRef(false)
+  // The one-time Google takeover notice (AD-19): shown once per flag, then cleared on the server.
+  const [takeoverDone, setTakeoverDone] = useState(false)
+  // Shown by an earlier mount of the shell: never again in this page load.
+  const [takeoverSeen] = useState(takeoverNoticeShown)
+  const takeoverCleared = useRef(false)
+  const showTakeover = me?.notice_google_takeover === true && !takeoverDone && !takeoverSeen
+
+  useEffect(() => {
+    if (!showTakeover || takeoverCleared.current) return
+    takeoverCleared.current = true
+    markTakeoverNoticeShown()
+    // Bookkeeping: once shown it never shows again, even if this tab closes before it fades. One
+    // retry; if both fail, the next page load may show it once more.
+    const clear = () => apiFetch('/api/me/notices/google-takeover', { method: 'POST' })
+    clear()
+      .catch(clear)
+      .catch(() => {})
+  }, [showTakeover])
 
   useEffect(() => {
     let live = true
@@ -167,6 +187,9 @@ export default function AppShell() {
           <Outlet
             context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted }}
           />
+          {showTakeover && (
+            <UndoMessage onDone={() => setTakeoverDone(true)}>{t('account.googleTakeover')}</UndoMessage>
+          )}
         </main>
       </div>
     </div>

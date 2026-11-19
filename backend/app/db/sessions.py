@@ -31,3 +31,8 @@ async def delete_others(conn: AsyncConnection, account_id: UUID, keep_session_id
         (account_id, keep_session_id),
     )
     return cur.rowcount
+
+
+async def delete_one(conn: AsyncConnection, account_id: UUID, session_id: UUID) -> None:
+    """End one session of the Account (a non-Google session while a Google takeover is due, AD-19)."""
+    await conn.execute("DELETE FROM auth.sessions WHERE id = %s AND user_id = %s", (session_id, account_id))

@@ -164,6 +164,8 @@ site_url = "http://localhost:8000"
 additional_redirect_urls = [
   "http://localhost:8000/auth/callback",
   "http://localhost:8000/reset-password",
+  "http://127.0.0.1:8000/auth/callback",
+  "http://127.0.0.1:8000/reset-password",
   "http://localhost:5173/auth/callback",
   "http://localhost:5173/reset-password",
 ]
@@ -231,6 +233,8 @@ double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
 enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
+# Pinned off (AD-19): the Google takeover sets a random password with the caller's own token and
+# must never need reauthentication. Keep "Require current password when updating" off in Cloud too.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
