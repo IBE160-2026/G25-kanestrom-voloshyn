@@ -5,8 +5,10 @@
   `429 quota_exceeded {limit}` (FR-7).
 - `GET /api/projects/{project_id}/materials`: every non-removed Material with its last status and its
   Topics in order (FR-22).
-- `DELETE /api/projects/{project_id}/materials/{material_id}`: remove a Material (FR-20, AD-23); `204`,
-  also when it was already removed. Requires an active Project.
+- `DELETE /api/projects/{project_id}/materials/{material_id}[?withdraw_mistakes=true]`: remove a Material
+  (FR-20, AD-23); `204`, also when it was already removed. Requires an active Project. With
+  `withdraw_mistakes=true` its outstanding Mistakes leave review in the same transaction (Story 3.3);
+  without it they stay outstanding.
 """
 
 from datetime import datetime
@@ -88,10 +90,15 @@ async def upload_material(
 
 @router.delete("/{material_id}", status_code=204, response_class=Response)
 async def remove_material(
-    request: Request, material_id: UUID, project: ActiveProject, user: UserAuth, conn: Conn
+    request: Request,
+    material_id: UUID,
+    project: ActiveProject,
+    user: UserAuth,
+    conn: Conn,
+    withdraw_mistakes: bool = False,
 ) -> Response:
     delete_original = await materials.remove(
-        conn, request.app.state.storage, user.account_id, project["id"], material_id
+        conn, request.app.state.storage, user.account_id, project["id"], material_id, withdraw_mistakes
     )
     after_commit(request, delete_original)
     return Response(status_code=204)

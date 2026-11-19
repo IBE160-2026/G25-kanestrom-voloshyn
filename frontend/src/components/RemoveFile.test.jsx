@@ -8,7 +8,7 @@ import { hasSession } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { POLL_MS } from '../pages/useProjectFiles.js'
-import { callsTo, fakeApi, material, project } from '../test/fakeApi.js'
+import { callsTo, fakeApi, material, mistake, project } from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
@@ -328,5 +328,122 @@ describe('Remove a file', () => {
     expect(row).toHaveTextContent('sending.pdf')
     expect(row).toHaveTextContent(en.files.status.processing)
     expect(within(row).queryByRole('button')).not.toBeInTheDocument()
+  })
+})
+
+// Story 3.3 (FR-20, AD-10): the mistakes checkbox. test/fakeApi.js counts outstanding Mistakes per file.
+describe('Remove a file with mistakes', () => {
+  const MISTAKES = [mistake('a', ['ok']), mistake('a', ['ok']), mistake('a', ['w'])]
+  const summaryReads = () => callsTo('/api/projects/a/mistakes/summary')
+
+  it('shows the unchecked checkbox only for a file with outstanding mistakes', async () => {
+    const user = userEvent.setup()
+    await openProject({ mistakes: MISTAKES })
+    await waitFor(() => expect(summaryReads().length).toBeGreaterThan(0))
+
+    await chooseRemove(user, 'notes.pdf')
+    const dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+    const box = within(dialog).getByRole('checkbox', { name: en.files.remove.withdrawMistakes })
+    expect(box).not.toBeChecked()
+    await user.keyboard('{Escape}')
+
+    await chooseRemove(user, 'lecture.pdf')
+    const other = await screen.findByRole('dialog', { name: 'Remove lecture.pdf?' })
+    expect(within(other).queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('unchecked, removes the file and keeps its mistakes', async () => {
+    const user = userEvent.setup()
+    const state = await openProject({ mistakes: MISTAKES })
+    await waitFor(() => expect(summaryReads().length).toBeGreaterThan(0))
+
+    await chooseRemove(user, 'notes.pdf')
+    const dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+    await within(dialog).findByRole('checkbox')
+    await user.click(within(dialog).getByRole('button', { name: en.files.remove.confirm }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(deletes('ok')).toHaveLength(1)
+    expect(state.removeQueries).toEqual([''])
+    expect(state.mistakes.filter((m) => !m.withdrawn)).toHaveLength(3)
+    expect(screen.getByTestId('mistakes-card')).toHaveTextContent('3 mistakes to review')
+  })
+
+  it('checked, sends the flag, and the card shows the new count', async () => {
+    const user = userEvent.setup()
+    const state = await openProject({ mistakes: MISTAKES })
+    expect(await screen.findByTestId('mistakes-card')).toHaveTextContent('3 mistakes to review')
+
+    await chooseRemove(user, 'notes.pdf')
+    const dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+    await user.click(within(dialog).getByRole('checkbox', { name: en.files.remove.withdrawMistakes }))
+    await user.click(within(dialog).getByRole('button', { name: en.files.remove.confirm }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(callsTo('/api/projects/a/materials/ok?withdraw_mistakes=true', 'DELETE')).toHaveLength(1)
+    expect(state.removeQueries).toEqual(['withdraw_mistakes=true'])
+    await waitFor(() => expect(screen.getByTestId('mistakes-card')).toHaveTextContent('1 mistake to review'))
+  })
+
+  it('starts unchecked again when the dialog reopens', async () => {
+    const user = userEvent.setup()
+    await openProject({ mistakes: MISTAKES })
+    await waitFor(() => expect(summaryReads().length).toBeGreaterThan(0))
+
+    await chooseRemove(user, 'notes.pdf')
+    let dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+    await user.click(within(dialog).getByRole('checkbox'))
+    expect(within(dialog).getByRole('checkbox')).toBeChecked()
+    await user.keyboard('{Escape}')
+
+    await chooseRemove(user, 'notes.pdf')
+    dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+    expect(within(dialog).getByRole('checkbox')).not.toBeChecked()
+  })
+
+  it('re-reads a summary that failed earlier when the dialog opens, then shows the checkbox', async () => {
+    const user = userEvent.setup()
+    let reads = 0
+    await openProject({
+      routes: {
+        'GET /api/projects/a/mistakes/summary': () => {
+          reads += 1
+          if (reads === 1) throw { code: 'internal_error', params: {} }
+          return { outstanding: 2, by_material: { ok: 2 } }
+        },
+      },
+    })
+    await waitFor(() => expect(reads).toBe(1))
+
+    await chooseRemove(user, 'notes.pdf')
+    const dialog = await screen.findByRole('dialog', { name: 'Remove notes.pdf?' })
+
+    expect(await within(dialog).findByRole('checkbox', { name: en.files.remove.withdrawMistakes })).not.toBeChecked()
+    expect(reads).toBe(2)
+  })
+
+  it('never sends the flag for the immediate removal of a Rejected file', async () => {
+    const user = userEvent.setup()
+    const state = await openProject({ mistakes: [mistake('a', ['x'])] })
+    await waitFor(() => expect(summaryReads().length).toBeGreaterThan(0))
+    const row = within(panel()).getAllByRole('listitem')[3]
+
+    await user.click(within(row).getByRole('button', { name: en.files.remove.item }))
+
+    await waitFor(() => expect(deletes('x')).toHaveLength(1))
+    expect(callsTo('/api/projects/a/materials/x?withdraw_mistakes=true', 'DELETE')).toHaveLength(0)
+    expect(state.removeQueries).toEqual([''])
+    expect(state.mistakes.filter((m) => !m.withdrawn)).toHaveLength(1)
+  })
+
+  it('works in Norwegian', async () => {
+    const user = userEvent.setup()
+    await i18n.changeLanguage('nb')
+    await openProject({ mistakes: MISTAKES })
+    await waitFor(() => expect(summaryReads().length).toBeGreaterThan(0))
+
+    await chooseRemove(user, 'notes.pdf', nb)
+    const dialog = await screen.findByRole('dialog', { name: 'Vil du fjerne notes.pdf?' })
+    expect(within(dialog).getByRole('checkbox', { name: 'Fjern også feilene fra repetisjonen min' })).not.toBeChecked()
   })
 })

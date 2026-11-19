@@ -18,7 +18,8 @@ A provider error fails the job with `llm_unavailable`, invalid output with `llm_
 usable question with `insufficient_material`.
 
 Taking the Quiz (Story 3.2): `get` serves the Questions with the answer key hidden until answered, and
-`answer` scores and saves one answer, idempotently, with no model call. No Mistakes here (Story 3.3).
+`answer` scores and saves one answer, idempotently, with no model call; a newly saved wrong answer
+becomes a Mistake through `mistakes.record_failure` in the same transaction (Story 3.3).
 Logs carry counts only, never material text.
 """
 
@@ -36,7 +37,7 @@ from app.db import quizzes as repo
 from app.errors import AppError
 from app.llm import Gateway, LLMOutputError, ProviderError, QuizDraft
 from app.llm.schemas import QUIZ_MAX
-from app.services import jobs, projects, topics
+from app.services import jobs, mistakes, projects, topics
 
 logger = logging.getLogger(__name__)
 
@@ -122,12 +123,19 @@ async def answer(
     """Score and save one answer (FR-11, AD-9): `option_id == correct_option_id`, with no model call.
     A content mutation, so the read-only guard comes first (AD-22). Idempotent: when the Question already
     has an answer, the stored one is returned unchanged, whatever option was sent now. `option_id` is
-    already one of a-d (the request model owns that rule). Returns the answered Question."""
+    already one of a-d (the request model owns that rule). A newly saved wrong answer is recorded as a
+    Mistake (Story 3.3). Returns the answered Question."""
     await projects.require_active(conn, account_id, project_id)
     row = await repo.question(conn, account_id, project_id, quiz_id, question_id)
     if row is None:
         raise QuizNotFound()
-    stored = await repo.insert_answer(conn, account_id, question_id, option_id, option_id == row["correct_option_id"])
+    stored, inserted = await repo.insert_answer(
+        conn, account_id, question_id, option_id, option_id == row["correct_option_id"]
+    )
+    # A newly saved wrong answer becomes a Mistake in this same transaction (FR-12, AD-10); a resubmit
+    # returns the stored answer and records nothing.
+    if inserted and not stored["is_correct"]:
+        await mistakes.record_failure(conn, account_id, project_id, question_id, stored["id"])
     labels = await repo.source_labels(conn, account_id, list(row["source_section_ids"]))
     return _question(row, stored, labels)
 

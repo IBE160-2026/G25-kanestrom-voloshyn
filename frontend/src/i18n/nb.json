@@ -70,6 +70,10 @@
   "tools": {
     "quiz": "Quiz"
   },
+  "mistakes": {
+    "card_one": "Du har {{count}} feil å repetere",
+    "card_other": "Du har {{count}} feil å repetere"
+  },
   "activity": {
     "back": "← Tilbake til samtalen"
   },
@@ -193,7 +197,8 @@
       "reading": "Lesingen stopper, og filen blir ikke lagt til.",
       "cancel": "Avbryt",
       "confirm": "Fjern",
-      "failed": "Vi fikk ikke fjernet filen."
+      "failed": "Vi fikk ikke fjernet filen.",
+      "withdrawMistakes": "Fjern også feilene fra repetisjonen min"
     }
   },
   "account": {

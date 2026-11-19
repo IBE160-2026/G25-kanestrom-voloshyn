@@ -1,5 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
-// 2.2) routes, Quiz setup and generation (Story 3.1a), and taking a Quiz (Story 3.2), installed on the
+// 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), and Mistakes (Story
+// 3.3), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
@@ -58,7 +59,10 @@ export const IMAGE_LIMIT = 25
  * number, or a function of the scope (Story 3.1a). A quiz request adds a running `quiz` job at the
  * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
  * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
- * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2). Returns the live state.
+ * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
+ * answer adds an outstanding Mistake (Story 3.3). `mistakes` lists outstanding Mistakes ({project_id,
+ * material_ids}, see `mistake`); GET .../mistakes/summary counts them, and a removal with
+ * `?withdraw_mistakes=true` withdraws the file's. Returns the live state.
  */
 export function fakeApi({
   me = PROFILE,
@@ -69,6 +73,7 @@ export function fakeApi({
   imagesLeft = IMAGE_LIMIT,
   capacity = 20,
   quizzes = [],
+  mistakes = [],
 } = {}) {
   const state = {
     me: { ...me },
@@ -86,6 +91,8 @@ export function fakeApi({
     quizzes: Object.fromEntries(quizzes.map((q) => [q.id, structuredClone(q)])), // { [quizId]: quiz(...) }
     answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
+    mistakes: mistakes.map((m) => ({ withdrawn: false, ...m })), // Story 3.3
+    removeQueries: [], // query strings of DELETE .../materials/{id} (Story 3.3), '' for none
   }
 
   vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
@@ -138,7 +145,13 @@ export function fakeApi({
       const question = state.quizzes[quizId]?.project_id === id && state.quizzes[quizId].questions.find((q) => q.id === questionId)
       if (!question) throw notFound()
       state.answers.push({ question_id: questionId, ...body })
-      question.answered ??= { submitted_option_id: body.option_id, is_correct: body.option_id === question.correct_option_id }
+      if (!question.answered) {
+        question.answered = { submitted_option_id: body.option_id, is_correct: body.option_id === question.correct_option_id }
+        // Like the server: a newly saved wrong answer becomes an outstanding Mistake (Story 3.3).
+        if (!question.answered.is_correct) {
+          state.mistakes.push({ project_id: id, quiz_question_id: questionId, material_ids: [...question.material_ids], withdrawn: false })
+        }
+      }
       return shownQuestion(question)
     }
     const quizCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes(?:\/([^/]+))?$/)
@@ -179,6 +192,16 @@ export function fakeApi({
         state.jobs.push(job)
         return { job_id: job.id }
       }
+    }
+    // Mistakes summary (Story 3.3): a read, so a read-only Project answers too.
+    const summaryCall = path.match(/^\/api\/projects\/([^/]+)\/mistakes\/summary$/)
+    if (summaryCall && method === 'GET') {
+      const id = summaryCall[1]
+      if (!state.projects.some((p) => p.id === id)) throw notFound()
+      const outstanding = state.mistakes.filter((m) => m.project_id === id && !m.withdrawn)
+      const byMaterial = {}
+      for (const m of outstanding) for (const mid of m.material_ids) byMaterial[mid] = (byMaterial[mid] ?? 0) + 1
+      return { outstanding: outstanding.length, by_material: byMaterial }
     }
     const cancelCall = path.match(/^\/api\/jobs\/([^/]+)\/cancel$/)
     if (cancelCall && method === 'POST') {
@@ -221,9 +244,11 @@ export function fakeApi({
       path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/]+)\/(topics)$/)
     if (topicEdit) return editTopics(state, method, path, body, topicEdit)
     // Remove a file (Story 2.7): like the server, 204 also when already removed; the job is cancelled.
-    const one = path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/]+)$/)
+    // With `?withdraw_mistakes=true`, the file's outstanding Mistakes are withdrawn (Story 3.3).
+    const one = path.match(/^\/api\/projects\/([^/]+)\/materials\/([^/?]+)(?:\?(.*))?$/)
     if (one && method === 'DELETE') {
-      const [, id, materialId] = one
+      const [, id, materialId, query = ''] = one
+      state.removeQueries.push(query)
       const owner = state.projects.find((p) => p.id === id)
       if (!owner) throw notFound()
       if (owner.archived_at || owner.deleted_at) throw { code: 'project_read_only', params: {} }
@@ -232,6 +257,9 @@ export function fakeApi({
       if (!list.some((m) => m.id === materialId)) throw notFound()
       state.materials[id] = list.filter((m) => m.id !== materialId)
       state.removed.push(materialId)
+      if (query === 'withdraw_mistakes=true') {
+        for (const m of state.mistakes) if (m.project_id === id && m.material_ids.includes(materialId)) m.withdrawn = true
+      }
       for (const job of state.jobs) {
         if (job.result_ref === materialId && ['queued', 'running'].includes(job.status)) job.status = 'cancelled'
       }
@@ -295,9 +323,9 @@ function shownQuestion(q) {
  * A stored Quiz of `n` Questions in Project `projectId`: Question i reads "Question {i}?" with options
  * "Option {i}A".."Option {i}D", explanation "Because {i}.", source "notes.pdf · Page {i}" (1-based).
  * `correct` is each Question's correct option id. `answered` maps a 0-based index to the submitted
- * option id. `requested` is the frozen count (default `n`).
+ * option id. `requested` is the frozen count (default `n`). Each Question cites `materialId`.
  */
-export function quiz(id, projectId, { n = 3, requested = n, correct = 'b', answered = {} } = {}) {
+export function quiz(id, projectId, { n = 3, requested = n, correct = 'b', answered = {}, materialId = 'notes' } = {}) {
   return {
     id,
     project_id: projectId,
@@ -310,6 +338,7 @@ export function quiz(id, projectId, { n = 3, requested = n, correct = 'b', answe
       correct_option_id: correct,
       explanation: `Because ${i + 1}.`,
       sources: [`notes.pdf · Page ${i + 1}`],
+      material_ids: [materialId],
       answered:
         answered[i] === undefined ? null : { submitted_option_id: answered[i], is_correct: answered[i] === correct },
     })),
@@ -374,6 +403,11 @@ export function topics(n, { groupSize = null, prefix = 'Topic' } = {}) {
     group_label: groupSize ? `Part ${Math.floor(i / groupSize) + 1}` : null,
     position: i,
   }))
+}
+
+/** An outstanding Mistake of Project `projectId` citing `materialIds` (Story 3.3). */
+export function mistake(projectId, materialIds = ['notes']) {
+  return { project_id: projectId, quiz_question_id: null, material_ids: [...materialIds], withdrawn: false }
 }
 
 /** The calls the SPA made with `method` to `path`. */

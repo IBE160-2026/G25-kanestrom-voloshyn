@@ -4,11 +4,13 @@ import { useNavigate, useOutletContext, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
+import MistakesCard from '../components/MistakesCard.jsx'
 import PrivacyNotice from '../components/PrivacyNotice.jsx'
 import ReadyNotice from '../components/ReadyNotice.jsx'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
+import { useMistakes } from './useMistakes.js'
 import { ACCEPT, useProjectFiles } from './useProjectFiles.js'
 import { useQuizNotices } from './useQuizNotices.js'
 
@@ -28,6 +30,9 @@ export const NAME_WAIT_MS = 30000
 // Project goes back to /projects. A read-only Project lists its files but takes no uploads.
 // A quiz finished while the student was elsewhere shows "Your quiz on {topic} is ready · Open" at the
 // top of the chat column (Story 3.1b; see useQuizNotices), also in a read-only Project.
+// Above those, the Mistakes card "{n} mistakes to review" shows while the Project is active and has
+// outstanding Mistakes (Story 3.3, FR-9; see useMistakes). It is read when the chat mounts, so coming
+// back from a Quiz shows the new count, and again after a file removal (which may withdraw Mistakes).
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -35,6 +40,7 @@ export default function ProjectHome() {
   const picker = useRef(null)
   const projectFiles = useProjectFiles(projectId)
   const quizNotices = useQuizNotices(projectId)
+  const mistakes = useMistakes(projectId)
   const { me, activeProjects, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
     useOutletContext()
 
@@ -52,7 +58,12 @@ export default function ProjectHome() {
     setNoticeError(null)
     setNotice({ mode: 'ask', files: chosen })
   }
-  const files = { ...projectFiles, upload: gatedUpload }
+  // A removal may withdraw the file's Mistakes (Story 3.3): the count is read again once it's done.
+  const removeFile = async (material, options) => {
+    await projectFiles.remove(material, options)
+    mistakes.refresh()
+  }
+  const files = { ...projectFiles, upload: gatedUpload, remove: removeFile }
   async function acceptNotice() {
     const pending = notice
     // The picker opens in this same click, while the browser still allows it.
@@ -213,6 +224,8 @@ export default function ProjectHome() {
       />
       <section className={styles.chat}>
         <div className={styles.chatInner}>
+          {/* Mistakes card (Story 3.3): only in an active Project, never at 0. */}
+          {project !== null && !readOnly && <MistakesCard count={mistakes.outstanding} />}
           {/* A polite live region, present from the start so a notice that arrives is announced. */}
           <div ref={noticeBox} className={styles.notices} aria-live="polite" data-testid="ready-notices">
             {quizNotices.notices.map((job, index) => (
@@ -270,6 +283,9 @@ export default function ProjectHome() {
         // Keyed by Project: an open Remove dialog or a removal error never carries over (Story 2.7).
         key={projectId}
         files={files}
+        // Null until the summary is known: the dialog's checkbox stays hidden until then (Story 3.3).
+        mistakesByMaterial={mistakes.known ? mistakes.byMaterial : null}
+        onRemoveOpen={mistakes.refresh}
         loading={!ready && !failed}
         readOnly={readOnly}
         onBrowse={openPicker}

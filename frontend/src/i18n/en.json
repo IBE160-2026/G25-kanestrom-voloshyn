@@ -69,6 +69,10 @@
   "tools": {
     "quiz": "Quiz"
   },
+  "mistakes": {
+    "card_one": "{{count}} mistake to review",
+    "card_other": "{{count}} mistakes to review"
+  },
   "activity": {
     "back": "← Back to chat"
   },
@@ -192,7 +196,8 @@
       "reading": "Reading stops and the file won't be added.",
       "cancel": "Cancel",
       "confirm": "Remove",
-      "failed": "We couldn't remove the file."
+      "failed": "We couldn't remove the file.",
+      "withdrawMistakes": "Also remove its mistakes from my review"
     }
   },
   "account": {
