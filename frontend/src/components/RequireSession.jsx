@@ -36,9 +36,9 @@ export default function RequireSession() {
 
   useEffect(
     () =>
-      onSignedOut(() => {
+      onSignedOut((code) => {
         rememberRoute(hereRef.current)
-        navigate('/', { replace: true, state: { sessionExpired: true } })
+        navigate('/', { replace: true, state: { sessionExpired: true, code } })
       }),
     [navigate],
   )

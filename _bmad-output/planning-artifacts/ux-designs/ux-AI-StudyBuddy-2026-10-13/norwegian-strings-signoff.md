@@ -40,7 +40,7 @@ Each row points to the "Strings by surface" rows for that flow.
 
 | Flow | Rows to check | Ihor | Cristoffer |
 | --- | --- | --- | --- |
-| Sign-in and account | Login (tagline, privacy line, actions, fields, invalid login, sign-in failure), Create account (duplicate email, password too short; new 2026-11-12: first name missing, email missing or invalid), Password reset (request, link expired, new password, saved; reset email subject and body, new 2026-11-16), Session expired, Email verified, Verification email (subject and body, new 2026-11-16), Verification email resent, Google takeover notice, Link Google (already linked elsewhere, email not verified) | [x] | [x] |
+| Sign-in and account | Login (tagline, privacy line, actions, the "eller" divider (new 2026-11-19), fields, invalid login, sign-in failure), Create account (duplicate email, password too short; new 2026-11-12: first name missing, email missing or invalid), Password reset (request, link expired, new password, saved; reset email subject and body, new 2026-11-16), Session expired, Email verified, Verification email (subject and body, new 2026-11-16), Verification email resent, Google takeover notice, Link Google (already linked elsewhere, email not verified) | [x] | [x] |
 | Projects and sidebar | Projects page (empty), "+ New project", placeholder name, greeting, Sidebar project menu, collapse and expand | [x] | [x] |
 | Upload and files | Upload drop zone, Upload buttons, Files panel header and strip, File status, partly unreadable note, unreadable image, unsupported type, over 50 MB, 11th file, image limit, Files strip warning | [x] | [x] |
 | Privacy notice (new 2026-11-02) | Privacy notice title, body, buttons and link | [x] | [x] |

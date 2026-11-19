@@ -7,8 +7,11 @@ import { takeRememberedRoute } from '../auth/returnTo.js'
 import panel from '../components/AuthForm.module.css'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
+import GoogleSignIn from '../components/GoogleSignIn.jsx'
 import { LANGUAGES, setLanguage } from '../i18n/index.js'
 import styles from './Login.module.css'
+
+const GOOGLE_SIGN_IN_REQUIRED = 'google_sign_in_required'
 
 // The Projects page; it forwards to the last opened Project when there is one (FR-8).
 const HOME = '/projects'
@@ -18,7 +21,8 @@ const HOME = '/projects'
 // refusal shows one message that never says whether the email exists. After the session ended
 // mid-use, it shows the signed-out notice and returns to the remembered route; after a password
 // reset, the password-changed notice. "Forgot password?" leads to the reset request (FR-3).
-// The Google button arrives with Story 1.6.
+// "Sign in with Google" shows only when Google is configured (FR-19); a Google sign-in that came
+// back with an error (from /auth/callback) shows its Error line here.
 export default function Login() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -28,7 +32,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(null) // { kind: 'credentials' | 'failed', attempt }
+  const [error, setError] = useState(null) // { kind: 'credentials' | 'failed' | 'googleInUse', attempt }
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null) // the catalogue key of the notice shown, or null
   const inFlight = useRef(false)
@@ -37,12 +41,18 @@ export default function Login() {
   // the email and password are locked (read-only) meanwhile.
   const [signedIn, setSignedIn] = useState(false)
   // A notice handed over by navigation: the session ended mid-use, or the password was reset.
+  // A password session refused because Google is taking the Account over (google_sign_in_required)
+  // gets the signed-off takeover line instead of the session-expired one.
   const noticeKey =
     location.state?.passwordChanged === true
       ? 'reset.saved'
       : location.state?.sessionExpired === true
-        ? 'session.expired'
+        ? location.state?.code === GOOGLE_SIGN_IN_REQUIRED
+          ? 'account.googleTakeover'
+          : 'session.expired'
         : null
+  // A Google sign-in that failed on /auth/callback: 'in_use' or 'failed'.
+  const googleError = typeof location.state?.googleError === 'string' ? location.state.googleError : null
 
   // Still signed in (sessions last 30 days): go straight in. A refused session has been signed
   // out locally before it comes back here, so this cannot loop.
@@ -68,6 +78,18 @@ export default function Login() {
     }, 0)
     return () => clearTimeout(timer)
   }, [noticeKey, location.pathname, location.search, navigate])
+
+  // The Google failure: shown as the Error line (an alert) just after mount, then the history state
+  // is cleared, so a reload doesn't show it again.
+  useEffect(() => {
+    if (!googleError) return
+    const timer = setTimeout(() => {
+      attempt.current += 1
+      setError({ kind: googleError === 'in_use' ? 'googleInUse' : 'failed', attempt: attempt.current })
+      navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [googleError, location.pathname, location.search, navigate])
 
   function fail(kind, field) {
     // A new attempt number remounts the Error line, so a repeated message is announced again.
@@ -108,6 +130,10 @@ export default function Login() {
         // The session is kept (an auth outage never signs out, AD-2); a retry repeats only this
         // step. If the backend refused the session, api/client.js has signed out: log in again.
         if (SIGNED_OUT_CODES.has(err?.code)) setSignedIn(false)
+        if (err?.code === GOOGLE_SIGN_IN_REQUIRED) {
+          setNotice('account.googleTakeover')
+          return
+        }
         return fail('failed', 'password')
       }
       navigate(takeRememberedRoute() ?? landing, { replace: true })
@@ -146,6 +172,7 @@ export default function Login() {
         <p role="status" className={showNotice ? styles.notice : undefined}>
           {showNotice ? t(notice) : null}
         </p>
+        <GoogleSignIn onFailed={() => fail('failed')} disabled={busy || signedIn} />
         {field('email', 'email', 'email', email, setEmail)}
         {field(
           'password',

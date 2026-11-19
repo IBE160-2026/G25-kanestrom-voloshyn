@@ -147,6 +147,7 @@ describe('signed-out handling', () => {
   it.each([
     [401, 'unauthorized'],
     [401, 'session_expired'],
+    [401, 'google_sign_in_required'],
   ])('%i %s clears the session, ends it on the server, tells the listener, then rejects', async (status, code) => {
     failWith(status, code)
     const listener = vi.fn(() => {
@@ -158,6 +159,7 @@ describe('signed-out handling', () => {
     await expect(client.apiFetch('/api/me')).rejects.toMatchObject({ status, code })
 
     expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(code) // Login picks its notice from it
     await vi.waitFor(() => expect(signOut).toHaveBeenCalledWith('tok', 'local'))
   })
 

@@ -8,12 +8,27 @@ export const SESSION_STORAGE_KEY = 'studybuddy.auth'
 // How long Log out waits for Supabase to end the session on the server.
 const LOGOUT_TIMEOUT_MS = 3000
 
+// Where Supabase sends the browser back after Google consent (FR-19); allowed in config.toml.
+export const OAUTH_CALLBACK_PATH = '/auth/callback'
+
+let configPromise = null
 let clientPromise = null
+
+/** GET /api/config, loaded once. A failed load is retried next time. */
+function getConfig() {
+  if (!configPromise) {
+    configPromise = apiFetch('/api/config', { auth: false })
+    configPromise.catch(() => {
+      configPromise = null
+    })
+  }
+  return configPromise
+}
 
 /** The Supabase client, created once from /api/config. A failed config load is retried next time. */
 export function getSupabase() {
   if (!clientPromise) {
-    clientPromise = apiFetch('/api/config', { auth: false }).then((config) =>
+    clientPromise = getConfig().then((config) =>
       createClient(config.supabase_url, config.supabase_publishable_key, {
         auth: { storageKey: SESSION_STORAGE_KEY },
       }),
@@ -23,6 +38,30 @@ export function getSupabase() {
     })
   }
   return clientPromise
+}
+
+/**
+ * Google sign-in's setting for /auth/callback: 'on', 'off', or 'unknown' when /api/config can't be
+ * loaded (which is not "Google off"). Never throws.
+ */
+export async function googleSetting() {
+  try {
+    return (await getConfig())?.google_enabled === true ? 'on' : 'off'
+  } catch {
+    return 'unknown'
+  }
+}
+
+/**
+ * Whether Google sign-in is configured (`google_enabled` from /api/config, AD-17). False when the
+ * config can't be loaded, so no Google button is shown that can't work. Never throws.
+ */
+export async function googleEnabled() {
+  try {
+    return (await getConfig())?.google_enabled === true
+  } catch {
+    return false
+  }
 }
 
 /** The current session's access token, or null when signed out. */
@@ -86,6 +125,71 @@ export async function signIn({ email, password }) {
   }
   if (!data?.session) return { error: 'failed' }
   return { session: data.session }
+}
+
+/**
+ * Start "Sign in with Google" (FR-19): supabase-js sends the browser to Google's consent screen,
+ * which returns to /auth/callback. Resolves with `{ ok: true }` while the browser leaves, or
+ * `{ error: 'failed' }` when it couldn't start. Never throws.
+ */
+export async function signInWithGoogle() {
+  try {
+    const supabase = await getSupabase()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}${OAUTH_CALLBACK_PATH}` },
+    })
+    return error ? { error: 'failed' } : { ok: true }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
+// Supabase's codes for a Google identity that already belongs to another Account.
+const IDENTITY_IN_USE_CODES = new Set(['identity_already_exists', 'identity_already_linked'])
+
+/** The OAuth error Supabase put in the callback URL (query or fragment), or null. */
+function callbackError() {
+  const params = new URLSearchParams(window.location.search)
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+  const read = (name) => params.get(name) ?? hash.get(name)
+  const error = read('error')
+  const code = read('error_code')
+  const description = read('error_description')
+  if (!error && !code && !description) return null
+  const inUse = IDENTITY_IN_USE_CODES.has(code) || /already (linked|exists)/i.test(description ?? '')
+  return inUse ? 'in_use' : 'failed'
+}
+
+let oauthCheck = null
+
+async function readOAuthSession() {
+  const urlError = callbackError()
+  if (urlError) return { error: urlError }
+  try {
+    const supabase = await getSupabase()
+    // supabase-js reads the session from the callback URL while it initialises; getSession waits.
+    const { data, error } = await supabase.auth.getSession()
+    if (error) return { error: IDENTITY_IN_USE_CODES.has(error.details?.code ?? error.code) ? 'in_use' : 'failed' }
+    return data?.session ? { ok: true } : { error: 'failed' }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
+/**
+ * Finish a Google sign-in on /auth/callback (FR-19). Resolves with `{ ok: true }` once the session
+ * is held, or `{ error }`: 'in_use' when the Google identity is already linked to another Account,
+ * otherwise 'failed' (cancelled consent `access_denied`, any other error, or no session). A second
+ * call while one runs (React StrictMode) shares it. Never throws.
+ */
+export function completeOAuth() {
+  if (!oauthCheck) {
+    oauthCheck = readOAuthSession().finally(() => {
+      oauthCheck = null
+    })
+  }
+  return oauthCheck
 }
 
 // Checks in flight, by token hash: a second call while one runs (React StrictMode's double effect)

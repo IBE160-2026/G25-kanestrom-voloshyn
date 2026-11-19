@@ -7,7 +7,7 @@ paradigm: 'layered modular monolith (single deployable: async FastAPI API + in-p
 scope: 'Whole V1 system: PRD §7.1 (FR-1 to FR-30), desktop web plus the FR-21 phone upload page'
 status: final
 created: '2026-10-13'
-updated: '2026-11-16'
+updated: '2026-11-19'
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26, FR-27, FR-28, FR-29, FR-30, SM-4]
 sources:
   - _bmad-output/planning-artifacts/prds/prd-AI-StudyBuddy-2026-10-06/prd.md
@@ -108,10 +108,10 @@ Arrows are the only allowed dependency directions. Adapters never import service
        - row missing (logged out, or ended by a reset or takeover) → `unauthorized`
        - `created_at` NULL, or older than `SESSION_MAX_AGE_DAYS` (default 30) → `session_expired`
     3. Create the `profiles` row idempotently (`INSERT … ON CONFLICT DO NOTHING`).
-    4. Enforce the Google takeover (AD-19).
+    4. Enforce the Google identity and takeover rules (AD-19).
 
     The SPA signs out on `unauthorized` or `session_expired`, keeping the intended route in `sessionStorage` so the student returns to the same Project after logging in again (FR-2).
-  - **Supabase Auth adapter.** `app/supabase_auth.py` is the only code that calls Supabase Auth over HTTP (token check, admin `generate_link`, admin user update and delete, identity unlink). It uses one `httpx2` client created in the lifespan. `storage.py` uses the same client for Storage. No `supabase` Python SDK.
+  - **Supabase Auth adapter.** `app/supabase_auth.py` is the only code that calls Supabase Auth over HTTP (token check, the caller's own password update and identity unlink, admin `generate_link`, admin user delete). It uses one `httpx2` client created in the lifespan. `storage.py` uses the same client for Storage. No `supabase` Python SDK.
   - **`phone_link_auth`** (AD-24) accepts only a phone-link token and only for routes under `/api/phone/`. No other code parses tokens.
   - **Scoping:** every repository function that touches Project-owned data takes `account_id` and filters by it. Any id the client sends (Topic, Material, Mistake, Question, Chat, Job) is checked to belong to the URL's Project. There is no unscoped lookup by id.
   - **System-context exceptions**, a closed list:
@@ -124,6 +124,8 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - `minimum_password_length = 8`
     - `enable_manual_linking = true`
     - `otp_expiry = 3600`, for 1 h recovery links (FR-3)
+    - `secure_password_change = false`, so the takeover's own-token password update never needs reauthentication (AD-19)
+    - checked by hand in the Cloud dashboard, since CLI 2.122.0 can't push it: "Require current password when updating" stays off (AD-19)
     - Google `enabled = env(SUPABASE_AUTH_EXTERNAL_GOOGLE_ENABLED)` (default false), with the client id and secret via `env()`; `google_enabled` in `/api/config` comes from the same variable
     - `site_url` and the redirect URLs (`/auth/callback`, the reset route) set per environment
   - `frontend/src/auth/` maps every login failure to one generic message (FR-2).
@@ -430,7 +432,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
     2. Stream with no connection held.
     3. Insert the messages in transaction 2.
   - **No LLM call inside an open write transaction.** Quota `reserve` is the only write allowed before one.
-  - **No external side effect inside an open write transaction.** No Supabase admin call (`supabase_auth.py`) and no SMTP send (`mailer.py`) runs while a write transaction is open:
+  - **No external side effect inside an open write transaction.** No Supabase Auth call, admin or with a user token (`supabase_auth.py`), and no SMTP send (`mailer.py`) runs while a write transaction is open:
     - Emails go out after the commit. A send failure is logged and never changes the response.
     - The Google takeover (AD-19) commits in its own transaction inside `user_auth`, before the route handler runs, so a later rollback can't undo the session deletes.
 
@@ -458,9 +460,17 @@ Arrows are the only allowed dependency directions. Adapters never import service
     - Verification never gates normal use, only Google linking.
   - **Google (FR-19):**
     - **Verified email Account:** Supabase's automatic identity linking is accepted, so the student is signed in and linked (PRD FR-19 as amended 2026-11-02).
-    - **Unverified email Account — takeover, enforced by `user_auth`.** On any request where the Account has a Google identity, `email_verified_at IS NULL`, and `google_takeover_at IS NULL`, it runs once: set a random password through the admin API, delete every other `auth.sessions` row, and set `google_takeover_at` and `notice_google_takeover`.
+    - **Unverified email Account: Google identity check, then takeover, both enforced by `user_auth`.** On any request for an Account with an email identity and `email_verified_at IS NULL`:
+      1. **Foreign Google identity.** A Google identity whose email differs from the Account's email is removed through the identity unlink with the caller's own token (`DELETE /auth/v1/user/identities/{id}` via `supabase_auth.py`; GoTrue has no admin route for it) before anything else. Only a Google identity with the Account's own email can cause a takeover.
+      2. **Takeover**, once, while `google_takeover_at IS NULL` and such a Google identity exists:
+         - It runs **only on a request whose token comes from a Google sign-in** (`amr` includes `oauth`).
+         - A request from any other session of that Account gets its own session deleted and `unauthorized`, and doesn't count as the takeover.
+         - The takeover sets a random password with the caller's own token (`PUT /auth/v1/user` through `supabase_auth.py`; never the admin update, which would also end the caller's session).
+         - It then deletes every other `auth.sessions` row and sets `google_takeover_at`, `notice_google_takeover` and `email_verified_at` (Google has proven the address), in its own transaction before the route handler (AD-18).
+         - Only a Google identity whose `identity_data.email_verified` is true counts as matching.
+      - The backend never sets a password on a Google-only Account, and the app never offers one.
     - A Google identity already linked elsewhere → `google_identity_in_use`.
-    - Settings' "Link Google" (`linkIdentity`) is offered only while `email_verified_at` is set. The backend re-checks after linking: a link made without verification is removed through the admin API (`email_not_verified`).
+    - Settings' "Link Google" (`linkIdentity`) is offered only while `email_verified_at` is set. The backend re-checks after linking: a link made without verification is removed through the same own-token identity unlink (`email_not_verified`).
     - EXPERIENCE.md shows this flow: a verified Account is signed in and linked at once, with no password step (updated 2026-11-02).
   - **Password reset (FR-3):**
     - `POST /api/auth/password-reset` always answers the same way.

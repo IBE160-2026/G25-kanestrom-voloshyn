@@ -152,7 +152,7 @@ describe('Login form', () => {
     expect(f.email).toHaveAttribute('autocomplete', 'email')
     expect(f.password).toHaveAttribute('type', 'password')
     expect(f.password).toHaveAttribute('autocomplete', 'current-password')
-    // "Forgot password?" is live since Story 1.5; Google (Story 1.6) is not shown yet.
+    // "Forgot password?" is live since Story 1.5; Google (Story 1.6) shows only when configured.
     expect(screen.getByRole('link', { name: en.login.forgotPassword })).toHaveAttribute('href', '/forgot-password')
     expect(screen.queryByText('Sign in with Google')).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()

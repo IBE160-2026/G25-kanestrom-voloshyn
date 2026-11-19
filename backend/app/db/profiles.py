@@ -7,7 +7,10 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-_COLUMNS = "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id, privacy_notice_ack_at"
+_COLUMNS = (
+    "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id, privacy_notice_ack_at,"
+    " notice_google_takeover"
+)
 
 
 async def ensure(conn: AsyncConnection, account_id: UUID) -> None:
@@ -49,6 +52,52 @@ async def lock_email_verified_at(conn: AsyncConnection, account_id: UUID) -> tup
     )
     row = await cur.fetchone()
     return (False, None) if row is None else (True, row[0])
+
+
+async def google_state(conn: AsyncConnection, account_id: UUID) -> tuple[bool, bool]:
+    """(email unverified, Google takeover done) for step 4 (AD-19). A missing profile is (True, False)."""
+    cur = await conn.execute(
+        "SELECT email_verified_at IS NULL, google_takeover_at IS NOT NULL FROM profiles WHERE account_id = %s",
+        (account_id,),
+    )
+    row = await cur.fetchone()
+    return (True, False) if row is None else (bool(row[0]), bool(row[1]))
+
+
+async def takeover_due(conn: AsyncConnection, account_id: UUID, lock: bool = False) -> bool:
+    """True while the Google takeover hasn't run: email not verified and no takeover yet (AD-19).
+
+    A missing profile counts as due (it is created with both columns NULL). With `lock`, the row
+    is locked for the caller's transaction, so concurrent takeovers serialise.
+    """
+    cur = await conn.execute(
+        "SELECT email_verified_at IS NULL AND google_takeover_at IS NULL FROM profiles WHERE account_id = %s"
+        + (" FOR UPDATE" if lock else ""),
+        (account_id,),
+    )
+    row = await cur.fetchone()
+    return True if row is None else bool(row[0])
+
+
+async def mark_takeover(conn: AsyncConnection, account_id: UUID) -> None:
+    """Record the Google takeover once, raise its one-time notice, and mark the email verified
+    (Google has proven the address), keeping an earlier verification time (AD-19)."""
+    await conn.execute(
+        """
+        UPDATE profiles
+        SET google_takeover_at = now(), notice_google_takeover = true,
+            email_verified_at = COALESCE(email_verified_at, now())
+        WHERE account_id = %s AND google_takeover_at IS NULL
+        """,
+        (account_id,),
+    )
+
+
+async def clear_google_takeover_notice(conn: AsyncConnection, account_id: UUID) -> None:
+    """The takeover notice has been shown; it never shows again."""
+    await conn.execute(
+        "UPDATE profiles SET notice_google_takeover = false WHERE account_id = %s", (account_id,)
+    )
 
 
 async def mark_email_verified(conn: AsyncConnection, account_id: UUID) -> None:

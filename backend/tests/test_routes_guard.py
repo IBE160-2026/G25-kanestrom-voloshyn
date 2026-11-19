@@ -23,6 +23,7 @@ ALLOWLIST = {
     ("PATCH", "/api/me"),
     ("PATCH", "/api/me/prefs"),
     ("POST", "/api/me/privacy-notice"),
+    ("POST", "/api/me/notices/google-takeover"),
     ("POST", "/api/projects"),
     ("POST", "/api/jobs/{job_id}/seen"),
     ("POST", "/api/jobs/{job_id}/cancel"),

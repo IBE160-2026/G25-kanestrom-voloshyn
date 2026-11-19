@@ -47,7 +47,9 @@ async def after_sign_in(
     request: Request,
     background: BackgroundTasks,
 ) -> Me:
-    profile = await identity.after_sign_in(conn, user.account_id, body.first_name, body.language)
+    # With Google linked, the Google first name is the one stored (FR-19); it fills only an unset name.
+    google_name = user.google.first_name if user.google else None
+    profile = await identity.after_sign_in(conn, user.account_id, google_name or body.first_name, body.language)
     # Nothing is issued unless Supabase reported an address to send it to.
     token = None
     if user.email:
@@ -63,7 +65,7 @@ async def after_sign_in(
             profile["language"] or body.language or "en",
             token,
         )
-    return to_me(profile)
+    return to_me(profile, user)
 
 
 @router.get("/verify", include_in_schema=False)
