@@ -725,7 +725,7 @@ Visual specs only. Behavior lives in EXPERIENCE.md Component Patterns, which use
 | **Key hint** | Small outlined key cap in `{colors.text-muted}`. On a primary button it takes `{colors.on-primary}`; on a revealed answer it takes that answer's color. |
 | **Source label** | Muted pill with the file name in `{colors.text}`: "filename · slide N". |
 | **Progress bar** | 4px. Fill `{colors.primary}` in Quiz and Flashcards, `{colors.mistake}` in Mistake Review. [ASSUMPTION: from mock] |
-| **Progress steps** | Vertical list of three steps: done steps carry a check, the current step is `{colors.text}` with a `{colors.primary}` marker, pending steps are muted. Ghost Cancel below, then a muted line saying the student can go back to the chat. |
+| **Progress steps** | Centred: a `{colors.primary}` spinning loop (static under reduced motion), below it a rotating status line in `{typography.body}` that changes every 2–3 s, and below that a small muted line "Step {n} of {total} · {step label}" naming the real step. Ghost Cancel below. Replaces the earlier vertical three-step list [decided by Cristoffer 2026-11-19]. |
 | **Skeleton** | Static `{colors.border}` blocks shaped like the content they stand for. No shimmer. [ASSUMPTION: fill and shape from the History loading mock] |
 | **Inline error** | Surface box with a `{colors.error-edge}` border. Message in `{colors.error}` `{typography.body}`, a muted reassurance line below ("Nothing you've made is lost."), and a small ghost "Try again" on the right. |
 | **Undo message** | Surface box with a hairline border and "Undo" as a `{colors.primary}` text action. No color fill. The one-time Google takeover notice uses the same box with no action. |

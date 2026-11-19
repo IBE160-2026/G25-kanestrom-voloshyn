@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
+import GenerationProgress from '../components/GenerationProgress.jsx'
 import InlineError from '../components/InlineError.jsx'
 import { COLLAPSE_ABOVE, groupTopics } from '../components/topicGroups.js'
 import { errorText } from '../i18n/errors.js'
@@ -19,8 +20,8 @@ import { COUNTS, requestCount } from './quizCounts.js'
 //   stays disabled: a failed capacity read shows the Inline error with "Try again" (read it again), and
 //   a scope with no Ready material says so. The API takes only 5, 10, or 20, so an offered count is sent
 //   as the next of those up; the server freezes the count cut to the capacity.
-// - "Make {n} questions" queues the job (202 {job_id}); the Progress steps then follow its
-//   `progress_step`, polled every 2 s, each step marked done once a later one is seen.
+// - "Make {n} questions" queues the job (202 {job_id}); the Progress steps (the shared
+//   GenerationProgress) then follow its `progress_step`, polled every 2 s, never moving backwards.
 //   Opening the page while a quiz job of this Project is still running (leaving and coming back, or a
 //   reload) shows that job's progress instead of a new setup.
 // - Cancel sends the cancel, then reads the job again: cancelled -> back to setup with the choices kept
@@ -422,29 +423,19 @@ export default function QuizSetup() {
       )}
 
       {phase === 'generating' && job && (
-        <section className={styles.generating}>
-          <ol ref={progressRegion} tabIndex={-1} className={styles.steps} role="status" aria-live="polite">
-            {STEPS.map((step, index) => {
-              const state = index < job.reached ? 'done' : index === job.reached ? 'now' : 'pending'
-              return (
-                <li key={step} className={`${styles.step} ${styles[state]}`} data-state={state}>
-                  <span className={styles.mark} aria-hidden="true">
-                    {state === 'done' ? '✓' : ''}
-                  </span>
-                  {t(`quiz.steps.${step}`)}
-                </li>
-              )
-            })}
-          </ol>
+        <GenerationProgress
+          ref={progressRegion}
+          steps={STEPS.map((step) => t(`quiz.steps.${step}`))}
+          current={job.reached}
+          onCancel={cancel}
+          cancelling={cancelling}
+        >
           {cancelError && (
             <div className={styles.error}>
               <InlineError onRetry={cancel}>{errorText(t, cancelError)}</InlineError>
             </div>
           )}
-          <button type="button" className={styles.ghost} onClick={cancel} disabled={cancelling}>
-            {t('quiz.cancel')}
-          </button>
-        </section>
+        </GenerationProgress>
       )}
     </div>
   )

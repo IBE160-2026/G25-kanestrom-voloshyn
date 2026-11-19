@@ -88,7 +88,6 @@
       "writing": "Skriver spørsmål",
       "checking": "Sjekker svarene"
     },
-    "cancel": "Avbryt",
     "cancelled": "Avbrutt. Valgene dine er lagret.",
     "failed": "Vi fikk ikke laget quizen.",
     "fewer_one": "Bare {{count}} spørsmål var mulig ut fra materialet.",
@@ -108,6 +107,28 @@
     "score": "<score>{{correct}}</score> <muted>av {{total}} riktige</muted>",
     "missedStay": "Spørsmål du bommet på, ligger i repetisjonen din.",
     "newQuiz": "Ny quiz"
+  },
+  "progress": {
+    "cancel": "Avbryt",
+    "step": "Steg {{n}} av {{total}} · {{label}}",
+    "lines": [
+      "Analyserer…",
+      "Kobler sammen ideer…",
+      "Utforsker muligheter…",
+      "Samler innsikt…",
+      "Tenker gjennom…",
+      "Finner mønstre…",
+      "Sorterer informasjon…",
+      "Sjekker detaljene…",
+      "Veier alternativene…",
+      "Finpusser resultatene…",
+      "Setter ting sammen…",
+      "Utforsker ulike vinkler…",
+      "Knytter sammenhenger…",
+      "Finjusterer…",
+      "Nesten ferdig…",
+      "Legger siste hånd på verket…"
+    ]
   },
   "files": {
     "header": "Filer <muted>· {{n}} av 10</muted>",
