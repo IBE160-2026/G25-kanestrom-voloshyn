@@ -1,8 +1,19 @@
 // auth/ sign-up, log in, log out, and password reset, with supabase-js and fetch stubbed (spine › Tests).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { signUpMock, signInMock, signOutMock, clientSignOutMock, getSessionMock, verifyOtpMock, updateUserMock } =
-  vi.hoisted(() => ({
+const {
+  signUpMock,
+  signInMock,
+  signOutMock,
+  clientSignOutMock,
+  getSessionMock,
+  verifyOtpMock,
+  updateUserMock,
+  oauthMock,
+  exchangeMock,
+} = vi.hoisted(() => ({
+    oauthMock: vi.fn(),
+    exchangeMock: vi.fn(),
     verifyOtpMock: vi.fn(),
     updateUserMock: vi.fn(),
     signUpMock: vi.fn(),
@@ -19,6 +30,8 @@ vi.mock('@supabase/supabase-js', () => ({
       getSession: getSessionMock,
       verifyOtp: verifyOtpMock,
       updateUser: updateUserMock,
+      signInWithOAuth: oauthMock,
+      exchangeCodeForSession: exchangeMock,
       signOut: clientSignOutMock, // supabase-js drops its own copy of the session
       admin: { signOut: signOutMock }, // POST /logout with the session's own token
     },
@@ -34,6 +47,8 @@ beforeEach(async () => {
   signInMock.mockReset()
   verifyOtpMock.mockReset()
   updateUserMock.mockReset()
+  oauthMock.mockReset().mockResolvedValue({ data: {}, error: null })
+  exchangeMock.mockReset()
   signOutMock.mockReset().mockResolvedValue({ error: null })
   clientSignOutMock.mockReset().mockResolvedValue({ error: null })
   // Like supabase-js: the stored session is the source of truth.
@@ -131,10 +146,12 @@ function storeSession(token = 'tok') {
 }
 
 describe('signOut and hasSession', () => {
-  it('builds the client with the named storage key', async () => {
+  it('builds the client with the named storage key and PKCE, without reading the URL itself', async () => {
     const { createClient } = await import('@supabase/supabase-js')
     await auth.hasSession()
-    expect(createClient).toHaveBeenLastCalledWith('http://sb.test', 'pk', { auth: { storageKey: 'studybuddy.auth' } })
+    expect(createClient).toHaveBeenLastCalledWith('http://sb.test', 'pk', {
+      auth: { storageKey: 'studybuddy.auth', flowType: 'pkce', detectSessionInUrl: false },
+    })
   })
 
   it('clears the stored session at once and ends this session only on the server (scope local)', async () => {
@@ -302,5 +319,89 @@ describe('setNewPassword', () => {
   it('a thrown error is a failure, never a throw', async () => {
     updateUserMock.mockRejectedValue(new TypeError('Failed to fetch'))
     await expect(auth.setNewPassword('whatever1')).resolves.toEqual({ error: 'failed' })
+  })
+})
+
+describe('Google sign-in', () => {
+  function stubConfig(config) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify(config), { status: 200 })),
+    )
+  }
+
+  it.each([
+    [{ ...CONFIG, google_enabled: true }, true],
+    [CONFIG, false],
+  ])('isGoogleEnabled follows /api/config (%o)', async (config, expected) => {
+    stubConfig(config)
+    await expect(auth.isGoogleEnabled()).resolves.toBe(expected)
+  })
+
+  it('isGoogleEnabled is false when /api/config fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('offline')
+      }),
+    )
+    await expect(auth.isGoogleEnabled()).resolves.toBe(false)
+  })
+
+  it('signInWithGoogle starts the Google OAuth flow back to /auth/callback', async () => {
+    await expect(auth.signInWithGoogle()).resolves.toEqual({ ok: true })
+    expect(oauthMock).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+  })
+
+  it.each([
+    [async () => ({ data: {}, error: { status: 500 } })],
+    [
+      async () => {
+        throw new TypeError('offline')
+      },
+    ],
+  ])('signInWithGoogle reports failed when it cannot start', async (impl) => {
+    oauthMock.mockImplementation(impl)
+    await expect(auth.signInWithGoogle()).resolves.toEqual({ error: 'failed' })
+  })
+
+  it('completeGoogleSignIn exchanges the code once, even when asked twice at once', async () => {
+    exchangeMock.mockResolvedValue({ data: { session: { access_token: 'tok' } }, error: null })
+    const [a, b] = await Promise.all([
+      auth.completeGoogleSignIn('?code=abc'),
+      auth.completeGoogleSignIn('?code=abc'),
+    ])
+    expect(a).toEqual({ ok: true })
+    expect(b).toEqual({ ok: true })
+    expect(exchangeMock).toHaveBeenCalledTimes(1)
+    expect(exchangeMock).toHaveBeenCalledWith('abc')
+  })
+
+  it.each([
+    ['?error=access_denied&error_description=cancelled', '', 'failed'],
+    ['', '#error=access_denied', 'failed'],
+    ['?error=server_error&error_code=identity_already_exists', '', 'identity_in_use'],
+    ['', '#error=server_error&error_code=google_identity_in_use', 'identity_in_use'],
+    ['', '', 'failed'],
+  ])('completeGoogleSignIn(%s, %s) is %s without an exchange', async (search, hash, error) => {
+    await expect(auth.completeGoogleSignIn(search, hash)).resolves.toEqual({ error })
+    expect(exchangeMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [{ data: { session: null }, error: { code: 'identity_already_exists', status: 422 } }, 'identity_in_use'],
+    [{ data: { session: null }, error: { code: 'flow_state_not_found', status: 404 } }, 'failed'],
+    [{ data: { session: null }, error: null }, 'failed'],
+  ])('completeGoogleSignIn maps a refused exchange (%o) to %s', async (answer, error) => {
+    exchangeMock.mockResolvedValue(answer)
+    await expect(auth.completeGoogleSignIn('?code=abc')).resolves.toEqual({ error })
+  })
+
+  it('completeGoogleSignIn is failed when the exchange throws', async () => {
+    exchangeMock.mockRejectedValue(new TypeError('offline'))
+    await expect(auth.completeGoogleSignIn('?code=abc')).resolves.toEqual({ error: 'failed' })
   })
 })

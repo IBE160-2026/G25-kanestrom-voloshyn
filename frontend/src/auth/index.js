@@ -8,14 +8,28 @@ export const SESSION_STORAGE_KEY = 'studybuddy.auth'
 // How long Log out waits for Supabase to end the session on the server.
 const LOGOUT_TIMEOUT_MS = 3000
 
+let configPromise = null
 let clientPromise = null
+
+/** GET /api/config, loaded once and shared. A failed load is retried next time. */
+function getConfig() {
+  if (!configPromise) {
+    configPromise = apiFetch('/api/config', { auth: false })
+    configPromise.catch(() => {
+      configPromise = null
+    })
+  }
+  return configPromise
+}
 
 /** The Supabase client, created once from /api/config. A failed config load is retried next time. */
 export function getSupabase() {
   if (!clientPromise) {
-    clientPromise = apiFetch('/api/config', { auth: false }).then((config) =>
+    clientPromise = getConfig().then((config) =>
       createClient(config.supabase_url, config.supabase_publishable_key, {
-        auth: { storageKey: SESSION_STORAGE_KEY },
+        // PKCE for Google sign-in (FR-19); the callback page finishes the exchange itself
+        // (completeGoogleSignIn), so supabase-js doesn't read the URL on its own.
+        auth: { storageKey: SESSION_STORAGE_KEY, flowType: 'pkce', detectSessionInUrl: false },
       }),
     )
     clientPromise.catch(() => {
@@ -23,6 +37,86 @@ export function getSupabase() {
     })
   }
   return clientPromise
+}
+
+/** Whether Google sign-in is configured (`google_enabled` in /api/config). False when it can't load. */
+export async function isGoogleEnabled() {
+  try {
+    return (await getConfig())?.google_enabled === true
+  } catch {
+    return false
+  }
+}
+
+// The page Google sign-in returns to; config.toml allows it on :8000 and :5173.
+export const GOOGLE_CALLBACK_PATH = '/auth/callback'
+
+/**
+ * Start Google sign-in (FR-19): supabase-js sends the browser to Google's consent screen, which
+ * returns to /auth/callback. Resolves with `{ ok: true }` while the browser leaves, or
+ * `{ error: 'failed' }` when it can't start. Never throws.
+ */
+export async function signInWithGoogle() {
+  try {
+    const supabase = await getSupabase()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}${GOOGLE_CALLBACK_PATH}` },
+    })
+    return error ? { error: 'failed' } : { ok: true }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
+// Supabase's codes for a Google identity that already belongs to another Account.
+const IDENTITY_IN_USE_CODES = new Set(['identity_already_exists', 'google_identity_in_use'])
+
+/** The OAuth error the callback URL carries (query or fragment), or null. */
+function callbackError(params) {
+  const code = params.get('error_code')
+  if (code && IDENTITY_IN_USE_CODES.has(code)) return 'identity_in_use'
+  return params.get('error') || code ? 'failed' : null
+}
+
+// Exchanges in flight, by code: React StrictMode's second effect shares the first instead of
+// spending the single-use code again.
+const exchanges = new Map()
+
+async function exchangeCode(code) {
+  let supabase
+  try {
+    supabase = await getSupabase()
+  } catch {
+    return { error: 'failed' }
+  }
+  try {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) return { error: IDENTITY_IN_USE_CODES.has(error.code) ? 'identity_in_use' : 'failed' }
+    return data?.session ? { ok: true } : { error: 'failed' }
+  } catch {
+    return { error: 'failed' }
+  }
+}
+
+/**
+ * Finish Google sign-in on /auth/callback from the URL's `search` and `hash`. Resolves with
+ * `{ ok: true }` (signed in) or `{ error }`: 'identity_in_use' when the Google account is already
+ * linked to another Account, otherwise 'failed' (cancelled consent, `access_denied`, a missing or
+ * refused code, Supabase unreachable). Never throws; nothing is logged.
+ */
+export function completeGoogleSignIn(search = '', hash = '') {
+  const query = new URLSearchParams(search)
+  const fragment = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+  const failure = callbackError(query) ?? callbackError(fragment)
+  if (failure) return Promise.resolve({ error: failure })
+  const code = query.get('code')
+  if (!code) return Promise.resolve({ error: 'failed' })
+  if (!exchanges.has(code)) {
+    const exchange = exchangeCode(code).finally(() => exchanges.delete(code))
+    exchanges.set(code, exchange)
+  }
+  return exchanges.get(code)
 }
 
 /** The current session's access token, or null when signed out. */

@@ -1,0 +1,45 @@
+/* Google button (DESIGN.md › Google button): a full-width Button (ghost), auth-button-height tall. */
+.button {
+  width: 100%;
+  height: var(--space-auth-button-height);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-hover);
+}
+
+.button:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.button:disabled {
+  opacity: 0.38;
+  cursor: progress;
+}
+
+/* The "or" divider: muted caption text with a hairline on either side. */
+.or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-strong);
+}

@@ -11,11 +11,21 @@ from app.errors import AppError
 
 
 async def after_sign_in(
-    conn: AsyncConnection, account_id: UUID, first_name: str | None, language: str | None
+    conn: AsyncConnection,
+    account_id: UUID,
+    first_name: str | None,
+    language: str | None,
+    google_created: bool = False,
 ) -> dict[str, Any]:
-    """Fill the first name and language while they are still unset. A repeated call changes nothing."""
+    """Fill the first name and language while they are still unset. A repeated call changes nothing.
+
+    `google_created` (a Google identity and no email identity): Google proved the address, so the
+    email counts as verified (AD-19), which also rules out a later takeover.
+    """
     await profiles.ensure(conn, account_id)
     await profiles.fill_unset(conn, account_id, first_name, language)
+    if google_created:
+        await profiles.mark_email_verified(conn, account_id)
     return await get_profile(conn, account_id)
 
 
@@ -61,3 +71,9 @@ async def require_privacy_ack(conn: AsyncConnection, account_id: UUID) -> None:
     profile = await profiles.get(conn, account_id)
     if profile is None or profile["privacy_notice_ack_at"] is None:
         raise PrivacyNoticeRequired()
+
+
+async def mark_takeover_notice_seen(conn: AsyncConnection, account_id: UUID) -> dict[str, Any]:
+    """The one-time "Your account now signs in with Google." notice was shown (AD-19)."""
+    await profiles.clear_takeover_notice(conn, account_id)
+    return await get_profile(conn, account_id)

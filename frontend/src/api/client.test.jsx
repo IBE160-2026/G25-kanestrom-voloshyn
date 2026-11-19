@@ -51,7 +51,9 @@ describe('apiFetch', () => {
 
     expect(callTo('/api/me')[1].headers.Authorization).toBe('Bearer tok')
     expect(callTo('/api/config')[1].headers.Authorization).toBeUndefined()
-    expect(createClient).toHaveBeenCalledWith('http://sb.test', 'pk', { auth: { storageKey: 'studybuddy.auth' } })
+    expect(createClient).toHaveBeenCalledWith('http://sb.test', 'pk', {
+      auth: { storageKey: 'studybuddy.auth', flowType: 'pkce', detectSessionInUrl: false },
+    })
   })
 
   it('loads /api/config once', async () => {
@@ -147,6 +149,7 @@ describe('signed-out handling', () => {
   it.each([
     [401, 'unauthorized'],
     [401, 'session_expired'],
+    [401, 'google_takeover'],
   ])('%i %s clears the session, ends it on the server, tells the listener, then rejects', async (status, code) => {
     failWith(status, code)
     const listener = vi.fn(() => {
@@ -158,6 +161,7 @@ describe('signed-out handling', () => {
     await expect(client.apiFetch('/api/me')).rejects.toMatchObject({ status, code })
 
     expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith(code)
     await vi.waitFor(() => expect(signOut).toHaveBeenCalledWith('tok', 'local'))
   })
 

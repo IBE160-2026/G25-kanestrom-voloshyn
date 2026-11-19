@@ -1,5 +1,6 @@
 """The `profiles` repository (AD-16, AD-19). Plain SQL; takes the request's `conn`, never commits."""
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -7,7 +8,10 @@ from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-_COLUMNS = "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id, privacy_notice_ack_at"
+_COLUMNS = (
+    "account_id, first_name, language, email_verified_at, ui_prefs, last_project_id, privacy_notice_ack_at,"
+    " notice_google_takeover"
+)
 
 
 async def ensure(conn: AsyncConnection, account_id: UUID) -> None:
@@ -42,10 +46,13 @@ async def get(conn: AsyncConnection, account_id: UUID) -> dict[str, Any] | None:
 async def lock_email_verified_at(conn: AsyncConnection, account_id: UUID) -> tuple[bool, Any]:
     """Lock the Account's profile row for this transaction; return (found, email_verified_at).
 
+    A Google takeover counts as verified here (no verification email after one).
+
     Serialises concurrent first-email checks for the same Account (AD-19).
     """
     cur = await conn.execute(
-        "SELECT email_verified_at FROM profiles WHERE account_id = %s FOR UPDATE", (account_id,)
+        "SELECT COALESCE(email_verified_at, google_takeover_at) FROM profiles WHERE account_id = %s FOR UPDATE",
+        (account_id,),
     )
     row = await cur.fetchone()
     return (False, None) if row is None else (True, row[0])
@@ -97,3 +104,59 @@ async def accept_privacy_notice(conn: AsyncConnection, account_id: UUID) -> None
         "UPDATE profiles SET privacy_notice_ack_at = coalesce(privacy_notice_ack_at, now()) WHERE account_id = %s",
         (account_id,),
     )
+
+
+
+async def takeover_state(conn: AsyncConnection, account_id: UUID) -> tuple[bool, Any, Any]:
+    """(found, email_verified_at, google_takeover_at) of the profile; a plain read, no lock."""
+    cur = await conn.execute(
+        "SELECT email_verified_at, google_takeover_at FROM profiles WHERE account_id = %s", (account_id,)
+    )
+    row = await cur.fetchone()
+    return (False, None, None) if row is None else (True, row[0], row[1])
+
+
+async def claim_google_takeover(conn: AsyncConnection, account_id: UUID) -> datetime | None:
+    """Claim the Account's one Google takeover (AD-19): its `google_takeover_at`, or None when
+    the email is verified or another request has claimed it. Commit before the admin call; a
+    concurrent claim waits for that commit and then finds it taken."""
+    cur = await conn.execute(
+        """
+        UPDATE profiles
+        SET google_takeover_at = now()
+        WHERE account_id = %s AND email_verified_at IS NULL AND google_takeover_at IS NULL
+        RETURNING google_takeover_at
+        """,
+        (account_id,),
+    )
+    row = await cur.fetchone()
+    return None if row is None else row[0]
+
+
+async def release_google_takeover(conn: AsyncConnection, account_id: UUID, claimed_at: datetime) -> None:
+    """Undo a claim whose admin call failed, so a later request can take over."""
+    await conn.execute(
+        "UPDATE profiles SET google_takeover_at = NULL WHERE account_id = %s AND google_takeover_at = %s",
+        (account_id, claimed_at),
+    )
+
+
+async def finish_google_takeover(
+    conn: AsyncConnection, account_id: UUID, claimed_at: datetime, first_name: str | None
+) -> None:
+    """After the takeover: the notice is due, Google proved the email, and the first name is
+    replaced from Google (kept when Google gives none)."""
+    await conn.execute(
+        """
+        UPDATE profiles
+        SET notice_google_takeover = true,
+            email_verified_at = COALESCE(email_verified_at, now()),
+            first_name = COALESCE(%s, first_name)
+        WHERE account_id = %s AND google_takeover_at = %s
+        """,
+        (first_name, account_id, claimed_at),
+    )
+
+async def clear_takeover_notice(conn: AsyncConnection, account_id: UUID) -> None:
+    """The one-time takeover notice has been shown."""
+    await conn.execute("UPDATE profiles SET notice_google_takeover = false WHERE account_id = %s", (account_id,))

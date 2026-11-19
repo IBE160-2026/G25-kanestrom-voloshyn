@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import styles from './Avatar.module.css'
 
 /** The first letter of the first name, upper-cased; empty when there is no name. */
@@ -6,12 +7,26 @@ function initials(firstName) {
   return first ? first.toLocaleUpperCase() : ''
 }
 
-// Avatar (DESIGN.md › Avatar): a circle with the initials for email Accounts. The Google photo
-// arrives with Story 1.6. Decorative: the name next to it, or the trigger's label, says who it is.
-export default function Avatar({ firstName }) {
+// Avatar (DESIGN.md › Avatar): the Google profile photo for an Account with Google linked
+// (`pictureUrl` from /api/me, linked and never stored, FR-27), otherwise the initials. A photo that
+// fails to load falls back to the initials. Decorative: the name next to it, or the trigger's
+// label, says who it is.
+export default function Avatar({ firstName, pictureUrl = null }) {
+  const [failedUrl, setFailedUrl] = useState(null)
+  const photo = typeof pictureUrl === 'string' && pictureUrl && pictureUrl !== failedUrl ? pictureUrl : null
   return (
     <span className={styles.avatar} aria-hidden="true">
-      {initials(firstName)}
+      {photo ? (
+        <img
+          className={styles.photo}
+          src={photo}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={() => setFailedUrl(photo)}
+        />
+      ) : (
+        initials(firstName)
+      )}
     </span>
   )
 }

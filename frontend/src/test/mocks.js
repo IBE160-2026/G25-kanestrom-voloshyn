@@ -12,6 +12,10 @@ export function authMock() {
     signOut: vi.fn(async () => ({ ended: Promise.resolve() })),
     completeRecovery: vi.fn(async () => ({ ok: true })),
     setNewPassword: vi.fn(async () => ({ ok: true })),
+    isGoogleEnabled: vi.fn(async () => false),
+    signInWithGoogle: vi.fn(async () => ({ ok: true })),
+    completeGoogleSignIn: vi.fn(async () => ({ ok: true })),
+    GOOGLE_CALLBACK_PATH: '/auth/callback',
   }
 }
 

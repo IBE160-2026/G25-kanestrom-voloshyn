@@ -9,11 +9,14 @@
     "createAccount": "Create account",
     "email": "Email",
     "password": "Password",
+    "google": "Sign in with Google",
+    "or": "or",
     "submit": "Log in",
     "forgotPassword": "Forgot password?",
     "errors": {
       "credentials": "Wrong email or password.",
-      "failed": "Sign-in didn't work. Try again."
+      "failed": "Sign-in didn't work. Try again.",
+      "identityInUse": "This Google account is already linked to another Study Buddy account."
     }
   },
   "signup": {
@@ -223,7 +226,8 @@
     "welcome": "Welcome, {{firstName}}",
     "menu": "Account menu",
     "language": "Language",
-    "logOut": "Log out"
+    "logOut": "Log out",
+    "googleTakeover": "Your account now signs in with Google."
   },
   "verify": {
     "success": "Your email is verified.",

@@ -127,3 +127,66 @@ async def generate_recovery_link(
         logger.warning("Supabase Auth generate_link answer is not usable")
         return None
     return link
+
+
+async def set_password(client: httpx2.AsyncClient, settings: Settings, account_id: UUID, password: str) -> None:
+    """Set the user's password with admin `PUT /auth/v1/admin/users/{id}` (the Google takeover, AD-19).
+
+    Supabase Auth also ends every session of the user when it sets a password, the caller's
+    included (GoTrue v2.197, checked 2026-11-19). A timeout, connection error, or any
+    answer but 200 raises `auth_unavailable` (503). The password is never logged.
+    """
+    try:
+        response = await client.put(
+            f"/auth/v1/admin/users/{account_id}",
+            headers=admin_headers(settings),
+            json={"password": password},
+        )
+    except httpx2.HTTPError as exc:
+        logger.warning("Supabase Auth set password failed: %s", type(exc).__name__)
+        raise _unavailable(type(exc).__name__) from None
+    if response.status_code != 200:
+        logger.warning("Supabase Auth answered %s to set password", response.status_code)
+        raise _unavailable(f"HTTP {response.status_code}")
+
+
+# The profile's first_name column allows at most 100 characters.
+_MAX_FIRST_NAME = 100
+
+
+@dataclass(frozen=True)
+class GoogleProfile:
+    """What the Google identity data gives the Account (FR-19, FR-27): first name and picture."""
+
+    first_name: str | None
+    picture_url: str | None
+
+
+def _text(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def google_profile(user: dict[str, Any]) -> GoogleProfile | None:
+    """The first name and picture from a Supabase user's Google identity, or None without one.
+
+    The first name is `given_name`, else the first word of `name` (or `full_name`). The picture is
+    `picture` (or `avatar_url`), only when it is an https URL; it is linked, never stored.
+    """
+    identities = user.get("identities")
+    if not isinstance(identities, list):
+        return None
+    for identity in identities:
+        if not isinstance(identity, dict) or identity.get("provider") != "google":
+            continue
+        data = identity.get("identity_data")
+        data = data if isinstance(data, dict) else {}
+        first_name = _text(data.get("given_name"))
+        if first_name is None:
+            full = _text(data.get("name")) or _text(data.get("full_name"))
+            first_name = full.split()[0] if full else None
+        picture = _text(data.get("picture")) or _text(data.get("avatar_url"))
+        return GoogleProfile(
+            first_name=first_name[:_MAX_FIRST_NAME] if first_name else None,
+            picture_url=picture if picture and picture.startswith("https://") else None,
+        )
+    return None

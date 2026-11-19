@@ -27,3 +27,17 @@
 .alerts > p:last-child {
   margin-bottom: 0;
 }
+
+/* The Undo message's live region: bottom left of the main area, kept in view while the page scrolls
+   (EXPERIENCE.md › Undo message). Empty, it takes no space. */
+.undo {
+  position: sticky;
+  bottom: var(--space-5);
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0 var(--space-5);
+}
+
+.undo:empty {
+  padding: 0;
+}

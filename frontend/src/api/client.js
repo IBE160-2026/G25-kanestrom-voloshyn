@@ -4,7 +4,8 @@
 import { getAccessToken, signOut } from '../auth/index.js'
 
 // Codes that mean the session is over. auth_unavailable is not one: the session is kept (AD-2).
-export const SIGNED_OUT_CODES = new Set(['unauthorized', 'session_expired'])
+// google_takeover: a Google sign-in just took the Account over and ended every session (AD-19).
+export const SIGNED_OUT_CODES = new Set(['unauthorized', 'session_expired', 'google_takeover'])
 
 let signedOutListener = null
 let pending = null // the sign-out in progress, shared by a burst of refusals of the same token
@@ -12,7 +13,7 @@ let pendingToken = null
 let handledToken = null // the last session token already signed out, for answers that arrive late
 
 /**
- * Register the one listener told when the session has ended (the router registers it, so this
+ * Register the one listener told when the session has ended (it gets the error code) (the router registers it, so this
  * module never imports the router). Returns a function that removes it.
  */
 export function onSignedOut(listener) {
@@ -40,7 +41,7 @@ async function currentToken() {
  * current one: a refusal of an older token (after Log out, or after a new login) is ignored, and
  * a request sent without a token counts only while there is still no session. Never throws.
  */
-async function handleSignedOut(token) {
+async function handleSignedOut(token, code) {
   if (pending) {
     if (pendingToken === token) return pending
     await pending
@@ -57,7 +58,7 @@ async function handleSignedOut(token) {
       // signOut never throws; the listener still runs
     }
     try {
-      signedOutListener?.()
+      signedOutListener?.(code)
     } catch {
       // a failing listener must not hide the ApiError from the caller
     }
@@ -112,7 +113,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true } = {})
       // not JSON: fall through to the generic code
     }
     const error = new ApiError(response.status, envelope?.error ?? {})
-    if (auth && SIGNED_OUT_CODES.has(error.code)) await handleSignedOut(token)
+    if (auth && SIGNED_OUT_CODES.has(error.code)) await handleSignedOut(token, error.code)
     throw error
   }
   if (response.status === 204) return null

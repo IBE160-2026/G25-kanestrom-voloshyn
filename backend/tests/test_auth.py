@@ -21,7 +21,13 @@ from app.main import create_app
 
 PASSWORD = "correct-horse-1"
 # The /api/me fields a new Account starts with (Story 2.1): no saved prefs, no last Project.
-NO_PREFS = {"ui_prefs": {}, "last_project_id": None, "privacy_notice_accepted": False}
+NO_PREFS = {
+    "ui_prefs": {},
+    "last_project_id": None,
+    "privacy_notice_accepted": False,
+    "notice_google_takeover": False,
+    "picture_url": None,
+}
 # psycopg's async mode cannot use Windows' default ProactorEventLoop.
 LOOP = {"loop_factory": asyncio.SelectorEventLoop} if sys.platform == "win32" else {}
 
