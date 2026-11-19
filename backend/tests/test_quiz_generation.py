@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 
 from app.llm import Gateway, LLMOutputError, ProviderUnavailable, QuizDraft
 from app.main import create_app
@@ -150,6 +151,54 @@ def test_the_jobs_list_shows_the_running_quiz_and_its_step(slow, student, db):
         (job_id, "quiz", "running", "writing")
     ]
     assert wait_for_job(db, job_id) == "completed"
+
+
+def test_the_jobs_list_carries_a_quiz_jobs_frozen_topic_labels(client, student, db, project):
+    # Story 3.1b: the "is ready" notice names the Topics; "All topics" is an empty list.
+    _, _, topic_ids = seed(db, student["id"], project, ["a", "b", "c"])
+    all_job = started(make_quiz(client, student["token"], project, ALL, count=5))
+    assert wait_for_job(db, all_job) == "completed"
+    some_job = started(make_quiz(client, student["token"], project, {"topic_ids": [topic_ids[2], topic_ids[0]]}, count=5))
+    assert wait_for_job(db, some_job) == "completed"
+
+    listed = client.get(f"/api/projects/{project}/jobs", headers=bearer(student["token"])).json()
+
+    labels = {j["id"]: j["topic_labels"] for j in listed if j["kind"] == "quiz"}
+    assert labels == {all_job: [], some_job: ["Topic 3", "Topic 1"]}
+    assert all("params" not in j for j in listed)
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"count": 5},
+        {"count": 5, "topic_labels": None},
+        {"count": 5, "topic_labels": "Cells"},
+        {"count": 5, "topic_labels": ["Cells", 3, None, {"x": 1}]},
+    ],
+)
+def test_odd_stored_topic_labels_never_break_the_jobs_list(client, student, db, project, params):
+    db.execute(
+        """
+        INSERT INTO generation_jobs (account_id, project_id, kind, params, status, result_ref, finished_at)
+        VALUES (%s, %s, 'quiz', %s, 'failed', NULL, now())
+        """,
+        (student["id"], project, Jsonb(params)),
+    )
+
+    response = client.get(f"/api/projects/{project}/jobs", headers=bearer(student["token"]))
+
+    assert response.status_code == 200, response.text
+    expected = ["Cells"] if isinstance(params.get("topic_labels"), list) else []
+    assert [j["topic_labels"] for j in response.json()] == [expected]
+
+
+def test_other_job_kinds_list_no_topic_labels(client, student, project):
+    upload_and_wait(client, student["token"], project, "photosynthesis-notes.md")
+
+    listed = client.get(f"/api/projects/{project}/jobs", headers=bearer(student["token"])).json()
+
+    assert [(j["kind"], j["topic_labels"]) for j in listed] == [("material_processing", [])]
 
 
 def test_fewer_possible_saves_only_what_the_material_supports(client, student, db, project):

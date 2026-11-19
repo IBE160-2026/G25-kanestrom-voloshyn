@@ -158,6 +158,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Chat, pending answer (until the first words appear) | "Study Buddy is thinking…" | Study Buddy tenker … |
 | Chat, answer complete (screen reader only) | "Answer ready" [ASSUMPTION: copy] | Svaret er klart |
 | Finished-generation message | "Your quiz on {topic} is ready · Open" | Quizen din om {topic} er klar · Åpne |
+| Finished-generation message, {topic} | No topics chosen: "all topics" · two: "{a} and {b}" · three or more: "{a} and {n} more" · dismiss: "Dismiss" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer with Story 3.1b] | alle emner · {a} og {b} · {a} og {n} til · Lukk |
 | Finished-generation message, Mistake Review | "Your practice questions are ready · Open" [ASSUMPTION: copy] | Øvingsspørsmålene dine er klare · Åpne |
 | File menu trigger, accessible name | "More options for {file name}" [ASSUMPTION] | Flere valg for {file name} |
 | File menu item | "Remove" | Fjern |

@@ -5,10 +5,12 @@ import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
 import PrivacyNotice from '../components/PrivacyNotice.jsx'
+import ReadyNotice from '../components/ReadyNotice.jsx'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
 import { ACCEPT, useProjectFiles } from './useProjectFiles.js'
+import { useQuizNotices } from './useQuizNotices.js'
 
 // Codes that mean "no such Project here": a missing or foreign id, or one that isn't an id at all.
 const GONE = new Set(['not_found', 'invalid_request'])
@@ -24,12 +26,15 @@ export const NAME_WAIT_MS = 30000
 // Files are uploaded from the drop zone's "browse", the panel's Upload button, or a drop on either.
 // A static skeleton shows while it loads (EXPERIENCE.md › Project cold-load). A missing or foreign
 // Project goes back to /projects. A read-only Project lists its files but takes no uploads.
+// A quiz finished while the student was elsewhere shows "Your quiz on {topic} is ready · Open" at the
+// top of the chat column (Story 3.1b; see useQuizNotices), also in a read-only Project.
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { projectId } = useParams()
   const picker = useRef(null)
   const projectFiles = useProjectFiles(projectId)
+  const quizNotices = useQuizNotices(projectId)
   const { me, activeProjects, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
     useOutletContext()
 
@@ -159,6 +164,24 @@ export default function ProjectHome() {
     }
   }, [namingRound, projectId, upsertProject])
 
+  // After ×, focus goes to the notice that took its place (or the one above), else to the first
+  // enabled tool button, else to the tools row itself (EXPERIENCE.md › Accessibility).
+  const noticeBox = useRef(null)
+  const toolsRow = useRef(null)
+  const focusAfter = useRef(null) // { id, index } of the notice being dismissed
+  const shownNotices = quizNotices.notices
+  useEffect(() => {
+    const pending = focusAfter.current
+    if (!pending || shownNotices.some((job) => job.id === pending.id)) return
+    focusAfter.current = null
+    const opens = noticeBox.current?.querySelectorAll('[data-notice-open]') ?? []
+    const target =
+      opens[Math.min(pending.index, opens.length - 1)] ??
+      toolsRow.current?.querySelector('button:not(:disabled)') ??
+      toolsRow.current
+    target?.focus()
+  }, [shownNotices])
+
   const drop = useDropTarget(files.upload, ready && !readOnly)
   useBlockWindowFileDrop()
 
@@ -190,6 +213,24 @@ export default function ProjectHome() {
       />
       <section className={styles.chat}>
         <div className={styles.chatInner}>
+          {/* A polite live region, present from the start so a notice that arrives is announced. */}
+          <div ref={noticeBox} className={styles.notices} aria-live="polite" data-testid="ready-notices">
+            {quizNotices.notices.map((job, index) => (
+              <ReadyNotice
+                key={job.id}
+                labels={job.topic_labels}
+                onOpen={() => {
+                  if (quizNotices.open(job)) navigate(`/projects/${projectId}/quizzes/${job.result_ref}`)
+                }}
+                onDismiss={async () => {
+                  focusAfter.current = { id: job.id, index }
+                  const dismissed = await quizNotices.dismiss(job)
+                  // A failed × keeps the notice, and focus stays on its ×.
+                  if (!dismissed && focusAfter.current?.id === job.id) focusAfter.current = null
+                }}
+              />
+            ))}
+          </div>
           {failed && <ErrorLine>{errorText(t, failed)}</ErrorLine>}
           {ready && !anyReady && (
             <div
@@ -213,7 +254,7 @@ export default function ProjectHome() {
           {!ready && !failed && <div className={`${styles.skeleton} ${styles.skeletonChat}`} aria-hidden="true" />}
           {/* Tool buttons row: Quiz (Story 3.1a), disabled until a file is Ready and while read-only.
               Flashcards and Summarize arrive with their stories. */}
-          <div className={styles.tools} data-testid="tools-row">
+          <div ref={toolsRow} className={styles.tools} data-testid="tools-row" tabIndex={-1}>
             <button
               type="button"
               className={styles.tool}
