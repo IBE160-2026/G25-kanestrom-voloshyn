@@ -24,25 +24,39 @@ from app.db import accounts, sessions
 logger = logging.getLogger(__name__)
 
 COOLDOWN_SECONDS = 60.0
+# At most this many reset tasks run at once; further requests are dropped silently (same 202).
+MAX_RUNNING_TASKS = 10
 # Clock for the cooldown; tests patch it.
 _now = time.monotonic
 # sha256(lower-cased address) -> monotonic time of the last accepted request. Never the address.
+# Insertion order is time order, so stale entries sit at the front.
 _last_request: dict[str, float] = {}
 # Strong references to running reset tasks, so they aren't garbage-collected mid-flight.
 _tasks: set[asyncio.Task] = set()
 
 
+def _key(email: str) -> str:
+    return hashlib.sha256(email.encode("utf-8")).hexdigest()
+
+
 def _cooling_down(email: str) -> bool:
     """True when this address had a request in the last 60 s; otherwise records this one."""
     now = _now()
-    for key, at in list(_last_request.items()):
-        if now - at >= COOLDOWN_SECONDS:
-            del _last_request[key]
-    key = hashlib.sha256(email.encode("utf-8")).hexdigest()
+    while _last_request:
+        oldest = next(iter(_last_request))
+        if now - _last_request[oldest] < COOLDOWN_SECONDS:
+            break
+        del _last_request[oldest]
+    key = _key(email)
     if key in _last_request:
         return True
     _last_request[key] = now
     return False
+
+
+def _forget(email: str) -> None:
+    """Clear the address's cooldown after a failed send, so a retry within 60 s can send."""
+    _last_request.pop(_key(email), None)
 
 
 def start_reset(
@@ -54,7 +68,7 @@ def start_reset(
 ) -> None:
     """Start the reset work detached from the response; returns at once, the same way for every email."""
     email = email.lower()
-    if _cooling_down(email):
+    if len(_tasks) >= MAX_RUNNING_TASKS or _cooling_down(email):
         return
     task = asyncio.create_task(_send_reset_email_safely(settings, pool, http, email, language))
     _tasks.add(task)
@@ -62,15 +76,27 @@ def start_reset(
 
 
 async def drain(timeout: float = 10.0) -> None:
-    """Wait (up to `timeout` s) for running reset tasks, e.g. at shutdown, before the pool closes."""
-    if _tasks:
-        await asyncio.wait(list(_tasks), timeout=timeout)
+    """Wait (up to `timeout` s) for running reset tasks, then cancel the rest, before the pool closes."""
+    if not _tasks:
+        return
+    _, pending = await asyncio.wait(list(_tasks), timeout=timeout)
+    for task in pending:
+        task.cancel()
+    if pending:
+        await asyncio.gather(*pending, return_exceptions=True)
 
 
-async def _send_reset_email_safely(*args) -> None:
+async def _send_reset_email_safely(
+    settings: Settings,
+    pool: AsyncConnectionPool,
+    http: httpx2.AsyncClient,
+    email: str,
+    language: str | None,
+) -> None:
     try:
-        await send_reset_email(*args)
+        await send_reset_email(settings, pool, http, email, language)
     except Exception as exc:  # noqa: BLE001 -- a detached task must never raise
+        _forget(email)
         logger.warning("Password reset failed: %s", type(exc).__name__)
 
 
@@ -89,7 +115,8 @@ async def send_reset_email(
 ) -> None:
     """Email a reset link when `email` belongs to an Account with an email identity; else do nothing.
 
-    Runs detached from the response (`start_reset`); every failure is logged and swallowed.
+    Runs detached from the response (`start_reset`); every failure is logged and swallowed, and
+    clears the address's cooldown so a retry can send.
     Order: lookup -> identity check -> link -> language -> send. No transaction is open during the
     admin call or the SMTP send (AD-18).
     """
@@ -97,6 +124,7 @@ async def send_reset_email(
         async with pool.connection() as conn:
             account = await accounts.find_for_reset(conn, email)
     except Exception as exc:  # noqa: BLE001 -- a background task must never raise
+        _forget(email)
         logger.warning("Password reset lookup failed: %s", type(exc).__name__)
         return
     # Unknown email or a Google-only Account: nothing is sent. Unverified Accounts are treated
@@ -105,7 +133,10 @@ async def send_reset_email(
         return
 
     link = await supabase_auth.generate_recovery_link(http, settings, email)
-    if link is None or link.account_id != account["account_id"] or "email" not in link.providers:
+    if link is None:  # Supabase failed (logged in supabase_auth): let a retry try again
+        _forget(email)
+        return
+    if link.account_id != account["account_id"] or "email" not in link.providers:
         return
 
     subject, body = mailer.password_reset_email(
@@ -116,6 +147,7 @@ async def send_reset_email(
     try:
         await mailer.send(settings, link.email, subject, body)
     except Exception as exc:  # noqa: BLE001 -- a send failure is logged only
+        _forget(email)
         # Only the exception type: SMTP errors can echo the recipient address.
         logger.warning("Password reset email could not be sent: %s", type(exc).__name__)
 

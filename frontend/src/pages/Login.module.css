@@ -38,6 +38,12 @@
   text-decoration: none;
 }
 
-.inlineLink:hover {
+.inlineLink:hover,
+.inlineLink:focus-visible {
   text-decoration: underline;
+}
+
+.inlineLink:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
 }

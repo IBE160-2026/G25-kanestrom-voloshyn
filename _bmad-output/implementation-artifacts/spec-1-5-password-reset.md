@@ -2,9 +2,9 @@
 title: 'Story 1.5: Reset a forgotten password'
 type: 'feature'
 created: '2026-11-16'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
-review_loop_iteration: 1
+review_loop_iteration: 2
 baseline_commit: '2c15f2225417a7ac513ae06db410f4b60834cb58'
 context:
   - '{project-root}/_bmad-output/implementation-artifacts/epic-1-context.md'
@@ -123,6 +123,8 @@ Email text (English, then Norwegian, proposed; `{name}` is the first name, with 
 - SPA: `auth.completeRecovery(tokenHash)` shares only a check in flight (React StrictMode) and forgets it once settled. Supabase refusing the token (a 4xx other than 429, or no session) is `expired`; no status, 429, 5xx, a throw, or a failed `/api/config` load is `failed`. `ResetPassword` is keyed by the token hash (a new link resets everything). While checking it shows the "Choose a new password" heading in a busy panel; `failed` shows the form with "Sign-in didn't work. Try again." and saving checks the same link again first. Leaving the page (any navigation, including "Log in") while holding a verified, unsaved recovery session calls `signOut()`; a check that succeeds after the page is gone signs out at once. `auth.setNewPassword` maps `weak_password` to `password_too_short` and everything else (including `same_password`) to `failed` (`errors.generic`). After saving: `after-password-reset` (retry repeats only it on `auth_unavailable`/network; carries on when the session is refused), then `signOut()` and Login with `state.passwordChanged`.
 - `ForgotPassword` sends `auth: false` with the active language and replaces the form with the "sent" text in an always-mounted `role="status"`. `src/auth/email.js` (`isEmail`, ≤ 254 characters) is shared with Create account.
 - Catalogue keys added: `login.forgotPassword`, `reset.request.{title,submit,sent}`, `reset.newPassword.{title,submit}`, `reset.saved`, `reset.expired`, `reset.sendNewLink`. Field labels, "Log in", and validation errors reuse `login.*` and `signup.errors.*`.
+- Review pass 2 fixes (2026-11-19): a failed send (lookup error, `generate_link` returning nothing, SMTP error, or any unexpected error) clears the address's cooldown entry, so a retry within 60 s can send. The cooldown dict prunes from the front (insertion order is time order), so it holds only the last 60 s. At most `MAX_RUNNING_TASKS = 10` reset tasks run at once; a request beyond that is dropped silently with the identical `202` and records no cooldown. `drain` cancels tasks still running after its timeout and awaits them before the pool and HTTP client close. `find_for_reset` compares `u.email = %s` (index-friendly); `start_reset` lower-cases the address first. Access-log redaction is case-insensitive and also covers `code=` (Story 1.6's PKCE code).
+- SPA (pass 2): `ResetPassword` moves the token hash from the URL into history state (`navigate('/reset-password', { replace: true, state: { tokenHash } })`), so it isn't left in the address bar or history; the page stays keyed by the same hash. `finish()` awaits `signOut()`'s `ended` before navigating to Login, and `onSubmit` stops after any await once the page is gone. `.primaryLink` and `.inlineLink` have hover (underline) and `:focus-visible` (token focus ring) states. The `newPasswordForm()` test helper waits for the Password field, not the heading shared with the checking step.
 
 ## Spec Change Log
 
@@ -153,6 +155,33 @@ Pass 1 (2026-11-16). Layers: blind (B), edge-case (E), verification-gap (V).
 | 19 | E: an unset secret key fails silently | low | A config error; logged as a 401 warning. | reject |
 | 20 | (implementer) reusing the old password shows the generic error | low | Needs a new string; rare. | reject |
 | 21 | B: spec Verification vs `--no-build`; tracking files disagree | false | `docker compose up -d --build` works here; step 5 syncs sprint-status. | reject |
+
+Pass 2 (2026-11-19, taken over by Cristoffer). Layers: blind (B), edge-case (E), verification-gap (V).
+
+| # | Finding | Verdict | Evidence | Route |
+|---|---------|---------|----------|-------|
+| 22 | V: `newPasswordForm()` waits for a heading the 'checking' step shares — the flaky test at L279 | high | reproduced 1 in 6 in isolation | patch |
+| 23 | E: cooldown recorded before the send; a retry after a failed send sends nothing | medium | entry set before lookup/SMTP | patch |
+| 24 | B/E: unbounded `_last_request` and detached tasks across distinct addresses | medium | no pruning, no cap; each task holds a pool connection | patch |
+| 25 | B/E: `drain` doesn't cancel leftovers before the pool closes | low | timeout then close | patch |
+| 26 | B: `lower(u.email)` scan | low | address already lower-cased | patch |
+| 27 | B/E: redaction misses `code=` and upper-case names | low | regex is case-sensitive, `*token` only | patch |
+| 28 | B: token stays in the URL and history | medium | no replace after reading | patch |
+| 29 | B: `finish()` doesn't await `ended` before Login's session check | medium | `signOut()` returns `ended` | patch |
+| 30 | E: `onSubmit` continues after unmount | low | no alive check after awaits | patch |
+| 31 | B: reset links lack hover/focus-visible | low | CSS | patch |
+| 32 | B/V: `after-password-reset` accepts any session | low | carried #15: ends only the caller's own other sessions | reject |
+| 33 | B: reusing the old password shows the generic error | low | carried #20: needs a new string | reject |
+| 34 | E: a signed-out error from `after-password-reset` skips ending other sessions | low | right after `setNewPassword` the session is fresh | reject |
+| 35 | E: leaving after a save whose follow-up failed | low | rare; the password is already changed | reject |
+| 36 | E: link A/B races in storage | low | two reset links opened in quick succession | reject |
+| 37 | E: a lost verify response makes the retry show expired | low | the student can request a new link | reject |
+| 38 | E/B: casefold and UTF-16 length mismatches | low | non-ASCII emails only | reject |
+| 39 | B: reset screens reuse `login.*` and `signup.errors.*` strings | low | carried #11: reuse was the decision | reject |
+| 40 | B: opening a link replaces another account's session in the browser | low | expected when using someone's reset link | reject |
+| 41 | B: a completed reset doesn't mark the email verified | low | product decision | defer to Cristoffer/Ihor |
+| 42 | V: shutdown drain untested | low | needs a stalled-task harness | defer |
+| 43 | B: planning docs missing from the diff | false | the diff was code only | reject |
 
 ## Verification
 

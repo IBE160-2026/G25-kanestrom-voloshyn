@@ -1,5 +1,6 @@
 // Password reset, new-password step (Story 1.5, FR-3): the emailed link, saving, and the expired
 // state. api/client.js and auth/ are mocked (spine › Tests).
+import { readFileSync } from 'node:fs'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,9 +28,11 @@ afterEach(async () => {
 })
 
 async function newPasswordForm(catalogue = en) {
-  await screen.findByRole('heading', { level: 2, name: catalogue.reset.newPassword.title })
+  // Wait for the form itself: the heading also shows while the link is still being checked.
+  const password = await screen.findByLabelText(catalogue.login.password)
+  expect(screen.getByRole('heading', { level: 2, name: catalogue.reset.newPassword.title })).toBeInTheDocument()
   return {
-    password: screen.getByLabelText(catalogue.login.password),
+    password,
     submit: screen.getByRole('button', { name: catalogue.reset.newPassword.submit }),
   }
 }
@@ -277,5 +280,92 @@ describe('ResetPassword', () => {
     vi.mocked(completeRecovery).mockResolvedValue({ ok: true })
     await router.navigate(LINK)
     expect((await newPasswordForm()).password).toHaveValue('')
+  })
+
+  it('removes the token hash from the URL once read, and the page keeps working', async () => {
+    const user = userEvent.setup()
+    const { router } = renderRoute(LINK)
+    const f = await newPasswordForm()
+
+    await waitFor(() => expect(router.state.location.search).toBe(''))
+    expect(router.state.location.pathname).toBe('/reset-password')
+    expect(router.state.historyAction).toBe('REPLACE')
+    expect(completeRecovery).toHaveBeenCalledTimes(1)
+    expect(completeRecovery).toHaveBeenCalledWith('abc123')
+
+    await user.type(f.password, 'brand-new-pass')
+    await user.click(f.submit)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    expect(setNewPassword).toHaveBeenCalledWith('brand-new-pass')
+  })
+
+  it('after saving, waits until the session has ended before showing Login', async () => {
+    let end
+    const ended = new Promise((resolve) => (end = resolve))
+    let sessionEnded = false
+    vi.mocked(signOut).mockResolvedValue({ ended: ended.then(() => (sessionEnded = true)) })
+    // The recovery session is still seen until signing out has really finished.
+    vi.mocked(hasSession).mockImplementation(async () => !sessionEnded)
+    const user = userEvent.setup()
+    const { router } = renderRoute(LINK)
+    const f = await newPasswordForm()
+
+    await user.type(f.password, 'brand-new-pass')
+    await user.click(f.submit)
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(router.state.location.pathname).toBe('/reset-password')
+
+    end()
+    await waitFor(() => expect(router.state.location.pathname).toBe('/'))
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(en.reset.saved))
+    // Login stays: its session check no longer sees the recovery session.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('leaving while the new password is being saved stops there: no follow-up, no navigation', async () => {
+    let save
+    vi.mocked(setNewPassword).mockReturnValue(new Promise((resolve) => (save = resolve)))
+    const user = userEvent.setup()
+    const { router } = renderRoute(LINK)
+    const f = await newPasswordForm()
+
+    await user.type(f.password, 'brand-new-pass')
+    await user.click(f.submit)
+    await router.navigate('/forgot-password')
+    // the unmount ends the held recovery session
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
+
+    save({ ok: true })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(apiFetch).not.toHaveBeenCalled()
+    expect(signOut).toHaveBeenCalledTimes(1)
+    expect(router.state.location.pathname).toBe('/forgot-password')
+  })
+
+  it('leaving while other sessions are being ended stops there: no sign-out twice, no navigation', async () => {
+    let done
+    vi.mocked(apiFetch).mockReturnValue(new Promise((resolve) => (done = resolve)))
+    const user = userEvent.setup()
+    const { router } = renderRoute(LINK)
+    const f = await newPasswordForm()
+
+    await user.type(f.password, 'brand-new-pass')
+    await user.click(f.submit)
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1))
+    await router.navigate('/forgot-password')
+    await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
+
+    done(null)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(signOut).toHaveBeenCalledTimes(1)
+    expect(router.state.location.pathname).toBe('/forgot-password')
+  })
+
+  it('"Send a new link" has hover and visible focus states, from tokens only', () => {
+    const css = readFileSync('src/components/AuthForm.module.css', 'utf8')
+    expect(css).toMatch(/\.primaryLink:hover[^{]*\{[^}]*text-decoration: underline/)
+    expect(css).toMatch(/\.primaryLink:focus-visible\s*\{[^}]*outline: var\(--space-focus-ring-width\) solid var\(--color-primary\)/)
   })
 })

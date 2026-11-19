@@ -5,6 +5,7 @@ The link is completed here the way the SPA does it: GoTrue `POST /verify` (type 
 token hash), `PUT /user` with the new password, then `POST /api/auth/after-password-reset`.
 """
 
+import asyncio
 import logging
 import re
 import time
@@ -54,6 +55,7 @@ def fresh_cooldown(monkeypatch):
     """A clean cooldown table, and a clock tests can move (`clock[0] += 61`)."""
     clock = [1000.0]
     monkeypatch.setattr(password_reset, "_last_request", {})
+    monkeypatch.setattr(password_reset, "_tasks", set())
     monkeypatch.setattr(password_reset, "_now", lambda: clock[0])
     return clock
 
@@ -234,6 +236,9 @@ def test_smtp_down_still_answers_202_and_logs_without_the_address(settings, clie
     assert "Password reset email could not be sent" in caplog.text
     assert email not in caplog.text
     assert reset_messages(mailpit, email) == []
+    # The failed send cleared the cooldown: a retry within 60 s sends the email.
+    assert_accepted(request_reset(client, email))
+    assert len(reset_messages(mailpit, email, expect=1)) == 1
 
 
 def _timeout(request):
@@ -257,6 +262,7 @@ def test_supabase_failure_still_answers_202_and_sends_nothing(client, gotrue, cr
     assert "generate_link" in caplog.text
     assert email not in caplog.text
     assert reset_messages(mailpit, email) == []
+    assert password_reset._last_request == {}  # a retry within 60 s may try again
 
 
 def test_generate_link_uses_the_secret_key_and_type_recovery(client, gotrue, created, mailpit, settings, stub_auth):
@@ -294,6 +300,10 @@ def test_no_token_link_or_address_in_the_app_logs(client, gotrue, created, mailp
         ("/reset-password?token_hash=abc123def&lang=nb", "abc123def", "/reset-password?token_hash=[redacted]&lang=nb"),
         ("/auth/callback?access_token=eyJ.abc&type=x", "eyJ.abc", "/auth/callback?access_token=[redacted]&type=x"),
         ("/auth/callback?a=1&refresh_token=r3fr", "r3fr", "/auth/callback?a=1&refresh_token=[redacted]"),
+        ("/auth/callback?code=pkce-c0de&next=/", "pkce-c0de", "/auth/callback?code=[redacted]&next=/"),
+        ("/api/auth/verify?Token=Up-1", "Up-1", "/api/auth/verify?Token=[redacted]"),
+        ("/reset-password?TOKEN_HASH=ABC9", "ABC9", "/reset-password?TOKEN_HASH=[redacted]"),
+        ("/auth/callback?x=1&Code=Mixed2", "Mixed2", "/auth/callback?x=1&Code=[redacted]"),
     ],
 )
 def test_access_log_redacts_token_parameters(path, secret, redacted):
@@ -307,10 +317,10 @@ def test_access_log_redacts_token_parameters(path, secret, redacted):
 
 def test_access_log_keeps_other_parameters():
     record = logging.LogRecord(
-        "uvicorn.access", logging.INFO, "", 0, "%s", ("/x?tokens=keep&status=expired",), None
+        "uvicorn.access", logging.INFO, "", 0, "%s", ("/x?tokens=keep&status=expired&zipcode=6400&codes=1",), None
     )
     _RedactTokens().filter(record)
-    assert record.getMessage() == "/x?tokens=keep&status=expired"
+    assert record.getMessage() == "/x?tokens=keep&status=expired&zipcode=6400&codes=1"
 
 
 # --- The link (matrix rows 6, 8) ---
@@ -437,6 +447,18 @@ def test_cooldown_keeps_no_address_and_prunes_old_entries(fresh_cooldown):
     assert len(password_reset._last_request) == 1  # the old entry was pruned
 
 
+def test_cooldown_prunes_only_entries_older_than_the_window(fresh_cooldown):
+    for i in range(5):
+        password_reset._cooling_down(f"old{i}@example.com")
+    fresh_cooldown[0] += 30
+    password_reset._cooling_down("recent@example.com")
+    fresh_cooldown[0] += 30
+    password_reset._cooling_down("new@example.com")
+    # The five 60 s-old entries are gone; the 30 s-old one still blocks.
+    assert len(password_reset._last_request) == 2
+    assert password_reset._cooling_down("recent@example.com") is True
+
+
 def test_generate_link_gets_the_lower_cased_address(client, gotrue, created, mailpit, stub_auth):
     email = with_profile(client, gotrue, created, mailpit)["user"]["email"]
     seen = {}
@@ -489,3 +511,60 @@ def test_an_unexpected_error_in_the_task_is_logged_by_type_only(client, gotrue, 
     assert "Password reset failed: RuntimeError" in caplog.text
     assert email not in caplog.text
     assert reset_messages(mailpit, email) == []
+    assert password_reset._last_request == {}
+
+
+def test_a_failed_lookup_clears_the_cooldown(client, gotrue, created, mailpit, monkeypatch, caplog):
+    email = with_profile(client, gotrue, created, mailpit)["user"]["email"]
+    real = password_reset.accounts.find_for_reset
+
+    async def broken(conn, address):
+        raise OSError("db down")
+
+    monkeypatch.setattr(password_reset.accounts, "find_for_reset", broken)
+    with caplog.at_level(logging.INFO):
+        assert_accepted(request_reset(client, email))
+    assert "Password reset lookup failed: OSError" in caplog.text
+    assert password_reset._last_request == {}
+
+    monkeypatch.setattr(password_reset.accounts, "find_for_reset", real)
+    assert_accepted(request_reset(client, email))
+    assert len(reset_messages(mailpit, email, expect=1)) == 1
+
+
+def test_requests_beyond_the_running_task_cap_are_dropped_silently(monkeypatch):
+    monkeypatch.setattr(password_reset, "_tasks", {object() for _ in range(password_reset.MAX_RUNNING_TASKS)})
+    password_reset.start_reset(None, None, None, "a@example.com", None)
+    assert len(password_reset._tasks) == password_reset.MAX_RUNNING_TASKS
+    # Not recorded either, so the address isn't blocked once the load passes.
+    assert password_reset._last_request == {}
+
+
+def test_requests_beyond_the_cap_get_the_identical_reply(client, monkeypatch):
+    first = client.post("/api/auth/password-reset", json={"email": "someone@example.com"})
+    monkeypatch.setattr(password_reset, "_tasks", {object() for _ in range(password_reset.MAX_RUNNING_TASKS)})
+    second = client.post("/api/auth/password-reset", json={"email": "other@example.com"})
+    monkeypatch.setattr(password_reset, "_tasks", set())
+    assert (second.status_code, second.content) == (first.status_code, first.content)
+
+
+def test_drain_cancels_tasks_still_running_after_the_timeout():
+    cancelled = []
+
+    async def go():
+        async def stalled():
+            try:
+                await asyncio.sleep(3600)
+            except asyncio.CancelledError:
+                cancelled.append(True)
+                raise
+
+        task = asyncio.create_task(stalled())
+        password_reset._tasks.add(task)
+        task.add_done_callback(password_reset._tasks.discard)
+        await password_reset.drain(timeout=0.01)
+        assert task.cancelled()
+
+    asyncio.run(go(), **LOOP)
+    assert cancelled == [True]
+    assert password_reset._tasks == set()

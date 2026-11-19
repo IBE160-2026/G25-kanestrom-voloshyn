@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { completeRecovery, setNewPassword, signOut } from '../auth/index.js'
 import styles from '../components/AuthForm.module.css'
@@ -10,10 +10,20 @@ import ErrorLine from '../components/ErrorLine.jsx'
 const MIN_PASSWORD = 8 // FR-1; Supabase enforces the same minimum (config.toml)
 
 // Where the emailed reset link lands: /reset-password?token_hash=… (FR-3, DESIGN.md › Password
-// reset screens). Keyed by the token hash, so another link starts from a clean screen.
+// reset screens). Keyed by the token hash, so another link starts from a clean screen. Once read,
+// the token hash moves from the URL into history state (replace), so it isn't left in the address
+// bar or the browser history.
 export default function ResetPassword() {
   const [params] = useSearchParams()
-  const tokenHash = params.get('token_hash')
+  const location = useLocation()
+  const navigate = useNavigate()
+  const fromUrl = params.get('token_hash')
+  const tokenHash = fromUrl ?? location.state?.tokenHash ?? null
+
+  useEffect(() => {
+    if (fromUrl !== null) navigate('/reset-password', { replace: true, state: { tokenHash: fromUrl } })
+  }, [fromUrl, navigate])
+
   return <ResetPasswordLink key={tokenHash ?? ''} tokenHash={tokenHash} />
 }
 
@@ -92,8 +102,10 @@ function ResetPasswordLink({ tokenHash }) {
 
   async function finish() {
     session.current = 'done'
-    await signOut()
-    navigate('/', { replace: true, state: { passwordChanged: true } })
+    // Wait until the session has really ended, so Login's session check doesn't still see it.
+    const { ended } = await signOut()
+    await ended
+    if (alive.current) navigate('/', { replace: true, state: { passwordChanged: true } })
   }
 
   async function onSubmit(event) {
@@ -112,16 +124,20 @@ function ResetPasswordLink({ tokenHash }) {
       }
       if (!changed) {
         const result = await setNewPassword(password)
+        // Left mid-save: the unmount already signed the recovery session out; stop here.
+        if (!alive.current) return
         if (result.error) return fail(result.error === 'password_too_short' ? 'passwordTooShort' : 'failed')
         setChanged(true)
       }
       try {
         await apiFetch('/api/auth/after-password-reset', { method: 'POST' })
       } catch (err) {
+        if (!alive.current) return
         // The password is changed. If the backend refused this session, it is already gone
         // (api/client.js signed out): carry on to Login. Otherwise a retry repeats only this step.
         if (!SIGNED_OUT_CODES.has(err?.code)) return fail('failed')
       }
+      if (!alive.current) return
       await finish()
     } finally {
       inFlight.current = false
