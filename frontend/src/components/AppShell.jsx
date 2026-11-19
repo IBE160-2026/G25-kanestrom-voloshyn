@@ -35,7 +35,8 @@ export default function AppShell() {
   const [narrow] = useState(isNarrow)
   const [collapsedChoice, setCollapsedChoice] = useState(null) // null until the student toggles
   const [creating, setCreating] = useState(false)
-  // A failed create, archive, or restore: { apiError, attempt } (the attempt re-announces a repeat).
+  // A failed create, archive, or restore (a failed delete shows in its dialog): { apiError, attempt }
+  // (the attempt re-announces a repeat).
   const [actionError, setActionError] = useState(null)
   const actionAttempt = useRef(0)
   // The archive Undo message (Story 7.1): { project, key } of the Project just archived.
@@ -169,7 +170,45 @@ export default function AppShell() {
     }
   }
 
-  /** Restore an archived Project (FR-23), from the Undo message, the Sidebar menu, or the banner. */
+  /**
+   * Delete a Project into Deleted projects (FR-24, Story 7.2a), from the Confirm dialog. Login no longer
+   * lands on it. Deleting the open Project lands on the most recent other active Project, or the empty
+   * Projects page; deleting another one stays on the current page. A failure rejects, so the dialog
+   * stays open with its error line.
+   */
+  async function deleteProject(id) {
+    const project = await apiFetch(`/api/projects/${id}/delete`, { method: 'POST' })
+    const next = (projects ?? []).find((p) => p.id !== id && isActive(p))
+    upsertProject(project)
+    setMe((profile) => (profile?.last_project_id === id ? { ...profile, last_project_id: null } : profile))
+    setArchived((shown) => (shown?.project.id === id ? null : shown))
+    if (id === projectId) navigate(next ? `/projects/${next.id}` : '/projects')
+    return project
+  }
+
+  /**
+   * Delete a deleted Project forever (FR-24, Story 7.2b), from the Confirm dialog (delete forever). It
+   * leaves the list (its group disappears at 0). From the open Project (the Deleted banner) it lands on
+   * the most recent active Project, or the empty Projects page; from the Sidebar menu for another
+   * Project it stays on the current page. `404 not_found` (purged meanwhile) counts as done; any other
+   * failure rejects, so the dialog stays open with its error line.
+   */
+  async function purgeProject(id) {
+    try {
+      await apiFetch(`/api/projects/${id}/purge`, { method: 'POST' })
+    } catch (err) {
+      // Already gone (another tab, or the 30-day purge): the same as done.
+      if (err?.code !== 'not_found') throw err
+    }
+    const next = (projects ?? []).find((p) => p.id !== id && isActive(p))
+    forgetProject(id)
+    if (id === projectId) navigate(next ? `/projects/${next.id}` : '/projects')
+  }
+
+  /**
+   * Restore an archived or deleted Project to the active list (FR-23, FR-24), from the Undo message,
+   * the Sidebar menu, or the banner. It stays on the current page, with no Undo message.
+   */
   async function restoreProject(id) {
     setActionError(null)
     try {
@@ -208,8 +247,9 @@ export default function AppShell() {
   }
 
   const activeProjects = projects ? projects.filter(isActive) : null
-  // Archived but not deleted, in the list's order (newest first). Deleted ones are Story 7.2's.
+  // Archived but not deleted, and deleted (archived before or not), in the list's order (newest first).
   const archivedProjects = projects ? projects.filter((p) => p.archived_at && !p.deleted_at) : []
+  const deletedProjects = projects ? projects.filter((p) => p.deleted_at) : []
   const current = projectId ? projects?.find((p) => p.id === projectId) : null
   const title = current ? <ProjectName key={current.id} project={current} onRenamed={upsertProject} /> : null
 
@@ -218,8 +258,11 @@ export default function AppShell() {
       <Sidebar
         projects={activeProjects ?? []}
         archivedProjects={archivedProjects}
+        deletedProjects={deletedProjects}
         onArchive={archiveProject}
         onRestore={restoreProject}
+        onDelete={deleteProject}
+        onPurge={purgeProject}
         focusProjectId={focusProjectId}
         onFocused={clearFocusRequest}
         currentId={projectId}
@@ -252,6 +295,7 @@ export default function AppShell() {
               markPrivacyAccepted,
               archiveProject,
               restoreProject,
+              purgeProject,
             }}
           />
           {/* Mounted empty first, so a message that arrives is announced. */}

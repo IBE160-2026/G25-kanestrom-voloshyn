@@ -330,3 +330,25 @@
   white-space: nowrap;
   z-index: 10;
 }
+
+/* Deleted projects group (DESIGN.md › Deleted projects group): as the Archived group, each row muted
+   with a muted caption line "Deleted · {n} days left". */
+.link.deletedLink {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-1);
+}
+
+.deletedName,
+.daysLeft {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daysLeft {
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}

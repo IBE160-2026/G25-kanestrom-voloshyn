@@ -146,6 +146,20 @@ async def user_auth(
     valid: Annotated[_ValidToken, Depends(_validated_token)],
     conn: Conn,
 ) -> CurrentUser:
+    return await _authenticate(request, valid, conn)
+
+
+async def user_auth_released(
+    request: Request, valid: Annotated[_ValidToken, Depends(_validated_token)]
+) -> CurrentUser:
+    """`user_auth` in its own short transaction, committed and released before the route runs: for a
+    route that holds no request connection while it waits (the purge, FR-24, AD-18)."""
+    async with request.app.state.pool.connection() as conn:
+        async with conn.transaction():
+            return await _authenticate(request, valid, conn)
+
+
+async def _authenticate(request: Request, valid: _ValidToken, conn: AsyncConnection) -> CurrentUser:
     # 2. The session must still exist and be young enough.
     await _check_session(conn, request.app.state.settings, valid)
 
@@ -170,6 +184,8 @@ async def user_auth(
 
 
 UserAuth = Annotated[CurrentUser, Depends(user_auth)]
+# The same checks; no request connection is held during the route (AD-18).
+ReleasedUserAuth = Annotated[CurrentUser, Depends(user_auth_released)]
 
 
 # --- The phone link (AD-2, AD-24) ---

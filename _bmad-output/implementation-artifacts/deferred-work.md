@@ -85,3 +85,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-3-1a-set-up-and-generate-a-quiz.md`
   summary: Add a Runner test that a shutdown `drain` cancelling a running generation job does not end it `cancelled` (the restart sweep fails it `interrupted`), plus the cancel-during-reading and cancel-at-return paths.
   evidence: Story 3.1a review (Verification Gap, Blind Hunter): only the student cancel while writing is tested; the `_interrupted` guard in `Runner._steps` could regress silently.
+
+- source_spec: none
+  summary: Story 7.2b — "Delete forever" (confirm dialog, `projects.purge`: cancel and wait for jobs, cascade delete, Storage prefix after commit) and the in-process 30-day purge task (startup, then hourly), with reads treating expired Projects as gone and a purge-vs-running-job test.
+  evidence: Split from Story 7.2 by Cristoffer on 2026-11-19; 7.2a (soft delete and restore) ships on its own and deleted Projects simply stay until 7.2b.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-2b-delete-a-project-forever.md`
+  summary: A Storage delete that fails after a purge (or a material removal) commits is logged and never retried, leaving orphaned objects under `{account_id}/{project_id}/`.
+  evidence: `storage.delete_prefix` and `storage.delete` swallow failures by design (AD-16 orders Storage after the DB commit); a periodic orphan-prefix sweep in the hourly task would settle it.

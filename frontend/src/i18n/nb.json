@@ -67,7 +67,25 @@
     "restore": "Gjenopprett",
     "archivedGroup": "Arkivert ({{count}})",
     "archivedUndo": "{{name}} er arkivert",
-    "undo": "Angre"
+    "undo": "Angre",
+    "delete": "Slett prosjekt",
+    "deletedGroup": "Slettede prosjekter ({{count}})",
+    "daysLeft_one": "Slettet · {{count}} dag igjen",
+    "daysLeft_other": "Slettet · {{count}} dager igjen",
+    "deleteDialog": {
+      "title": "Vil du slette {{name}}?",
+      "body": "{{name}} flyttes til Slettede prosjekter og slettes for godt etter 30 dager. Du kan gjenopprette det frem til da.",
+      "cancel": "Avbryt",
+      "confirm": "Slett prosjekt"
+    },
+    "purge": "Slett for godt",
+    "purgeDialog": {
+      "title": "Vil du slette {{name}} for godt?",
+      "lost": "Filene, feilene og det genererte innholdet slettes.",
+      "final": "Dette kan ikke angres.",
+      "cancel": "Avbryt",
+      "confirm": "Slett for godt"
+    }
   },
   "project": {
     "archivedBanner": "Arkivert"
@@ -278,6 +296,7 @@
     "auth_unavailable": "Noe gikk galt.",
     "invalid_name": "Gi prosjektet et navn.",
     "project_read_only": "Dette prosjektet kan bare leses.",
+    "project_not_deleted": "Prosjektet ligger ikke i Slettede prosjekter.",
     "unsupported_file_type": "Denne filtypen støttes ikke. Bruk PDF, Word (.docx), PowerPoint (.pptx), .txt, .md, JPG, PNG eller HEIC.",
     "material_limit_reached": "Et prosjekt kan ha 10 filer. Fjern en for å legge til en ny.",
     "privacy_notice_required": "Godta merknaden om hvordan filene dine brukes før du laster opp første gang.",

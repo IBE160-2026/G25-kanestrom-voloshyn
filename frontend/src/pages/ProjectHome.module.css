@@ -68,6 +68,44 @@
   outline-offset: var(--space-focus-ring-offset);
 }
 
+/* Deleted banner (DESIGN.md › Deleted banner): Restore (primary) and a small ghost "Delete forever". */
+.bannerActions {
+  flex: none;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.bannerPurge {
+  flex: none;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bannerPurge:hover {
+    background: var(--color-hover);
+  }
+}
+
+/* 0.38 as the other busy buttons: no opacity token exists. */
+.bannerPurge:disabled {
+  opacity: 0.38;
+  cursor: progress;
+}
+
+.bannerPurge:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
 /* Finished-generation messages at the top of the chat column (Story 3.1b), newest first. */
 .notices {
   display: flex;

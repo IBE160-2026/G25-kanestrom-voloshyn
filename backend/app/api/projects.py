@@ -4,20 +4,25 @@
 - `POST /api/projects`: a new Project with no name (`201`).
 - `GET /api/projects/{project_id}`: opens the Project, which becomes the one login lands on.
 - `PATCH /api/projects/{project_id}`: rename; requires an active Project (`ActiveProject`).
-- `POST /api/projects/{project_id}/archive` and `/restore` (FR-23): idempotent bookkeeping, so no
-  `ActiveProject`; both return the Project. Archive also revokes the Project's phone links.
+- `POST /api/projects/{project_id}/archive`, `/delete`, and `/restore` (FR-23, FR-24): idempotent
+  bookkeeping, so no `ActiveProject`; each returns the Project. Archive and delete revoke the Project's
+  phone links; delete also cancels its jobs. Restore clears both `archived_at` and `deleted_at`.
+  A deleted Project carries `purge_at`, 30 days after `deleted_at`.
+- `POST /api/projects/{project_id}/purge` ("Delete forever", FR-24): bookkeeping, so no `ActiveProject`;
+  only a deleted Project (`409 project_not_deleted`), then it and everything in it is gone (`204`). Runs
+  its own short transactions through the pool; no request `Conn` is held (AD-18).
 """
 
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, ConfigDict
 
 from app.api.conn import after_commit
 from app.api.deps import ActiveProject, Conn
-from app.auth import UserAuth
+from app.auth import ReleasedUserAuth, UserAuth
 from app.services import projects
 
 router = APIRouter(prefix="/projects")
@@ -29,6 +34,8 @@ class Project(BaseModel):
     name_source: Literal["auto", "student"] | None
     archived_at: datetime | None
     deleted_at: datetime | None
+    # When a deleted Project is permanently deleted (FR-24); null unless deleted.
+    purge_at: datetime | None
     created_at: datetime
 
 
@@ -75,6 +82,28 @@ async def archive_project(request: Request, project_id: UUID, user: UserAuth, co
     return to_project(project)
 
 
+@router.post("/{project_id}/delete", response_model=Project)
+async def delete_project(request: Request, project_id: UUID, user: UserAuth, conn: Conn) -> Project:
+    runner = request.app.state.runner
+    project, cleanup, running = await projects.delete(
+        conn, request.app.state.storage, runner.kinds, user.account_id, project_id
+    )
+    # Only once the delete has committed: the discarded staged photos go, and the running jobs (now
+    # `cancel_requested`) are interrupted, so an in-flight model call stops (AD-20).
+    after_commit(request, cleanup)
+    for job_id in running:
+        after_commit(request, lambda job_id=job_id: runner.interrupt(job_id))
+    return to_project(project)
+
+
 @router.post("/{project_id}/restore", response_model=Project)
 async def restore_project(project_id: UUID, user: UserAuth, conn: Conn) -> Project:
     return to_project(await projects.restore(conn, user.account_id, project_id))
+
+
+@router.post("/{project_id}/purge", status_code=204)
+async def purge_project(request: Request, project_id: UUID, user: ReleasedUserAuth) -> Response:
+    # `ReleasedUserAuth`: no request connection stays open while the purge waits for running jobs.
+    state = request.app.state
+    await projects.purge(state.pool, state.storage, state.runner, user.account_id, project_id)
+    return Response(status_code=204)

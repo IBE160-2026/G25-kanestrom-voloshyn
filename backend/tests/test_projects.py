@@ -56,7 +56,8 @@ def test_new_account_has_no_projects_and_no_last_project(client, student):
 def test_create_returns_an_unnamed_project(client, student, db):
     project = create(client, student["token"])
 
-    assert set(project) == {"id", "name", "name_source", "archived_at", "deleted_at", "created_at"}
+    assert set(project) == {"id", "name", "name_source", "archived_at", "deleted_at", "purge_at", "created_at"}
+    assert project["purge_at"] is None
     assert project["name"] is None
     assert project["name_source"] is None
     assert project["archived_at"] is None and project["deleted_at"] is None

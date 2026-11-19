@@ -1,8 +1,8 @@
 """Archive and restore a Project (Story 7.1: FR-23, AD-22, AD-24).
 
 Runs the real routes in mock mode against local Supabase, like test_projects.py. Archive and restore
-are idempotent bookkeeping; a deleted Project answers `409 project_read_only` to both (its restore is
-Story 7.2's).
+are idempotent bookkeeping; a deleted Project answers `409 project_read_only` to archive (its delete
+and restore are in test_delete_project.py).
 """
 
 import pytest
@@ -111,14 +111,14 @@ def test_restore_of_an_active_project_is_200_and_unchanged(client, student, db):
 
 
 @pytest.mark.parametrize("archived", [False, True])
-def test_a_deleted_project_refuses_archive_and_restore(client, student, db, archived):
+def test_a_deleted_project_refuses_archive(client, student, db, archived):
+    # Its restore is Story 7.2's (test_delete_project.py).
     project_id = create_project(client, student["token"])
     archived_sql = ", archived_at = now()" if archived else ""
     db.execute(f"UPDATE projects SET deleted_at = now(){archived_sql} WHERE id = %s", (project_id,))
     before = project_row(db, project_id)
 
     assert_error(archive(client, student["token"], project_id), 409, "project_read_only")
-    assert_error(restore(client, student["token"], project_id), 409, "project_read_only")
     assert project_row(db, project_id) == before
 
 

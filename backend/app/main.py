@@ -26,7 +26,7 @@ from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
 from app.llm import create_gateway
-from app.services import jobs, materials, password_reset, phone, quiz, review
+from app.services import jobs, materials, password_reset, phone, projects, quiz, review
 from app.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -142,12 +142,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # The stale phone-batch cleanup (AD-24): at startup, then hourly, in this process.
         cleanup = asyncio.create_task(phone.cleanup_forever(pool, storage))
         app.state.phone_cleanup = cleanup
+        # The 30-day purge of Deleted projects (FR-24): at startup, then hourly, in this process (AD-20).
+        purge = asyncio.create_task(projects.purge_expired_forever(pool, storage, runner))
+        app.state.purge = purge
         try:
             yield
         finally:
             sweep.cancel()
             cleanup.cancel()
-            await asyncio.gather(sweep, cleanup, return_exceptions=True)
+            purge.cancel()
+            await asyncio.gather(sweep, cleanup, purge, return_exceptions=True)
             # Let running jobs and reset emails finish before their pool and client close.
             await runner.drain()
             await password_reset.drain()

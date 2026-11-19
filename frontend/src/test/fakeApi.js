@@ -25,6 +25,7 @@ export function project(id, overrides = {}) {
     name_source: null,
     archived_at: null,
     deleted_at: null,
+    purge_at: null,
     created_at: '2026-11-16T10:00:00Z',
     ...overrides,
   }
@@ -71,8 +72,10 @@ export const IMAGE_LIMIT = 25
  * answer `410 link_expired` once it is revoked or expired. A photo uses one of `imagesLeft` and is
  * refused like the server (`file_too_large`, `quota_exceeded`); finalize adds one `phone_batch` file,
  * Reading…, named "Handwritten notes, {n} pages", or refuses (`insufficient_material`,
- * `material_limit_reached`). Archive and restore (Story 7.1) set and clear
- * `archived_at` (409 `project_read_only` for a deleted Project); archive revokes its links. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
+ * `material_limit_reached`). Archive (Story 7.1) sets `archived_at` (409 `project_read_only` for a
+ * deleted Project) and revokes its links; delete (Story 7.2a) sets `deleted_at` and `purge_at` (30
+ * days later), keeps `archived_at`, revokes its links, and cancels its active jobs; restore clears
+ * `archived_at`, `deleted_at`, and `purge_at`. All three are idempotent. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
  * answers carry a `Date` header that far ahead of the test's clock. Returns the live
  * state.
  */
@@ -115,7 +118,7 @@ export function fakeApi({
     links: [], // phone links: { link_id, token, project_id, expires_at, revoked } (Story 6.1)
     batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
     photoRequests: [], // names of photos sent, accepted or refused, in order
-    stateChanges: [], // "archive {id}" / "restore {id}" answered 200, in order (Story 7.1)
+    stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
   const handle = async (path, { method = 'GET', body } = {}) => {
@@ -444,19 +447,50 @@ export function fakeApi({
       return null
     }
 
-    // Archive and restore (Story 7.1): idempotent; a deleted Project is read-only to both; archive
-    // revokes the Project's phone links.
-    const stateCall = path.match(/^\/api\/projects\/([^/]+)\/(archive|restore)$/)
+    // Delete forever (Story 7.2b): only a deleted Project (409 `project_not_deleted`); it and its
+    // files, jobs, and Mistakes are gone (204). Recorded as "purge {id}" in `stateChanges`.
+    const purgeCall = path.match(/^\/api\/projects\/([^/]+)\/purge$/)
+    if (purgeCall && method === 'POST') {
+      const found = state.projects.find((p) => p.id === purgeCall[1])
+      if (!found) throw notFound()
+      if (!found.deleted_at) throw rule('project_not_deleted')
+      state.stateChanges.push(`purge ${found.id}`)
+      state.projects = state.projects.filter((p) => p.id !== found.id)
+      state.jobs = state.jobs.filter((job) => job.project_id !== found.id)
+      state.mistakes = state.mistakes.filter((m) => m.project_id !== found.id)
+      delete state.materials[found.id]
+      if (state.me?.last_project_id === found.id) state.me = { ...state.me, last_project_id: null }
+      return null
+    }
+
+    // Archive, delete, and restore (Stories 7.1, 7.2a): idempotent; a deleted Project refuses archive;
+    // archive and delete revoke the Project's phone links, and delete cancels its active jobs.
+    const stateCall = path.match(/^\/api\/projects\/([^/]+)\/(archive|delete|restore)$/)
     if (stateCall && method === 'POST') {
       const found = state.projects.find((p) => p.id === stateCall[1])
       if (!found) throw notFound()
-      if (found.deleted_at) throw rule('project_read_only')
-      state.stateChanges.push(`${stateCall[2]} ${found.id}`)
-      if (stateCall[2] === 'archive') {
+      const action = stateCall[2]
+      if (action === 'archive' && found.deleted_at) throw rule('project_read_only')
+      state.stateChanges.push(`${action} ${found.id}`)
+      if (action === 'archive') {
         found.archived_at = found.archived_at ?? new Date().toISOString()
         for (const link of state.links) if (link.project_id === found.id) link.revoked = true
+      } else if (action === 'delete') {
+        if (!found.deleted_at) {
+          const now = Date.now()
+          found.deleted_at = new Date(now).toISOString()
+          found.purge_at = new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString()
+          for (const link of state.links) if (link.project_id === found.id) link.revoked = true
+          for (const job of state.jobs) {
+            if (job.project_id === found.id && (job.status === 'queued' || job.status === 'running')) {
+              job.status = 'cancelled'
+            }
+          }
+        }
       } else {
         found.archived_at = null
+        found.deleted_at = null
+        found.purge_at = null
       }
       return { ...found }
     }

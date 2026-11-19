@@ -6,8 +6,10 @@ import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
 import MistakesCard from '../components/MistakesCard.jsx'
 import PrivacyNotice from '../components/PrivacyNotice.jsx'
+import PurgeProjectDialog from '../components/PurgeProjectDialog.jsx'
 import QrDialog from '../components/QrDialog.jsx'
 import ReadyNotice from '../components/ReadyNotice.jsx'
+import { daysLeft } from '../components/daysLeft.js'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
@@ -40,6 +42,9 @@ export const NAME_WAIT_MS = 30000
 // "Upload from phone" (Story 6.2, FR-21), in the Files panel and the empty-Project drop zone, opens
 // the QR dialog (the Privacy notice first, until accepted); while it is open the files are polled, so
 // a batch from the phone shows up live. Closing it ends the phone link.
+// An archived Project shows the Archived banner, a deleted one the Deleted banner with its days left
+// (Stories 7.1, 7.2a); both have Restore, and both are read-only. The Deleted banner also has "Delete
+// forever", which opens the Confirm dialog (delete forever) (Story 7.2b); the shell then lands elsewhere.
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -69,6 +74,7 @@ export default function ProjectHome() {
     saveFilesCollapsed,
     markPrivacyAccepted,
     restoreProject,
+    purgeProject,
   } = useOutletContext()
 
   // Privacy notice (Story 2.3, FR-6, §5.3): until the Account has accepted it, Upload, "browse", and
@@ -162,6 +168,7 @@ export default function ProjectHome() {
   const ready = project !== null && listed && me !== null && me !== undefined
   const readOnly = Boolean(project?.archived_at || project?.deleted_at)
   const archived = Boolean(project?.archived_at && !project?.deleted_at)
+  const deleted = Boolean(project?.deleted_at)
   // The Project whose restore is in flight, so another Project's banner is never busy.
   const [restoringId, setRestoringId] = useState(null)
   const restoring = restoringId === projectId
@@ -173,6 +180,8 @@ export default function ProjectHome() {
     await restoreProject?.(id)
     setRestoringId((current) => (current === id ? null : current))
   }
+  // The Project whose delete-forever dialog is open (from the Deleted banner), or null.
+  const [purging, setPurging] = useState(null)
   const anyReady = (files.materials ?? []).some((m) => m.status === 'ready')
 
   // Auto-naming (Story 2.4b, FR-4, AD-14): the server names an unnamed Project after a file turns
@@ -281,6 +290,25 @@ export default function ProjectHome() {
               </button>
             </div>
           )}
+          {/* Deleted banner (Story 7.2a, FR-24): read-only, with the days left, until Restore. */}
+          {deleted && (
+            <div className={styles.banner} data-testid="deleted-banner">
+              <span className={styles.bannerLabel}>{t('projects.daysLeft', { count: daysLeft(project) })}</span>
+              <div className={styles.bannerActions}>
+                <button type="button" className={styles.bannerRestore} onClick={restore} aria-busy={restoring}>
+                  {t('projects.restore')}
+                </button>
+                <button
+                  type="button"
+                  className={styles.bannerPurge}
+                  disabled={restoring}
+                  onClick={() => setPurging(project)}
+                >
+                  {t('projects.purge')}
+                </button>
+              </div>
+            </div>
+          )}
           {/* Mistakes card (Story 3.3): only in an active Project, never at 0. */}
           {project !== null && !readOnly && (
             <MistakesCard count={mistakes.outstanding} onStart={() => navigate(`/projects/${projectId}/review`)} />
@@ -374,6 +402,11 @@ export default function ProjectHome() {
         error={noticeError}
         onAccept={acceptNotice}
         onClose={() => setNotice(null)}
+      />
+      <PurgeProjectDialog
+        project={purging}
+        onPurge={(target) => purgeProject(target.id)}
+        onClose={() => setPurging(null)}
       />
       <QrDialog
         open={phoneOpen && ready && !readOnly}

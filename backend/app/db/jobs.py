@@ -182,6 +182,59 @@ async def request_cancel_running_for(conn: AsyncConnection, account_id: UUID, re
         return cur.rowcount
 
 
+async def cancel_queued_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
+    """Finish every queued job of the Project as `cancelled`, so it never runs (FR-24). `SKIP LOCKED` as in
+    `cancel_queued_for`: a job `claim` holds is caught at its save step, which sees the deleted Project."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            UPDATE generation_jobs
+            SET status = 'cancelled', progress_step = NULL, finished_at = now()
+            WHERE id IN (
+                SELECT id FROM generation_jobs
+                WHERE account_id = %s AND project_id = %s AND status = 'queued'
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING {_COLUMNS}
+            """,
+            (account_id, project_id),
+        )
+        return await cur.fetchall()
+
+
+async def request_cancel_running_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[UUID]:
+    """Set `cancel_requested` on every running job of the Project and return their ids, so the caller can
+    interrupt them after the commit. `SKIP LOCKED` as in `request_cancel_running_for`: a locked running
+    job is in its save transaction, which waits for this one and then sees the deleted Project."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE generation_jobs SET cancel_requested = true
+            WHERE id IN (
+                SELECT id FROM generation_jobs
+                WHERE account_id = %s AND project_id = %s AND status = 'running' AND NOT cancel_requested
+                FOR UPDATE SKIP LOCKED
+            )
+            RETURNING id
+            """,
+            (account_id, project_id),
+        )
+        return [row[0] for row in await cur.fetchall()]
+
+
+async def running_ids_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[UUID]:
+    """Ids of the Project's queued or running jobs, flagged or not (the purge waits for them, FR-24)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id FROM generation_jobs
+            WHERE account_id = %s AND project_id = %s AND status IN ('queued', 'running')
+            """,
+            (account_id, project_id),
+        )
+        return [row[0] for row in await cur.fetchall()]
+
+
 async def now(conn: AsyncConnection) -> datetime:
     async with conn.cursor() as cur:
         await cur.execute("SELECT now()")
