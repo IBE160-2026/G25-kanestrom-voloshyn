@@ -1,0 +1,23 @@
+/* Mistakes card (DESIGN.md › Mistakes card, components › mistakes-card): surface, 1px border, a
+   mistake-coloured left edge, rounded.lg; the headline in the mistake colour, semibold. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-accent-edge-width) solid var(--color-mistake);
+  border-radius: var(--radius-lg);
+}
+
+.headline {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--color-mistake);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-heading-weight);
+  line-height: var(--type-body-line-height);
+}

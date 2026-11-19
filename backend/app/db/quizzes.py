@@ -150,8 +150,9 @@ async def answers_for(conn: AsyncConnection, account_id: UUID, question_ids: lis
 
 async def insert_answer(
     conn: AsyncConnection, account_id: UUID, question_id: UUID, option_id: str, is_correct: bool
-) -> dict[str, Any]:
-    """Save the answer once (idempotent): a second submit keeps the first. Returns the stored answer."""
+) -> tuple[dict[str, Any], bool]:
+    """Save the answer once (idempotent): a second submit keeps the first. Returns the stored answer and
+    whether this call inserted it."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             """
@@ -161,6 +162,7 @@ async def insert_answer(
             """,
             (question_id, account_id, option_id, is_correct),
         )
+        inserted = cur.rowcount == 1
         await cur.execute(
             """
             SELECT id, quiz_question_id, submitted_option_id, is_correct
@@ -168,7 +170,7 @@ async def insert_answer(
             """,
             (question_id, account_id),
         )
-        return await cur.fetchone()
+        return await cur.fetchone(), inserted
 
 
 async def source_labels(conn: AsyncConnection, account_id: UUID, section_ids: list[UUID]) -> dict[UUID, str]:

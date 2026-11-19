@@ -6,7 +6,9 @@
 //   the list is fetched again and the job is marked seen. Nothing is polled otherwise.
 // - `remove(material)` removes a file (FR-20, AD-23): the row leaves only once the server has said 204
 //   (or `not_found`: it is gone already). Removed ids are remembered per Project, so a list request
-//   sent before the removal committed can't bring the row back when it answers later.
+//   sent before the removal committed can't bring the row back when it answers later. With
+//   `{ withdrawMistakes: true }` it sends `?withdraw_mistakes=true`, so the file's outstanding Mistakes
+//   leave review in the same removal (Story 3.3); without it they stay.
 // - `editTopics(materialId, edit)` sends one Topic edit (FR-22, AD-21: rename, delete, merge, or add)
 //   and, once the server answers, puts the file's whole Topic list from the answer in place through
 //   `setTopics`; a failed edit changes nothing and rejects with the ApiError. A `not_found` failure
@@ -222,12 +224,14 @@ export function useProjectFiles(projectId) {
   )
 
   /** Remove a file; resolves once removed (the row leaves), rejects with the ApiError otherwise.
-   * `not_found` counts as removed: the file is gone either way. */
+   * `not_found` counts as removed: the file is gone either way. `withdrawMistakes` also takes its
+   * outstanding Mistakes out of review (Story 3.3). */
   const remove = useCallback(
-    async (material) => {
+    async (material, { withdrawMistakes = false } = {}) => {
       const id = projectId
+      const query = withdrawMistakes ? '?withdraw_mistakes=true' : ''
       try {
-        await apiFetch(`/api/projects/${id}/materials/${material.id}`, { method: 'DELETE' })
+        await apiFetch(`/api/projects/${id}/materials/${material.id}${query}`, { method: 'DELETE' })
       } catch (error) {
         if (error?.code !== 'not_found') throw error
       }

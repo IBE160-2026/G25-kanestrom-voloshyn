@@ -15,6 +15,7 @@ from app.api import config as config_api
 from app.api import jobs as jobs_api
 from app.api import materials as materials_api
 from app.api import me as me_api
+from app.api import mistakes as mistakes_api
 from app.api import projects as projects_api
 from app.api import quizzes as quizzes_api
 from app.api import topics as topics_api
@@ -68,6 +69,7 @@ def _api_router() -> APIRouter:
     api.include_router(materials_api.router)
     api.include_router(topics_api.router)
     api.include_router(quizzes_api.router)
+    api.include_router(mistakes_api.router)
     api.include_router(jobs_api.router)
     api.include_router(usage_api.router)
 

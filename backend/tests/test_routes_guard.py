@@ -143,3 +143,11 @@ def test_quiz_answers_are_guarded():
         and "POST" in r.methods
     )
     assert active_project in _calls(route.dependant)
+
+
+def test_mistakes_summary_is_an_unguarded_read():
+    # Story 3.3: a read, so an archived or deleted Project still answers; the SPA hides the card there.
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/mistakes/summary")
+    assert route.methods == {"GET"}
+    assert active_project not in _calls(route.dependant)

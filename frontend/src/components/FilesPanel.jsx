@@ -23,12 +23,24 @@ import { useDropTarget } from './useDropTarget.js'
 // the live file (it closes if the file leaves the list); a Rejected row's "Remove" goes at once, several
 // may be in flight, and each failure shows its own Inline error ("Try again" unless the Project is
 // read-only). After a removal the row leaves, the count updates, and focus goes to the Upload button.
-// A read-only Project removes nothing. ProjectHome keys the panel by Project, so none of this state
+// The dialog offers "Also remove its mistakes from my review" when the file has outstanding Mistakes
+// (`mistakesByMaterial`, null while unknown; Story 3.3). Opening it calls `onRemoveOpen`, which reads
+// the counts again, so a summary that failed or hadn't arrived yet is fetched then. A read-only Project removes nothing. ProjectHome keys the panel by Project, so none of this state
 // carries over to another Project.
 // The Limit notice shows at this many images left today, or fewer (EXPERIENCE.md › Daily limits).
 const IMAGE_NOTICE_AT = 10
 
-export default function FilesPanel({ files, loading, readOnly, onBrowse, collapsed = false, onToggle, onPrivacyInfo }) {
+export default function FilesPanel({
+  files,
+  loading,
+  readOnly,
+  onBrowse,
+  collapsed = false,
+  onToggle,
+  onPrivacyInfo,
+  mistakesByMaterial = null,
+  onRemoveOpen,
+}) {
   const { t } = useTranslation()
   const heading = useId()
   const { materials, pending, failures, loadError, upload, retry, remove, editTopics, imagesLeft = null } = files
@@ -44,6 +56,10 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
   // focus goes to Upload (the row's "···" trigger left with it).
   const targetMaterial = target ? ((materials ?? []).find((m) => m.id === target.id) ?? null) : null
   const targetGone = target !== null && targetMaterial === null
+  const targetId = target?.id ?? null
+  useEffect(() => {
+    if (targetId !== null) onRemoveOpen?.()
+  }, [targetId, onRemoveOpen])
   useEffect(() => {
     if (targetGone) uploadButton.current?.focus()
   }, [targetGone])
@@ -214,6 +230,7 @@ export default function FilesPanel({ files, loading, readOnly, onBrowse, collaps
       )}
       <RemoveFileDialog
         material={targetMaterial}
+        mistakeCount={targetMaterial && mistakesByMaterial ? (mistakesByMaterial[targetMaterial.id] ?? 0) : 0}
         returnFocus={target?.trigger ?? null}
         onRemove={remove}
         onClose={() => setTarget(null)}

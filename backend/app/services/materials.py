@@ -25,8 +25,9 @@ and from there it is handled like any other file. Right before the vision call t
 back only when the call never started (removed or cancelled before it, a job that never reached it,
 a file that can't be decoded) or failed at the provider; once the call started it stays used.
 
-Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, and cancels the
-Material's job; the stored original is deleted after the commit.
+Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, cancels the
+Material's job, and, when asked, withdraws the file's outstanding Mistakes; the stored original is deleted
+after the commit.
 """
 
 import logging
@@ -46,7 +47,7 @@ from app.errors import AppError
 from app.extraction import Extracted, ExtractedSection, images, integrity
 from app.extraction.types import clean
 from app.llm import Gateway, ProviderError
-from app.services import identity, jobs, projects, topics, usage
+from app.services import identity, jobs, mistakes, projects, topics, usage
 from app.storage import Storage, material_path
 
 logger = logging.getLogger(__name__)
@@ -214,13 +215,21 @@ async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: 
 
 
 async def remove(
-    conn: AsyncConnection, storage: Storage, account_id: UUID, project_id: UUID, material_id: UUID
+    conn: AsyncConnection,
+    storage: Storage,
+    account_id: UUID,
+    project_id: UUID,
+    material_id: UUID,
+    withdraw_mistakes: bool = False,
 ) -> Callable[[], Any]:
     """Remove a Material, all or nothing (FR-20, AD-23). Returns the after-commit step that deletes the
-    stored original. An already removed Material changes nothing in the database, but the delete is
-    returned again, so a retry deletes an original whose earlier delete failed (it is idempotent).
+    stored original. An already removed Material keeps its removal as it was (only the Mistakes
+    withdrawal below can still run), and the delete is returned again, so a retry deletes an original whose earlier delete failed (it is idempotent).
 
-    The row, its file name, and its Section labels stay; the text goes. Generated content stays.
+    The row, its file name, and its Section labels stay; the text goes. Generated content stays. With
+    `withdraw_mistakes`, the outstanding Mistakes citing the file leave review in the same transaction
+    (Story 3.3, AD-10); without it they stay outstanding. The withdrawal also runs for a file that is
+    already removed, so a retried (or later) removal with the flag still withdraws its Mistakes.
     """
     await projects.require_active(conn, account_id, project_id)
     material = await repo.get_for_update(conn, account_id, material_id)
@@ -233,6 +242,8 @@ async def remove(
         # ended by its save step, and its terminal hook decides.
         for cancelled in await jobs.cancel_for_material(conn, account_id, material_id):
             await _release_if_unread(conn, cancelled)
+    if withdraw_mistakes:
+        await mistakes.withdraw_for_material(conn, account_id, project_id, material_id)
     path = material_path(account_id, project_id, material_id)
     return lambda: storage.delete(path)
 
