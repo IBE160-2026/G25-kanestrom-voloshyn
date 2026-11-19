@@ -118,7 +118,7 @@ export function fakeApi({
     links: [], // phone links: { link_id, token, project_id, expires_at, revoked } (Story 6.1)
     batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
     photoRequests: [], // names of photos sent, accepted or refused, in order
-    stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" answered 200, in order (Stories 7.1, 7.2a)
+    stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
   const handle = async (path, { method = 'GET', body } = {}) => {
@@ -444,6 +444,22 @@ export function fakeApi({
       const job = state.jobs.find((j) => j.id === seen[1])
       if (!job) throw notFound()
       job.seen = true
+      return null
+    }
+
+    // Delete forever (Story 7.2b): only a deleted Project (409 `project_not_deleted`); it and its
+    // files, jobs, and Mistakes are gone (204). Recorded as "purge {id}" in `stateChanges`.
+    const purgeCall = path.match(/^\/api\/projects\/([^/]+)\/purge$/)
+    if (purgeCall && method === 'POST') {
+      const found = state.projects.find((p) => p.id === purgeCall[1])
+      if (!found) throw notFound()
+      if (!found.deleted_at) throw rule('project_not_deleted')
+      state.stateChanges.push(`purge ${found.id}`)
+      state.projects = state.projects.filter((p) => p.id !== found.id)
+      state.jobs = state.jobs.filter((job) => job.project_id !== found.id)
+      state.mistakes = state.mistakes.filter((m) => m.project_id !== found.id)
+      delete state.materials[found.id]
+      if (state.me?.last_project_id === found.id) state.me = { ...state.me, last_project_id: null }
       return null
     }
 

@@ -187,6 +187,25 @@ export default function AppShell() {
   }
 
   /**
+   * Delete a deleted Project forever (FR-24, Story 7.2b), from the Confirm dialog (delete forever). It
+   * leaves the list (its group disappears at 0). From the open Project (the Deleted banner) it lands on
+   * the most recent active Project, or the empty Projects page; from the Sidebar menu for another
+   * Project it stays on the current page. `404 not_found` (purged meanwhile) counts as done; any other
+   * failure rejects, so the dialog stays open with its error line.
+   */
+  async function purgeProject(id) {
+    try {
+      await apiFetch(`/api/projects/${id}/purge`, { method: 'POST' })
+    } catch (err) {
+      // Already gone (another tab, or the 30-day purge): the same as done.
+      if (err?.code !== 'not_found') throw err
+    }
+    const next = (projects ?? []).find((p) => p.id !== id && isActive(p))
+    forgetProject(id)
+    if (id === projectId) navigate(next ? `/projects/${next.id}` : '/projects')
+  }
+
+  /**
    * Restore an archived or deleted Project to the active list (FR-23, FR-24), from the Undo message,
    * the Sidebar menu, or the banner. It stays on the current page, with no Undo message.
    */
@@ -243,6 +262,7 @@ export default function AppShell() {
         onArchive={archiveProject}
         onRestore={restoreProject}
         onDelete={deleteProject}
+        onPurge={purgeProject}
         focusProjectId={focusProjectId}
         onFocused={clearFocusRequest}
         currentId={projectId}
@@ -275,6 +295,7 @@ export default function AppShell() {
               markPrivacyAccepted,
               archiveProject,
               restoreProject,
+              purgeProject,
             }}
           />
           {/* Mounted empty first, so a message that arrives is announced. */}

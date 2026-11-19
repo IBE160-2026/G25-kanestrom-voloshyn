@@ -36,6 +36,8 @@ ALLOWLIST = {
     ("POST", "/api/projects/{project_id}/archive"),
     ("POST", "/api/projects/{project_id}/delete"),
     ("POST", "/api/projects/{project_id}/restore"),
+    # Delete forever removes a deleted (read-only) Project; it refuses any other (FR-24).
+    ("POST", "/api/projects/{project_id}/purge"),
 }
 
 PHONE_AUTH = {phone_link_auth, phone_link_finalize_auth}

@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 BUCKET = "study-materials"
 # Storage uploads can take longer than the 5 s auth timeout of the shared client.
 TIMEOUT_SECONDS = 120.0
+# Page size when listing a prefix, and the most names per bulk delete.
+LIST_PAGE = 1000
+REMOVE_BATCH = 1000
 
 
 class StorageError(Exception):
@@ -77,3 +80,46 @@ class Storage:
             return
         if response.status_code not in (200, 204, 400, 404):
             logger.warning("Storage answered %s to a delete", response.status_code)
+
+    async def _list(self, prefix: str) -> list[str]:
+        """Every object name under the folder `prefix` (no trailing slash), recursing into subfolders."""
+        names: list[str] = []
+        offset = 0
+        while True:
+            response = await self.http.post(
+                f"/storage/v1/object/list/{BUCKET}",
+                json={"prefix": prefix, "limit": LIST_PAGE, "offset": offset},
+                headers=supabase_auth.admin_headers(self.settings),
+                timeout=TIMEOUT_SECONDS,
+            )
+            if response.status_code != 200:
+                raise StorageError(f"HTTP {response.status_code}")
+            entries = response.json()
+            for entry in entries:
+                path = f"{prefix}/{entry['name']}"
+                # Folders have no id.
+                if entry.get("id") is None:
+                    names += await self._list(path)
+                else:
+                    names.append(path)
+            if len(entries) < LIST_PAGE:
+                return names
+            offset += LIST_PAGE
+
+    async def delete_prefix(self, prefix: str) -> None:
+        """Delete every object under `prefix` (a Project's `{account_id}/{project_id}/`, FR-24), logging and
+        swallowing any failure, like `delete`."""
+        try:
+            names = await self._list(prefix.rstrip("/"))
+            for start in range(0, len(names), REMOVE_BATCH):
+                response = await self.http.request(
+                    "DELETE",
+                    f"/storage/v1/object/{BUCKET}",
+                    json={"prefixes": names[start : start + REMOVE_BATCH]},
+                    headers=supabase_auth.admin_headers(self.settings),
+                    timeout=TIMEOUT_SECONDS,
+                )
+                if response.status_code not in (200, 204):
+                    logger.warning("Storage answered %s to a bulk delete", response.status_code)
+        except Exception as exc:  # noqa: BLE001 -- runs after the commit; never turns a done purge into an error
+            logger.warning("Storage prefix delete failed: %s", type(exc).__name__)

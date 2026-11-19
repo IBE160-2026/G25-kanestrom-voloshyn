@@ -132,6 +132,12 @@ async def cancel_for_project(
     return after, running
 
 
+async def active_ids_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[UUID]:
+    """Every job of the Project still queued or running (also those already `cancel_requested`), for
+    `Runner.wait_for` before a purge (FR-24)."""
+    return await repo.running_ids_for_project(conn, account_id, project_id)
+
+
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
     return await repo.list_for_project(conn, account_id, project_id)
 
@@ -244,6 +250,8 @@ class Runner:
     # Jobs whose handler is running, by id, and those a cancel interrupted.
     _in_handler: dict[UUID, asyncio.Task] = field(default_factory=dict)
     _interrupted: set[UUID] = field(default_factory=set)
+    # Every job task in this process by id, for its whole run (claim, handler, save, after-commit).
+    _by_job: dict[UUID, asyncio.Task] = field(default_factory=dict)
 
     def submit(self, job: dict[str, Any], payload: Any = None) -> None:
         """Start the job as a task; `payload` is in-memory input (e.g. the uploaded bytes)."""
@@ -252,6 +260,13 @@ class Runner:
         task = asyncio.create_task(self._run(job["id"], job["kind"], payload), name=f"job-{job['id']}")
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+        job_id = job["id"]
+        self._by_job[job_id] = task
+        task.add_done_callback(lambda done, job_id=job_id: self._forget(job_id, done))
+
+    def _forget(self, job_id: UUID, task: asyncio.Task) -> None:
+        if self._by_job.get(job_id) is task:
+            del self._by_job[job_id]
 
     def interrupt(self, job_id: UUID) -> None:
         """Stop a cancelled job's handler (and its in-flight model call) now, instead of at its save
@@ -261,6 +276,15 @@ class Runner:
         if task is not None and job_id not in self._interrupted:
             self._interrupted.add(job_id)
             task.cancel()
+
+    async def wait_for(self, job_ids: list[UUID], timeout: float = 30.0) -> bool:
+        """Wait until the tasks running these jobs in this process have ended, at most `timeout` seconds
+        (a purge, FR-24). Ids with no task here are skipped. Never cancels a task. True when all ended."""
+        tasks = [self._by_job[job_id] for job_id in job_ids if job_id in self._by_job]
+        if not tasks:
+            return True
+        _, pending = await asyncio.wait(tasks, timeout=timeout)
+        return not pending
 
     @property
     def running(self) -> int:

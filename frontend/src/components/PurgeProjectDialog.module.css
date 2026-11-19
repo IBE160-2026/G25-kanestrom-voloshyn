@@ -1,0 +1,63 @@
+/* Confirm dialog (delete forever) (DESIGN.md › Confirm dialog (delete forever), Button (danger)): the
+   delete-project dialog's panel and ghost Cancel (DeleteProjectDialog.module.css), with the final
+   "Delete forever" as Button (danger): error fill, dark on-primary label (Color-role rule 3). */
+.danger {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+  background: var(--color-error);
+  color: var(--color-on-primary);
+  border: none;
+}
+
+/* Hover: the hover wash over the fill (no separate hover colour token exists). */
+@media (hover: hover) and (pointer: fine) {
+  .danger:hover:not(:disabled) {
+    background-image: linear-gradient(var(--color-hover), var(--color-hover));
+  }
+}
+
+/* The Focus ring (global.css), stated here so it never depends on the cascade order. */
+.danger:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* 0.38 as the other confirm dialogs' busy buttons: no opacity token exists. */
+.danger:disabled {
+  opacity: 0.38;
+  cursor: progress;
+}
+
+/* The body: what is lost in an inset `{colors.background}` box (DESIGN.md losses-background), then
+   "This can't be undone." in bold. */
+.description {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.losses,
+.final {
+  margin: 0;
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.losses {
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.final {
+  /* No bold body token exists: the heading weight. */
+  font-weight: var(--type-heading-weight);
+}

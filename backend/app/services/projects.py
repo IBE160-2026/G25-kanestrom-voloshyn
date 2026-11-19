@@ -1,14 +1,17 @@
-"""Projects service: create, list, open, rename, archive, delete and restore, auto-naming, and the
-read-only guard (FR-4, FR-5, FR-23, FR-24, AD-14, AD-22). The only writer of `archived_at` and `deleted_at`.
+"""Projects service: create, list, open, rename, archive, delete, restore, and purge, auto-naming, and the
+read-only guard (FR-4, FR-5, FR-23, FR-24, AD-14, AD-22). The only writer of `archived_at` and `deleted_at`,
+and the only deleter of `projects` rows.
 
-Takes `conn`, never commits (AD-18); the exception is `auto_name_if_unnamed`, an after-commit step that
-takes the pool. Every call is scoped by `account_id` (AD-2).
+Takes `conn`, never commits (AD-18); the exceptions take the pool and run their own short transactions:
+`auto_name_if_unnamed` (an after-commit step) and the purge (`purge`, `purge_expired`,
+`purge_expired_forever`). Every call is scoped by `account_id` (AD-2).
 """
 
+import asyncio
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
@@ -21,9 +24,16 @@ from app.llm import Gateway
 from app.llm.gateway import SectionLike
 from app.storage import Storage
 
+if TYPE_CHECKING:
+    from app.services.jobs import Runner
+
 logger = logging.getLogger(__name__)
 
 NAME_MAX_LENGTH = 100
+# How long a purge waits for the Project's running jobs to end before it deletes anyway (FR-24).
+PURGE_WAIT_SECONDS = 30.0
+# The 30-day purge task runs at startup, then every hour (AD-20).
+PURGE_INTERVAL_SECONDS = 3600
 
 
 class ProjectNotFound(AppError):
@@ -34,6 +44,11 @@ class ProjectNotFound(AppError):
 class ProjectReadOnly(AppError):
     def __init__(self) -> None:
         super().__init__(409, "project_read_only", "The Project is archived or deleted")
+
+
+class ProjectNotDeleted(AppError):
+    def __init__(self) -> None:
+        super().__init__(409, "project_not_deleted", "The Project isn't in Deleted projects")
 
 
 class InvalidName(AppError):
@@ -166,17 +181,21 @@ async def delete(
     deleted = await repo.set_deleted(conn, account_id, project_id)
 
     async def after() -> None:
-        for step in steps:
-            if step is None:
-                continue
-            try:
-                result = step()
-                if inspect.isawaitable(result):
-                    await result
-            except Exception as exc:  # noqa: BLE001 -- the delete has committed; cleanup is best effort
-                logger.warning("After-delete step failed: %s", type(exc).__name__)
+        await _run_steps(steps)
 
     return deleted, after, running
+
+
+async def _run_steps(steps: Sequence[Callable[[], Any] | None]) -> None:
+    for step in steps:
+        if step is None:
+            continue
+        try:
+            result = step()
+            if inspect.isawaitable(result):
+                await result
+        except Exception as exc:  # noqa: BLE001 -- the change has committed; cleanup is best effort
+            logger.warning("After-commit step failed: %s", type(exc).__name__)
 
 
 async def restore(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
@@ -192,6 +211,90 @@ async def restore(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> 
 
 def _nothing() -> None:
     return None
+
+
+# --- Delete forever and the 30-day purge (FR-24, AD-18, AD-20, AD-22) ---
+
+
+async def purge(
+    pool: AsyncConnectionPool,
+    storage: Storage,
+    runner: "Runner",
+    account_id: UUID,
+    project_id: UUID,
+    *,
+    include_expired: bool = False,
+    wait_seconds: float | None = None,
+) -> None:
+    """Delete a deleted Project forever (FR-24), in short transactions with no connection held during
+    the wait (AD-18):
+
+    1. lock it (`404 not_found` when missing, foreign or expired, unless `include_expired`;
+       `409 project_not_deleted` when it isn't deleted) and cancel its jobs; commit;
+    2. interrupt its running jobs and wait for them (`runner.wait_for`), at most `wait_seconds`
+       (default `PURGE_WAIT_SECONDS`); a job
+       that outlives the wait finds no Project at its save step and saves nothing;
+    3. delete the row; every child row goes by cascade, Mistake history included;
+    4. after that commit, delete the Storage prefix `{account_id}/{project_id}/`.
+    """
+    # Imported here: `jobs` is imported by services that import this module.
+    from app.services import jobs
+
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            project = await repo.get_for_update(conn, account_id, project_id, include_expired=include_expired)
+            if project is None:
+                raise ProjectNotFound()
+            if project["deleted_at"] is None:
+                raise ProjectNotDeleted()
+            steps, interrupt = await jobs.cancel_for_project(conn, runner.kinds, account_id, project_id)
+            waiting = await jobs.active_ids_for_project(conn, account_id, project_id)
+    await _run_steps(steps)
+    for job_id in interrupt:
+        runner.interrupt(job_id)
+    if wait_seconds is None:
+        wait_seconds = PURGE_WAIT_SECONDS
+    if not await runner.wait_for(waiting, wait_seconds):
+        logger.warning("Purge of Project %s: jobs still running after %.0f s", project_id, wait_seconds)
+
+    async with pool.connection() as conn:
+        async with conn.transaction():
+            removed = await repo.delete_deleted(conn, account_id, project_id)
+            if not removed:
+                # Restored during the wait, or purged by someone else.
+                if await repo.get_for_update(conn, account_id, project_id, include_expired=True) is None:
+                    raise ProjectNotFound()
+                raise ProjectNotDeleted()
+    await storage.delete_prefix(f"{account_id}/{project_id}/")
+
+
+async def purge_expired(pool: AsyncConnectionPool, storage: Storage, runner: "Runner") -> int:
+    """Purge every Project deleted more than 30 days ago, one at a time; a failure is logged and the
+    next goes on (it is retried on the next round). Returns how many were purged."""
+    async with pool.connection() as conn:
+        expired = await repo.expired_ids(conn)
+    purged = 0
+    for account_id, project_id in expired:
+        try:
+            await purge(pool, storage, runner, account_id, project_id, include_expired=True)
+            purged += 1
+        except Exception as exc:  # noqa: BLE001 -- the next Project still goes; retried next round
+            logger.warning("Purge of expired Project %s failed: %s", project_id, type(exc).__name__)
+    if purged:
+        logger.info("Purge: %d expired Project(s) deleted", purged)
+    return purged
+
+
+async def purge_expired_forever(
+    pool: AsyncConnectionPool, storage: Storage, runner: "Runner", interval: float = PURGE_INTERVAL_SECONDS
+) -> None:
+    """At startup, then every `interval` seconds, until cancelled (the app's lifespan, AD-20)."""
+    while True:
+        try:
+            await purge_expired(pool, storage, runner)
+        except Exception as exc:  # noqa: BLE001 -- retried on the next round
+            logger.warning("Purge task failed: %s", type(exc).__name__)
+        await asyncio.sleep(interval)
 
 
 async def auto_name_if_unnamed(

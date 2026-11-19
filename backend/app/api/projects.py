@@ -8,18 +8,21 @@
   bookkeeping, so no `ActiveProject`; each returns the Project. Archive and delete revoke the Project's
   phone links; delete also cancels its jobs. Restore clears both `archived_at` and `deleted_at`.
   A deleted Project carries `purge_at`, 30 days after `deleted_at`.
+- `POST /api/projects/{project_id}/purge` ("Delete forever", FR-24): bookkeeping, so no `ActiveProject`;
+  only a deleted Project (`409 project_not_deleted`), then it and everything in it is gone (`204`). Runs
+  its own short transactions through the pool; no request `Conn` is held (AD-18).
 """
 
 from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, ConfigDict
 
 from app.api.conn import after_commit
 from app.api.deps import ActiveProject, Conn
-from app.auth import UserAuth
+from app.auth import ReleasedUserAuth, UserAuth
 from app.services import projects
 
 router = APIRouter(prefix="/projects")
@@ -96,3 +99,11 @@ async def delete_project(request: Request, project_id: UUID, user: UserAuth, con
 @router.post("/{project_id}/restore", response_model=Project)
 async def restore_project(project_id: UUID, user: UserAuth, conn: Conn) -> Project:
     return to_project(await projects.restore(conn, user.account_id, project_id))
+
+
+@router.post("/{project_id}/purge", status_code=204)
+async def purge_project(request: Request, project_id: UUID, user: ReleasedUserAuth) -> Response:
+    # `ReleasedUserAuth`: no request connection stays open while the purge waits for running jobs.
+    state = request.app.state
+    await projects.purge(state.pool, state.storage, state.runner, user.account_id, project_id)
+    return Response(status_code=204)

@@ -222,6 +222,19 @@ async def request_cancel_running_for_project(conn: AsyncConnection, account_id: 
         return [row[0] for row in await cur.fetchall()]
 
 
+async def running_ids_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[UUID]:
+    """Ids of the Project's queued or running jobs, flagged or not (the purge waits for them, FR-24)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id FROM generation_jobs
+            WHERE account_id = %s AND project_id = %s AND status IN ('queued', 'running')
+            """,
+            (account_id, project_id),
+        )
+        return [row[0] for row in await cur.fetchall()]
+
+
 async def now(conn: AsyncConnection) -> datetime:
     async with conn.cursor() as cur:
         await cur.execute("SELECT now()")

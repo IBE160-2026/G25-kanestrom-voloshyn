@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { daysLeft } from './daysLeft.js'
 import DeleteProjectDialog from './DeleteProjectDialog.jsx'
+import PurgeProjectDialog from './PurgeProjectDialog.jsx'
 import { initials } from './initials.js'
 import ProjectName from './ProjectName.jsx'
 import styles from './Sidebar.module.css'
@@ -15,9 +16,10 @@ import styles from './Sidebar.module.css'
 // collapsed by default (not saved) and absent at 0; each opens read-only, and its "···" menu has
 // Restore. Active and archived rows' menus also have "Delete project", which opens the Confirm
 // dialog (delete project) (FR-24, Story 7.2a). Below "Archived", "Deleted projects ({n})" lists the
-// deleted Projects the same way, each muted with "Deleted · {n} days left"; its menu has Restore only
-// (Delete forever is Story 7.2b). "Hide projects" collapses it to the strip with "Show projects" and a
-// "New project" icon button; the strip shows active Projects only. The collapse state is the AppShell's.
+// deleted Projects the same way, each muted with "Deleted · {n} days left"; its menu has Restore and
+// "Delete forever", which opens the Confirm dialog (delete forever) (Story 7.2b). "Hide projects"
+// collapses it to the strip with "Show projects" and a "New project" icon button; the strip shows
+// active Projects only. The collapse state is the AppShell's.
 export default function Sidebar({
   projects,
   archivedProjects = [],
@@ -31,6 +33,7 @@ export default function Sidebar({
   onArchive,
   onRestore,
   onDelete,
+  onPurge,
   focusProjectId = null,
   onFocused,
 }) {
@@ -43,6 +46,8 @@ export default function Sidebar({
   if (deletedOpen && deletedProjects.length === 0) setDeletedOpen(false)
   // The delete dialog's { project, trigger }: the "···" trigger focus goes back to on Cancel.
   const [deleting, setDeleting] = useState(null)
+  // The delete-forever dialog's { project, trigger }, the same way.
+  const [purging, setPurging] = useState(null)
   const triggers = useRef({})
   const list = useRef(null)
   const newProject = useRef(null)
@@ -323,13 +328,23 @@ export default function Sidebar({
                         <span className={styles.daysLeft}>{t('projects.daysLeft', { count: daysLeft(project) })}</span>
                       </Link>
                       <DropdownMenu.Root modal={false}>
-                        <DropdownMenu.Trigger className={styles.more} aria-label={t('projects.more', { name })}>
+                        <DropdownMenu.Trigger
+                          ref={keepTrigger(project.id)}
+                          className={styles.more}
+                          aria-label={t('projects.more', { name })}
+                        >
                           <Dots />
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Portal>
                           <DropdownMenu.Content className={styles.menu} align="start" sideOffset={4}>
                             <DropdownMenu.Item className={styles.menuItem} onSelect={() => onRestore?.(project.id)}>
                               {t('projects.restore')}
+                            </DropdownMenu.Item>
+                            <DropdownMenu.Item
+                              className={styles.menuItem}
+                              onSelect={() => setPurging({ project, trigger: triggers.current[project.id] ?? null })}
+                            >
+                              {t('projects.purge')}
                             </DropdownMenu.Item>
                           </DropdownMenu.Content>
                         </DropdownMenu.Portal>
@@ -351,6 +366,13 @@ export default function Sidebar({
         returnFocus={deleting?.trigger ?? null}
         onDelete={(project) => onDelete(project.id)}
         onClose={() => setDeleting(null)}
+        onFocusLost={focusList}
+      />
+      <PurgeProjectDialog
+        project={purging?.project ?? null}
+        returnFocus={purging?.trigger ?? null}
+        onPurge={(project) => onPurge(project.id)}
+        onClose={() => setPurging(null)}
         onFocusLost={focusList}
       />
     </aside>
