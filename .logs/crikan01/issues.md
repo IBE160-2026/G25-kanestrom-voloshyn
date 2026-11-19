@@ -43,3 +43,4 @@
 - [ ] 2026-11-19 [story-1-6-google-sign-in](981-2026-11-19-16-37-17-story-1-6-google-sign-in.md) — Avtal med Ihor hvem som tar hvilke stories fremover.
 - [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — Teksten for en mobilbunke der ingen bilder kunne leses (entallsform «image») trenger godkjenning.
 - [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — «Send photos» / «Send bilder» på mobilsiden: den norske teksten trenger godkjenning i EXPERIENCE.md.
+- [ ] 2026-11-19 [story-7-1-archive](979-2026-11-19-22-32-26-story-7-1-archive.md) — Hover-stilen på Gjenopprett-knappen i arkiv-banneret er ikke fra DESIGN.md (agentens valg).
