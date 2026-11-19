@@ -86,15 +86,17 @@ async def outstanding_by_material(conn: AsyncConnection, account_id: UUID, proje
 async def oldest_outstanding(
     conn: AsyncConnection, account_id: UUID, project_id: UUID, limit: int
 ) -> list[dict[str, Any]]:
-    """The Project's oldest outstanding Mistakes, at most `limit`: `id`, `material_ids`, and
-    `question_snapshot` (AD-11)."""
+    """The Project's oldest outstanding Mistakes, at most `limit`: `id`, `material_ids`,
+    `question_snapshot`, and the wrong answer's `submitted_option_id` (AD-11)."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             f"""
-            SELECT id, material_ids, question_snapshot
-            FROM mistakes
-            WHERE account_id = %s AND project_id = %s AND {OUTSTANDING}
-            ORDER BY created_at, id
+            SELECT m.id, m.material_ids, m.question_snapshot, qa.submitted_option_id
+            FROM mistakes m
+            LEFT JOIN quiz_answers qa ON qa.id = m.failed_answer_id AND qa.account_id = m.account_id
+            WHERE m.account_id = %s AND m.project_id = %s
+              AND m.cleared_at IS NULL AND m.withdrawn_at IS NULL
+            ORDER BY m.created_at, m.id
             LIMIT %s
             """,
             (account_id, project_id, limit),

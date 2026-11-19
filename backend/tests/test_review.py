@@ -856,6 +856,28 @@ def test_plan_targets_keeps_a_targets_sections_within_the_cap():
     assert (target.question_text, target.correct_text) == ("Q?", "Beta")
 
 
+def test_plan_targets_carries_the_students_wrong_answer():
+    s1 = _S("Page 1")
+    m = {"id": uuid.uuid4(), "submitted_option_id": "c", "question_snapshot": {
+        "question": "Q?", "options": OPTIONS, "correct_option_id": "b", "source_section_ids": [str(s1.id)]}}
+
+    (target,) = review.plan_targets([m], {s1.id: s1}, 100_000)
+
+    texts = {o["id"]: o["text"] for o in OPTIONS}
+    assert target.wrong_text == texts["c"] != target.correct_text
+
+
+def test_a_round_sends_each_mistakes_wrong_answer_to_the_model(client, db, student, project, monkeypatch):
+    make_mistakes(client, db, student, project, 2)
+    counting = CountingPractice(monkeypatch)
+
+    full_round(client, db, student, project)
+
+    targets = counting.calls[0]
+    assert len(targets) == 2
+    assert all(t.wrong_text and t.wrong_text != t.correct_text for t in targets)
+
+
 def test_a_bad_snapshot_section_id_is_skipped_not_fatal():
     good = uuid.uuid4()
     mistake = {"id": uuid.uuid4(), "material_ids": [uuid.uuid4()], "question_snapshot": {

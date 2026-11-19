@@ -68,12 +68,13 @@ class IdentifiedSection(LabelledSection, Protocol):
 @dataclass(frozen=True)
 class PracticeTarget:
     """A Mistake to write a practice question for (AD-11): the original question, its correct answer's
-    text, and the Sections it cited."""
+    text, the Sections it cited, and the student's wrong answer, so the practice can target it."""
 
     mistake_id: Any
     question_text: str
     correct_text: str
     sections: Sequence[IdentifiedSection]
+    wrong_text: str = ""
 
 
 def practice_sections(targets: Sequence[PracticeTarget]) -> list[IdentifiedSection]:
@@ -315,6 +316,7 @@ class Gateway:
                 "mistake_id": str(target.mistake_id),
                 "question": target.question_text,
                 "correct_answer": target.correct_text,
+                "student_answer": target.wrong_text,
                 "sections": [number[section.id] for section in target.sections],
             }
             for target in targets

@@ -274,12 +274,13 @@ def plan_targets(
             continue
         texts = {option.get("id"): option.get("text", "") for option in snap.get("options") or []}
         question, correct = str(snap.get("question", "")), str(texts.get(snap.get("correct_option_id"), ""))
-        cost = len(question) + len(correct) + sum(len(s.text) for s in own if s.id not in sent)
+        wrong = str(texts.get(m.get("submitted_option_id"), ""))
+        cost = len(question) + len(correct) + len(wrong) + sum(len(s.text) for s in own if s.id not in sent)
         if (used + cost) // CHARS_PER_TOKEN > budget_tokens:
             continue
         used += cost
         sent.update(s.id for s in own)
-        targets.append(PracticeTarget(m["id"], question, correct, own))
+        targets.append(PracticeTarget(m["id"], question, correct, own, wrong))
     return targets
 
 
