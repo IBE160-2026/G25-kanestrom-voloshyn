@@ -1,12 +1,18 @@
-"""Quiz setup and generation (FR-10, FR-26, AD-7, AD-20).
+"""Quiz setup, generation, and taking (FR-10, FR-11, FR-26, AD-7, AD-9, AD-20).
 
 - `GET /api/projects/{project_id}/capacity?scope=<json>`: `{max_questions}` for a scope, deterministic,
   with no model call. A read, so no read-only guard.
 - `POST /api/projects/{project_id}/quizzes` `{scope, count}`: requires an active Project
   (`ActiveProject`); resolves the scope, refuses one over the context budget (`422 scope_too_large`), and
   queues a `quiz` job: `202 {job_id}`.
-- `GET /api/projects/{project_id}/quizzes/{quiz_id}`: `{id, requested_count, question_count}`; the
-  Questions are served from Story 3.2.
+- `GET /api/projects/{project_id}/quizzes/{quiz_id}`: `{id, requested_count, question_count, questions}`.
+  Each Question is `{id, position, question, options: [{id, text}], answer}`; `answer` is null until the
+  Question is answered, so the answer key, explanation, and sources never reach the browser before
+  (AD-9). A read, so a read-only Project's Quiz still opens.
+- `POST /api/projects/{project_id}/quizzes/{quiz_id}/questions/{question_id}/answer` `{option_id}`
+  (Story 3.2, FR-11): requires an active Project; scores with no model call, saves the answer once, and
+  returns the answered Question, `answer: {submitted_option_id, is_correct, correct_option_id,
+  explanation, sources: [{label}]}`. A repeat submit returns the stored answer unchanged.
 
 `scope` is `{"all_topics": true}` or `{"topic_ids": [...]}` (AD-7). A foreign Topic is `404 not_found`;
 a scope with no Ready material is `422 insufficient_material`.
@@ -64,10 +70,42 @@ class JobAccepted(BaseModel):
     job_id: UUID
 
 
+class Option(BaseModel):
+    id: str
+    text: str
+
+
+class SourceLabel(BaseModel):
+    label: str
+
+
+class Answer(BaseModel):
+    submitted_option_id: str
+    is_correct: bool
+    correct_option_id: str
+    explanation: str
+    sources: list[SourceLabel]
+
+
+class Question(BaseModel):
+    id: UUID
+    position: int
+    question: str
+    options: list[Option]
+    answer: Answer | None
+
+
 class Quiz(BaseModel):
     id: UUID
     requested_count: int
     question_count: int
+    questions: list[Question]
+
+
+class AnswerRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    option_id: Literal["a", "b", "c", "d"]
 
 
 @router.get("/capacity", response_model=Capacity)
@@ -108,3 +146,12 @@ async def create_quiz(
 @router.get("/quizzes/{quiz_id}", response_model=Quiz)
 async def get_quiz(project_id: UUID, quiz_id: UUID, user: UserAuth, conn: Conn) -> Quiz:
     return Quiz.model_validate(await quiz.get(conn, user.account_id, project_id, quiz_id))
+
+
+@router.post("/quizzes/{quiz_id}/questions/{question_id}/answer", response_model=Question)
+async def answer_question(
+    quiz_id: UUID, question_id: UUID, body: AnswerRequest, project: ActiveProject, user: UserAuth, conn: Conn
+) -> Question:
+    return Question.model_validate(
+        await quiz.answer(conn, user.account_id, project["id"], quiz_id, question_id, body.option_id)
+    )

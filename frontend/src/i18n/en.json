@@ -87,13 +87,47 @@
       "writing": "Writing questions",
       "checking": "Checking answers"
     },
-    "cancel": "Cancel",
     "cancelled": "Cancelled. Your choices are kept.",
     "failed": "We couldn't make the quiz.",
-    "ready_one": "Your quiz is ready: {{count}} question.",
-    "ready_other": "Your quiz is ready: {{count}} questions.",
     "fewer_one": "Only {{count}} question was possible from this material.",
-    "fewer_other": "Only {{count}} questions were possible from this material."
+    "fewer_other": "Only {{count}} questions were possible from this material.",
+    "progress": "{{n}} of {{total}}",
+    "yourAnswer": "Your answer",
+    "correctAnswer": "Correct answer",
+    "correct": "Correct",
+    "notQuite": "Not quite",
+    "staysInReview": "It stays in your review.",
+    "next": "Next question",
+    "seeResults": "See results",
+    "keys": {
+      "answer": "answer",
+      "next": "next"
+    },
+    "score": "<score>{{correct}}</score> <muted>of {{total}} correct</muted>",
+    "missedStay": "Missed questions stay in your review.",
+    "newQuiz": "New quiz"
+  },
+  "progress": {
+    "cancel": "Cancel",
+    "step": "Step {{n}} of {{total}} · {{label}}",
+    "lines": [
+      "Analyzing…",
+      "Connecting ideas…",
+      "Exploring possibilities…",
+      "Gathering insights…",
+      "Thinking it through…",
+      "Finding patterns…",
+      "Sorting information…",
+      "Checking the details…",
+      "Weighing the options…",
+      "Refining the results…",
+      "Putting things together…",
+      "Exploring different angles…",
+      "Making connections…",
+      "Fine-tuning…",
+      "Almost there…",
+      "Putting on the finishing touches…"
+    ]
   },
   "files": {
     "header": "Files <muted>· {{n}} of 10</muted>",

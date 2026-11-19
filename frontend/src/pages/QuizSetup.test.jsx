@@ -42,9 +42,9 @@ async function startQuiz(options = {}) {
   return opened
 }
 
-function stepStates() {
-  return screen.getAllByRole('listitem').filter((li) => li.dataset.state).map((li) => [li.textContent.replace('✓', ''), li.dataset.state])
-}
+// The Progress steps' step line, "Step {n} of 3 · {label}" (the polite live region).
+const STEP = (n, key) => `Step ${n} of 3 · ${en.quiz.steps[key]}`
+const stepLine = () => screen.getByRole('status').textContent
 
 describe('Quiz setup', () => {
   it('opens from the Quiz button in the chat, which is enabled once a file is Ready', async () => {
@@ -152,24 +152,25 @@ describe('Quiz setup', () => {
     expect([1, 5, 6, 10, 14, 20].map(requestCount)).toEqual([5, 5, 10, 10, 20, 20])
   })
 
-  it('shows the Progress steps in turn, polling every 2 s, then the Quiz ready panel', async () => {
-    const { state } = await startQuiz()
+  it('shows the Progress steps in turn, polling every 2 s, then lands on question 1', async () => {
+    const { state, router } = await startQuiz()
     const steps = en.quiz.steps
 
-    await waitFor(() => expect(stepStates()).toEqual([[steps.reading, 'now'], [steps.writing, 'pending'], [steps.checking, 'pending']]))
+    await waitFor(() => expect(stepLine()).toBe(`Step 1 of 3 · ${steps.reading}`))
     expect(screen.getByRole('status')).toHaveAttribute('aria-live', 'polite')
 
     stepJob(state, 'q-1', 'writing')
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(stepStates()).toEqual([[steps.reading, 'done'], [steps.writing, 'now'], [steps.checking, 'pending']])
+    expect(stepLine()).toBe(`Step 2 of 3 · ${steps.writing}`)
 
     stepJob(state, 'q-1', 'checking')
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(stepStates()).toEqual([[steps.reading, 'done'], [steps.writing, 'done'], [steps.checking, 'now']])
+    expect(stepLine()).toBe(`Step 3 of 3 · ${steps.checking}`)
 
     finishQuiz(state, 'q-1', 10)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/projects/a/quizzes/quiz-q-1')
     expect(screen.queryByText(en.quiz.fewer_other.replace('{{count}}', 10))).not.toBeInTheDocument()
     expect(callsTo('/api/jobs/q-1/seen', 'POST')).toHaveLength(1)
   })
@@ -192,7 +193,7 @@ describe('Quiz setup', () => {
     stepJob(state, 'q-1', 'writing')
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(stepStates()[1]).toEqual([en.quiz.steps.writing, 'now'])
+    expect(stepLine()).toBe(STEP(2, 'writing'))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
@@ -202,19 +203,17 @@ describe('Quiz setup', () => {
     finishQuiz(state, 'q-1', 6)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 6) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
     expect(screen.getByText(en.quiz.fewer_other.replace('{{count}}', 6))).toBeInTheDocument()
   })
 
-  it('"← Back to chat" on the ready panel goes back to the Project', async () => {
+  it('the finished Quiz replaces the setup in the history, so Back returns to the chat', async () => {
     const { state, router } = await startQuiz()
     finishQuiz(state, 'q-1', 10)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    const panel = (await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).closest('section')
+    await screen.findByRole('heading', { name: 'Question 1?' })
 
-    fireEvent.click(within(panel).getByRole('button', { name: en.activity.back }))
-
-    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a'))
+    expect(router.state.historyAction).toBe('REPLACE')
   })
 
   it('Cancel returns to setup with the choices kept and "Cancelled. Your choices are kept."', async () => {
@@ -224,15 +223,15 @@ describe('Quiz setup', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Photosynthesis 2' }))
     await waitFor(() => expect(make(20)).toBeEnabled())
     fireEvent.click(make(20))
-    await screen.findByText(en.quiz.steps.reading)
+    await screen.findByText(STEP(1, 'reading'))
 
-    fireEvent.click(screen.getByRole('button', { name: en.quiz.cancel }))
+    fireEvent.click(screen.getByRole('button', { name: en.progress.cancel }))
 
     expect(await screen.findByText(en.quiz.cancelled)).toBeInTheDocument()
     expect(state.cancelled).toEqual(['q-1'])
     expect(screen.getByRole('radio', { name: '20' })).toBeChecked()
     expect(screen.getByRole('button', { name: 'Photosynthesis 2' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.queryByText(en.quiz.steps.reading)).not.toBeInTheDocument()
+    expect(screen.queryByText(STEP(1, 'reading'))).not.toBeInTheDocument()
     const polls = callsTo('/api/projects/a/jobs').length
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS * 3))
     expect(callsTo('/api/projects/a/jobs')).toHaveLength(polls)
@@ -255,7 +254,7 @@ describe('Quiz setup', () => {
 
     await waitFor(() => expect(state.quizRequests).toHaveLength(2))
     expect(state.quizRequests[1]).toEqual(state.quizRequests[0])
-    expect(await screen.findByText(en.quiz.steps.reading)).toBeInTheDocument()
+    expect(await screen.findByText(STEP(1, 'reading'))).toBeInTheDocument()
   })
 
   it('a scope over the budget shows "That\'s a lot of material…" with no Try again', async () => {
@@ -331,12 +330,11 @@ describe('Quiz setup', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lag 6 i stedet' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Lag 6 spørsmål' }))
 
-    expect(await screen.findByText('Leser materialet ditt')).toBeInTheDocument()
-    expect(screen.getByText('Skriver spørsmål')).toBeInTheDocument()
-    expect(screen.getByText('Sjekker svarene')).toBeInTheDocument()
+    expect(await screen.findByText('Steg 1 av 3 · Leser materialet ditt')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Avbryt' })).toBeInTheDocument()
     finishQuiz(state, 'q-1', 6)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    expect(await screen.findByRole('heading', { name: 'Quizen din er klar: 6 spørsmål.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
   })
 
   it('shows "Vi fikk ikke laget quizen." on a failure in Norwegian', async () => {
@@ -356,35 +354,30 @@ describe('Quiz setup', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
   })
 
-  it('moves focus to the Progress steps, then to the ready panel heading', async () => {
-    const { state } = await startQuiz()
+  it('moves focus to the Progress steps', async () => {
+    await startQuiz()
 
     await waitFor(() => expect(screen.getByRole('status')).toHaveFocus())
-
-    finishQuiz(state, 'q-1', 10)
-    await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
-    const heading = await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })
-    await waitFor(() => expect(heading).toHaveFocus())
   })
 
   it('after a cancel, focus returns to the setup heading', async () => {
     await startQuiz()
-    await screen.findByText(en.quiz.steps.reading)
+    await screen.findByText(STEP(1, 'reading'))
 
-    fireEvent.click(screen.getByRole('button', { name: en.quiz.cancel }))
+    fireEvent.click(screen.getByRole('button', { name: en.progress.cancel }))
 
     await screen.findByText(en.quiz.cancelled)
     await waitFor(() => expect(screen.getByRole('heading', { name: en.quiz.title })).toHaveFocus())
   })
 
-  it('a Cancel that finds the Quiz already saved shows the ready panel, not "Cancelled"', async () => {
+  it('a Cancel that finds the Quiz already saved opens it, not "Cancelled"', async () => {
     const { state } = await startQuiz()
-    await screen.findByText(en.quiz.steps.reading)
+    await screen.findByText(STEP(1, 'reading'))
     finishQuiz(state, 'q-1', 10)
 
-    fireEvent.click(screen.getByRole('button', { name: en.quiz.cancel }))
+    fireEvent.click(screen.getByRole('button', { name: en.progress.cancel }))
 
-    expect(await screen.findByRole('heading', { name: en.quiz.ready_other.replace('{{count}}', 10) })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Question 1?' })).toBeInTheDocument()
     expect(screen.queryByText(en.quiz.cancelled)).not.toBeInTheDocument()
   })
 
@@ -396,14 +389,14 @@ describe('Quiz setup', () => {
         },
       },
     })
-    await screen.findByText(en.quiz.steps.reading)
+    await screen.findByText(STEP(1, 'reading'))
 
-    fireEvent.click(screen.getByRole('button', { name: en.quiz.cancel }))
+    fireEvent.click(screen.getByRole('button', { name: en.progress.cancel }))
 
     const alert = await screen.findByRole('alert')
     expect(within(alert).getByRole('button', { name: en.inlineError.retry })).toBeInTheDocument()
-    expect(screen.getByText(en.quiz.steps.reading)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: en.quiz.cancel })).toBeEnabled()
+    expect(screen.getByText(STEP(1, 'reading'))).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: en.progress.cancel })).toBeEnabled()
     expect(screen.queryByText(en.quiz.cancelled)).not.toBeInTheDocument()
     expect(state.jobs[0].status).toBe('running')
   })
@@ -416,14 +409,9 @@ describe('Quiz setup', () => {
     })
     renderRoute('/projects/a/quiz')
 
-    await screen.findByText(en.quiz.steps.writing)
-    expect(stepStates()).toEqual([
-      [en.quiz.steps.reading, 'done'],
-      [en.quiz.steps.writing, 'now'],
-      [en.quiz.steps.checking, 'pending'],
-    ])
+    await screen.findByText(STEP(2, 'writing'))
     expect(screen.queryByRole('heading', { name: en.quiz.title })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: en.quiz.cancel })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: en.progress.cancel })).toBeInTheDocument()
   })
 
   it.each(['insufficient_material', 'material_removed', 'scope_too_large'])(

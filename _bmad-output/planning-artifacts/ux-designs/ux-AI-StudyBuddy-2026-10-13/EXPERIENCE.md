@@ -2,7 +2,7 @@
 title: "Experience: AI Study Buddy"
 status: final
 created: 2026-10-13
-updated: 2026-11-18
+updated: 2026-11-19
 sources:
   - ../../prds/prd-AI-StudyBuddy-2026-10-06/prd.md
   - ../../briefs/brief-AI-StudyBuddy-2026-09-16/brief.md
@@ -104,7 +104,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | English | Norwegian (bokmål) |
 |---|---|
 | Not quite | Ikke helt |
-| It stays in your review. | Den ligger fortsatt i repetisjonen din. |
+| It stays in your review. | Det ligger fortsatt i repetisjonen din. [Norwegian corrected by Cristoffer 2026-11-19] |
 | Mistake Review | Repetisjon av feil |
 | Chat (the term, in every string: "New chat", "Chats", "Back to chat") | Samtale ("Ny samtale", "Samtaler", "Tilbake til samtalen") |
 | Flashcards (the term, in every string, including "cards") | Treningskort |
@@ -254,6 +254,8 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Feedback, correct | "Correct" [ASSUMPTION: copy] | Riktig |
 | Score summary | "{correct} of {total} correct" · "Missed questions stay in your review." · "New quiz" [ASSUMPTION: copy] | {correct} av {total} riktige · Spørsmål du bommet på, ligger i repetisjonen din. · Ny quiz |
 | Progress steps, cancel | "Cancel" | Avbryt |
+| Progress status lines (rotating, random; the last two only during the final step) | "Analyzing…" · "Connecting ideas…" · "Exploring possibilities…" · "Gathering insights…" · "Thinking it through…" · "Finding patterns…" · "Sorting information…" · "Checking the details…" · "Weighing the options…" · "Refining the results…" · "Putting things together…" · "Exploring different angles…" · "Making connections…" · "Fine-tuning…" · "Almost there…" · "Putting on the finishing touches…" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer] | Analyserer… · Kobler sammen ideer… · Utforsker muligheter… · Samler innsikt… · Tenker gjennom… · Finner mønstre… · Sorterer informasjon… · Sjekker detaljene… · Veier alternativene… · Finpusser resultatene… · Setter ting sammen… · Utforsker ulike vinkler… · Knytter sammenhenger… · Finjusterer… · Nesten ferdig… · Legger siste hånd på verket… |
+| Progress step line | "Step {n} of {total} · {label}" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer] | Steg {n} av {total} · {label} |
 | Generation cancelled | "Cancelled. Your choices are kept." [ASSUMPTION: copy] | Avbrutt. Valgene dine er lagret. |
 | Flashcards, actions | "Got it" · "Not yet" · "Stop for now" | Kan det · Ikke ennå · Stopp for nå |
 | Flashcards, progress | "{n} of {total}" | {n} av {total} |
@@ -290,6 +292,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | API error, blank project name (`invalid_name`) | "Give the project a name." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Gi prosjektet et navn. |
 | API error, read-only project (`project_read_only`) | "This project is read-only." [ASSUMPTION: copy, approved 2026-11-16 with Story 2.1] | Dette prosjektet kan bare leses. |
 | API error, privacy notice not accepted (`privacy_notice_required`) | "Accept the note on how your files are used before your first upload." [ASSUMPTION: copy, approved 2026-11-17 with Story 2.3] | Godta merknaden om hvordan filene dine brukes før du laster opp første gang. |
+| API error, no ready material in scope (`insufficient_material`) | "There isn't enough ready material for this yet." [ASSUMPTION: copy, approved 2026-11-19 with Story 3.1a] | Det er ikke nok ferdig materiale til dette ennå. |
 | Too much material | "That's a lot of material. Pick fewer topics or one file." [ASSUMPTION: copy] | Det er mye materiale. Velg færre emner eller én fil. |
 | Read-only project, blocked action | "This project is archived. Restore it to make changes." · deleted: "This project is deleted. Restore it to make changes." [ASSUMPTION: copy] | Prosjektet er arkivert. Gjenopprett det for å gjøre endringer. · Prosjektet er slettet. Gjenopprett det for å gjøre endringer. |
 
@@ -306,7 +309,7 @@ Behavioral. Visual specs live in DESIGN.md Components, which uses the same compo
 | Key hint | Quiz, Flashcards, Mistake Review buttons | Shows the shortcut on the control it triggers. Desktop only. |
 | Source label | Chat, Quiz, Flashcards, Summarize, Mistake Review | "filename · slide N". |
 | Progress bar | Quiz, Flashcards, Mistake Review | Advances with each question, card, or mistake. |
-| Progress steps | Quiz, Flashcards, Summary generation; Mistake Review start | Per-activity step labels with Cancel. The student can leave (State Patterns › Generating); all four follow the same generation rules. Cancel returns to setup with choices kept; from the Mistake Review start, to the chat [ASSUMPTION]. |
+| Progress steps | Quiz, Flashcards, Summary generation; Mistake Review start | A spinner with a rotating status line (Strings › Progress status lines) and the real step as "Step {n} of {total} · {label}", with Cancel. Screen readers hear only the real step when it changes, never the rotating line [decided by Cristoffer 2026-11-19]. The student can leave (State Patterns › Generating); all four follow the same generation rules. Cancel returns to setup with choices kept; from the Mistake Review start, to the chat [ASSUMPTION]. |
 | Skeleton | Project cold-load; History loading | Holds the shape of the chat thread and Files panel, or the History list, until content arrives. Static: no shimmer. |
 | Inline error | Network or AI failure (generation, History, remove file, Mistake Review) | Message, the reassurance "Nothing you've made is lost.", and "Try again", which takes focus. Choices and saved work are kept. |
 | Undo message | After archiving a Project; once after a Google takeover | "{project} archived · Undo"; Undo restores the Project immediately. Shows at the bottom left of the main area for 6 seconds, and stays while hovered or focused. Without an action, it carries the one-time notice "Your account now signs in with Google." (State Patterns › Account). [ASSUMPTION: the takeover notice reuses this component] |

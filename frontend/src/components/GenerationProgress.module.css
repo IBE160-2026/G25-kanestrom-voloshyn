@@ -1,0 +1,80 @@
+/* Progress steps (DESIGN.md › Progress steps): centred spinner, rotating status line, muted step line,
+   ghost Cancel. */
+.progress {
+  width: 100%;
+  max-width: var(--space-setup-width);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-content-x);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+/* A primary-coloured loop: a ring with one primary arc. Static under reduced motion. */
+.spinner {
+  width: var(--space-6);
+  height: var(--space-6);
+  margin-bottom: var(--space-2);
+  border: var(--space-accent-edge-width) solid var(--color-primary-subtle);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner {
+    animation: spin 0.9s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.line {
+  min-height: calc(var(--type-body-size) * var(--type-body-line-height));
+  color: var(--color-text);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+}
+
+.step {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+.step:focus {
+  outline: none;
+}
+
+.step:focus-visible,
+.cancel:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.cancel {
+  margin-top: var(--space-3);
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.cancel:hover {
+  background: var(--color-hover);
+}
+
+.cancel:disabled {
+  opacity: 0.38;
+  cursor: default;
+}

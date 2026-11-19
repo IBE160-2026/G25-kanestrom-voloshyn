@@ -132,3 +132,14 @@ def test_job_cancel_is_allowlisted_bookkeeping():
     route = next(r for r in api_routes(app) if r.path == "/api/jobs/{job_id}/cancel" and "POST" in r.methods)
     assert active_project not in _calls(route.dependant)
     assert ("POST", "/api/jobs/{job_id}/cancel") in ALLOWLIST
+
+
+def test_quiz_answers_are_guarded():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(
+        r
+        for r in api_routes(app)
+        if r.path == "/api/projects/{project_id}/quizzes/{quiz_id}/questions/{question_id}/answer"
+        and "POST" in r.methods
+    )
+    assert active_project in _calls(route.dependant)
