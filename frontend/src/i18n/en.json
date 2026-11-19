@@ -299,7 +299,8 @@
     "title": "Upload from phone",
     "waiting": "Waiting for photos…",
     "expiry": "This code works for 10 minutes and stops when you close this window.",
-    "close": "Close"
+    "close": "Close",
+    "sameNetwork": "Your phone needs to be on the same Wi-Fi as this computer."
   },
   "phone": {
     "header": "Uploading to {{project}}",

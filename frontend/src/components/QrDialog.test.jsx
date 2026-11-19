@@ -11,7 +11,7 @@ import nb from '../i18n/nb.json'
 import { POLL_MS } from '../pages/useProjectFiles.js'
 import { PROFILE, callsTo, fakeApi, finish, material, project } from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
-import { phoneUrl, qrPath } from './qrCode.js'
+import { isLocalUrl, phoneUrl, qrPath } from './qrCode.js'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
 vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
@@ -319,5 +319,47 @@ describe('Upload from phone', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
     await waitFor(() => expect(callsTo('/api/usage').length).toBeGreaterThan(before))
+  })
+
+  it('knows a local address', () => {
+    for (const url of ['http://localhost:8000/u/x', 'http://127.0.0.1/u/x', 'http://10.1.2.3:8000/u/x', 'http://172.16.0.1/u/x',
+      'http://172.31.255.1/u/x', 'http://192.168.10.109:8000/u/x']) {
+      expect(isLocalUrl(url)).toBe(true)
+    }
+    for (const url of ['https://studybuddy.example.com/u/x', 'http://172.15.0.1/u/x', 'http://172.32.0.1/u/x',
+      'http://192.169.0.1/u/x', 'http://8.8.8.8/u/x', 'http://10.example.com/u/x', 'not a url']) {
+      expect(isLocalUrl(url)).toBe(false)
+    }
+  })
+
+  it('a code for a local address says the phone must be on the same Wi-Fi', async () => {
+    const user = userEvent.setup()
+    await openProject({ appPublicUrl: 'http://192.168.10.109:8000' })
+
+    const dialog = await openDialog(user)
+
+    await within(dialog).findByRole('img', { name: en.qr.title })
+    expect(within(dialog).getByText('Your phone needs to be on the same Wi-Fi as this computer.')).toBeInTheDocument()
+  })
+
+  it('a code for a public address has no Wi-Fi hint', async () => {
+    const user = userEvent.setup()
+    await openProject({ appPublicUrl: 'https://studybuddy.example.com' })
+
+    const dialog = await openDialog(user)
+
+    await within(dialog).findByRole('img', { name: en.qr.title })
+    expect(within(dialog).queryByText(en.qr.sameNetwork)).not.toBeInTheDocument()
+  })
+
+  it('shows the Wi-Fi hint in Norwegian', async () => {
+    await i18n.changeLanguage('nb')
+    const user = userEvent.setup()
+    await openProject({ appPublicUrl: 'http://192.168.10.109:8000' })
+
+    await user.click(within(panel()).getByRole('button', { name: nb.files.uploadPhone }))
+
+    const dialog = await screen.findByRole('dialog', { name: nb.qr.title })
+    expect(await within(dialog).findByText('Mobilen må være på samme Wi-Fi som denne datamaskinen.')).toBeInTheDocument()
   })
 })

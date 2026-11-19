@@ -20,3 +20,19 @@ export function qrPath(text) {
   }
   return { size: modules.size, d: parts.join('') }
 }
+
+/** Whether the URL's host is a local address (localhost, 127.x, 10.x, 172.16-31.x, 192.168.x): the
+ * phone then has to be on the same network (EXPERIENCE.md › QR dialog, local network hint). */
+export function isLocalUrl(url) {
+  let host
+  try {
+    host = new URL(url).hostname
+  } catch {
+    return false
+  }
+  if (host === 'localhost') return true
+  const parts = host.split('.')
+  if (parts.length !== 4 || !parts.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255)) return false
+  const [a, b] = parts.map(Number)
+  return a === 127 || a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)
+}

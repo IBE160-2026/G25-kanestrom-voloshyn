@@ -6,7 +6,7 @@ import { errorText } from '../i18n/errors.js'
 import ErrorLine from './ErrorLine.jsx'
 import styles from './QrDialog.module.css'
 import { TILE, fileState } from './fileStatus.js'
-import { phoneUrl, qrPath } from './qrCode.js'
+import { isLocalUrl, phoneUrl, qrPath } from './qrCode.js'
 
 // QR dialog (FR-21, AD-24; EXPERIENCE.md › Phone upload, State Patterns › Phone link; DESIGN.md › QR
 // dialog). Each opening creates a phone link for the open Project (POST .../phone-links) and shows the
@@ -159,6 +159,7 @@ function PhoneLink({ projectId, materials }) {
           )}
         </div>
       )}
+      {link && isLocalUrl(link.url) && <p className={styles.expiry}>{t('qr.sameNetwork')}</p>}
       <p className={styles.expiry}>{t('qr.expiry')}</p>
       <div className={styles.live} aria-live="polite">
         <p className={styles.waiting}>

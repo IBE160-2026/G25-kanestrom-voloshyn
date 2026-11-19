@@ -300,7 +300,8 @@
     "title": "Last opp fra mobilen",
     "waiting": "Venter på bilder …",
     "expiry": "Koden gjelder i 10 minutter og slutter å virke når du lukker dette vinduet.",
-    "close": "Lukk"
+    "close": "Lukk",
+    "sameNetwork": "Mobilen må være på samme Wi-Fi som denne datamaskinen."
   },
   "phone": {
     "header": "Laster opp til {{project}}",
