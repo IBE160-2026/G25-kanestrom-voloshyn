@@ -69,6 +69,21 @@ async def revoke(conn: AsyncConnection, account_id: UUID, link_id: UUID) -> bool
         return cur.rowcount == 1
 
 
+async def open_link_ids_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[UUID]:
+    """The ids of the Project's links that are not revoked yet (expired ones included: their open batches
+    are still discarded)."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT id FROM phone_upload_links
+            WHERE project_id = %s AND account_id = %s AND revoked_at IS NULL
+            ORDER BY created_at, id
+            """,
+            (project_id, account_id),
+        )
+        return [row[0] for row in await cur.fetchall()]
+
+
 async def get_link_for_project(
     conn: AsyncConnection, account_id: UUID, project_id: UUID, link_id: UUID
 ) -> dict[str, Any] | None:

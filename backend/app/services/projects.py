@@ -1,12 +1,12 @@
-"""Projects service: create, list, open, rename, auto-naming, and the read-only guard (FR-4, FR-5,
-AD-14, AD-22).
+"""Projects service: create, list, open, rename, archive and restore, auto-naming, and the read-only
+guard (FR-4, FR-5, FR-23, AD-14, AD-22). The only writer of `archived_at`.
 
 Takes `conn`, never commits (AD-18); the exception is `auto_name_if_unnamed`, an after-commit step that
 takes the pool. Every call is scoped by `account_id` (AD-2).
 """
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 from uuid import UUID
 
@@ -18,6 +18,7 @@ from app.db import projects as repo
 from app.errors import AppError
 from app.llm import Gateway
 from app.llm.gateway import SectionLike
+from app.storage import Storage
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +111,45 @@ async def rename(conn: AsyncConnection, account_id: UUID, project_id: UUID, raw_
     if project is None:
         raise ProjectNotFound()
     return project
+
+
+async def _lock_not_deleted(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
+    """The Project, locked; `404` when missing or foreign, `409 project_read_only` when deleted (a
+    deleted Project's restore is Story 7.2's)."""
+    project = await repo.get_for_update(conn, account_id, project_id)
+    if project is None:
+        raise ProjectNotFound()
+    if project["deleted_at"] is not None:
+        raise ProjectReadOnly()
+    return project
+
+
+async def archive(
+    conn: AsyncConnection, storage: Storage, account_id: UUID, project_id: UUID
+) -> tuple[dict[str, Any], Callable[[], Any]]:
+    """Archive the Project (FR-23): idempotent bookkeeping; nothing else on it changes. Its open phone
+    links are revoked in the same transaction (AD-24); running generation is left to finish and save.
+    Returns (Project, the after-commit step that deletes the discarded staged photos)."""
+    # Imported here: `phone` imports this module.
+    from app.services import phone
+
+    project = await _lock_not_deleted(conn, account_id, project_id)
+    if project["archived_at"] is not None:
+        return project, _nothing
+    delete_photos = await phone.revoke_for_project(conn, storage, account_id, project_id)
+    return await repo.set_archived(conn, account_id, project_id, True), delete_photos
+
+
+async def restore(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
+    """Restore an archived Project (FR-23): clears `archived_at` only; idempotent."""
+    project = await _lock_not_deleted(conn, account_id, project_id)
+    if project["archived_at"] is None:
+        return project
+    return await repo.set_archived(conn, account_id, project_id, False)
+
+
+def _nothing() -> None:
+    return None
 
 
 async def auto_name_if_unnamed(

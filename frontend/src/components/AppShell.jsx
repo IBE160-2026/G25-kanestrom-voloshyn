@@ -35,8 +35,17 @@ export default function AppShell() {
   const [narrow] = useState(isNarrow)
   const [collapsedChoice, setCollapsedChoice] = useState(null) // null until the student toggles
   const [creating, setCreating] = useState(false)
-  const [createError, setCreateError] = useState(null) // { apiError, attempt }
-  const createAttempt = useRef(0)
+  // A failed create, archive, or restore: { apiError, attempt } (the attempt re-announces a repeat).
+  const [actionError, setActionError] = useState(null)
+  const actionAttempt = useRef(0)
+  // The archive Undo message (Story 7.1): { project, key } of the Project just archived.
+  const [archived, setArchived] = useState(null)
+  // Its live region mounts (empty) when the first archive starts, so the text that follows is announced.
+  const [undoRegion, setUndoRegion] = useState(false)
+  const closeArchived = useCallback(() => setArchived(null), [])
+  // The Project just restored: the Sidebar moves focus to its link, then clears this.
+  const [focusProjectId, setFocusProjectId] = useState(null)
+  const clearFocusRequest = useCallback(() => setFocusProjectId(null), [])
   const inFlight = useRef(false)
   // The one-time Google takeover notice (AD-19): when the profile says so, its live region mounts
   // empty and the text follows, so it is announced; it is marked seen at once and shows 6 s. The
@@ -79,7 +88,7 @@ export default function AppShell() {
   const [errorFor, setErrorFor] = useState(projectId)
   if (errorFor !== projectId) {
     setErrorFor(projectId)
-    setCreateError(null)
+    setActionError(null)
   }
 
   const collapsed = collapsedChoice ?? (narrow || me?.ui_prefs?.sidebar_collapsed === true)
@@ -134,6 +143,47 @@ export default function AppShell() {
     setMe((profile) => (profile?.last_project_id === id ? { ...profile, last_project_id: null } : profile))
   }, [])
 
+  function showError(err) {
+    if (SIGNED_OUT_CODES.has(err?.code)) return
+    actionAttempt.current += 1
+    setActionError({ apiError: err, attempt: actionAttempt.current })
+  }
+
+  /**
+   * Archive a Project (FR-23): immediate, no confirmation, with the Undo message. Login no longer
+   * lands on it (the server falls back to the most recent active Project; mirrored locally). A
+   * failure leaves the row active and shows an error line.
+   */
+  async function archiveProject(id) {
+    setActionError(null)
+    setUndoRegion(true)
+    try {
+      const project = await apiFetch(`/api/projects/${id}/archive`, { method: 'POST' })
+      upsertProject(project)
+      setMe((profile) => (profile?.last_project_id === id ? { ...profile, last_project_id: null } : profile))
+      setArchived({ project, key: Date.now() })
+      return project
+    } catch (err) {
+      showError(err)
+      return null
+    }
+  }
+
+  /** Restore an archived Project (FR-23), from the Undo message, the Sidebar menu, or the banner. */
+  async function restoreProject(id) {
+    setActionError(null)
+    try {
+      const project = await apiFetch(`/api/projects/${id}/restore`, { method: 'POST' })
+      upsertProject(project)
+      setArchived((shown) => (shown?.project.id === id ? null : shown))
+      setFocusProjectId(id)
+      return project
+    } catch (err) {
+      showError(err)
+      return null
+    }
+  }
+
   /**
    * Create a Project and open it (FR-4). `revealSidebar` (from the Sidebar strip) also shows the
    * Sidebar, so the new Project is visible at the top of the list; it isn't saved as the student's
@@ -143,17 +193,14 @@ export default function AppShell() {
     if (inFlight.current) return
     inFlight.current = true
     setCreating(true)
-    setCreateError(null)
+    setActionError(null)
     try {
       const project = await apiFetch('/api/projects', { method: 'POST' })
       upsertProject(project)
       if (revealSidebar === true) setCollapsedChoice(false)
       navigate(`/projects/${project.id}`)
     } catch (err) {
-      if (!SIGNED_OUT_CODES.has(err?.code)) {
-        createAttempt.current += 1
-        setCreateError({ apiError: err, attempt: createAttempt.current })
-      }
+      showError(err)
     } finally {
       inFlight.current = false
       setCreating(false)
@@ -161,6 +208,8 @@ export default function AppShell() {
   }
 
   const activeProjects = projects ? projects.filter(isActive) : null
+  // Archived but not deleted, in the list's order (newest first). Deleted ones are Story 7.2's.
+  const archivedProjects = projects ? projects.filter((p) => p.archived_at && !p.deleted_at) : []
   const current = projectId ? projects?.find((p) => p.id === projectId) : null
   const title = current ? <ProjectName key={current.id} project={current} onRenamed={upsertProject} /> : null
 
@@ -168,6 +217,11 @@ export default function AppShell() {
     <div className={styles.shell}>
       <Sidebar
         projects={activeProjects ?? []}
+        archivedProjects={archivedProjects}
+        onArchive={archiveProject}
+        onRestore={restoreProject}
+        focusProjectId={focusProjectId}
+        onFocused={clearFocusRequest}
         currentId={projectId}
         collapsed={collapsed}
         onToggle={toggleSidebar}
@@ -178,18 +232,45 @@ export default function AppShell() {
       <div className={styles.column}>
         <TopBar me={me} ready={Boolean(me || loadError)} title={title} />
         <main className={styles.main} aria-busy={!loadError && (!me || !projects)}>
-          {(loadError || createError) && (
+          {(loadError || actionError) && (
             <div className={styles.alerts}>
               {loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}
-              {createError && <ErrorLine key={createError.attempt}>{errorText(t, createError.apiError)}</ErrorLine>}
+              {actionError && <ErrorLine key={actionError.attempt}>{errorText(t, actionError.apiError)}</ErrorLine>}
             </div>
           )}
           <Outlet
-            context={{ me, activeProjects, creating, createProject, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted }}
+            context={{
+              me,
+              projects,
+              activeProjects,
+              creating,
+              createProject,
+              upsertProject,
+              markOpened,
+              forgetProject,
+              saveFilesCollapsed,
+              markPrivacyAccepted,
+              archiveProject,
+              restoreProject,
+            }}
           />
-          {takeoverPending && (
+          {/* Mounted empty first, so a message that arrives is announced. */}
+          {(takeoverPending || undoRegion) && (
             <div role="status" className={styles.undo}>
               {takeoverShown && <UndoMessage onClose={closeTakeover}>{t('account.googleTakeover')}</UndoMessage>}
+              {archived && (
+                <UndoMessage
+                  key={archived.key}
+                  onClose={closeArchived}
+                  action={
+                    <button type="button" className={styles.undoAction} onClick={() => restoreProject(archived.project.id)}>
+                      {t('projects.undo')}
+                    </button>
+                  }
+                >
+                  {t('projects.archivedUndo', { name: archived.project.name ?? t('projects.placeholder') })}
+                </UndoMessage>
+              )}
             </div>
           )}
         </main>

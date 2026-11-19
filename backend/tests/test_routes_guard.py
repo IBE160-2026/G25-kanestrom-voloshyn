@@ -31,6 +31,9 @@ ALLOWLIST = {
     ("POST", "/api/jobs/{job_id}/cancel"),
     # Closing the QR dialog revokes its phone link, also in a read-only Project (AD-24).
     ("DELETE", "/api/projects/{project_id}/phone-links/{link_id}"),
+    # Archive and restore change only `archived_at`; restore must work on a read-only Project (FR-23).
+    ("POST", "/api/projects/{project_id}/archive"),
+    ("POST", "/api/projects/{project_id}/restore"),
 }
 
 PHONE_AUTH = {phone_link_auth, phone_link_finalize_auth}

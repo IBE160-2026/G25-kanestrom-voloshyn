@@ -61,7 +61,15 @@
     "rename": "Rename",
     "more": "More options for {{name}}",
     "hide": "Hide projects",
-    "show": "Show projects"
+    "show": "Show projects",
+    "archive": "Archive",
+    "restore": "Restore",
+    "archivedGroup": "Archived ({{count}})",
+    "archivedUndo": "{{name}} archived",
+    "undo": "Undo"
+  },
+  "project": {
+    "archivedBanner": "Archived"
   },
   "projectHome": {
     "dropZone": {

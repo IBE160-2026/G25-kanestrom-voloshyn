@@ -1,5 +1,5 @@
 import { DropdownMenu, Tooltip } from 'radix-ui'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { initials } from './initials.js'
@@ -8,16 +8,59 @@ import styles from './Sidebar.module.css'
 
 // Sidebar and Sidebar strip (DESIGN.md › Sidebar, Sidebar strip; EXPERIENCE.md › Sidebar). Lists the
 // active Projects newest first, each opening its home; "+ New project" creates one (FR-4). Each row
-// has a "···" menu with Rename (inline, Enter saves, Esc cancels; FR-5); Archive and Delete arrive
-// with Epic 7. "Hide projects" collapses it to the strip with "Show projects" and a "New project"
-// icon button. The collapse state is the AppShell's.
-export default function Sidebar({ projects, currentId, collapsed, onToggle, onCreate, creating, onRenamed }) {
+// has a "···" menu with Rename (inline, Enter saves, Esc cancels; FR-5) and Archive (immediate, no
+// confirmation; FR-23, Story 7.1). Below the list, "Archived ({n})" lists the archived Projects,
+// collapsed by default (not saved) and absent at 0; each opens read-only, and its "···" menu has
+// Restore. Delete arrives with Story 7.2. "Hide projects" collapses it to the strip with "Show
+// projects" and a "New project" icon button; the strip shows active Projects only. The collapse
+// state is the AppShell's.
+export default function Sidebar({
+  projects,
+  archivedProjects = [],
+  currentId,
+  collapsed,
+  onToggle,
+  onCreate,
+  creating,
+  onRenamed,
+  onArchive,
+  onRestore,
+  focusProjectId = null,
+  onFocused,
+}) {
   const { t } = useTranslation()
   const [renamingId, setRenamingId] = useState(null)
+  const [archivedOpen, setArchivedOpen] = useState(false)
+  // The group disappears with its last row; it comes back collapsed.
+  if (archivedOpen && archivedProjects.length === 0) setArchivedOpen(false)
+  const list = useRef(null)
+  const newProject = useRef(null)
+
+  // After a restore (Undo, the archived row's menu, or the banner) the control used unmounts: focus
+  // moves to the restored Project's link in the active list. Collapsed, focus is left alone.
+  useEffect(() => {
+    if (!focusProjectId) return
+    if (!collapsed) {
+      const link = [...(list.current?.querySelectorAll('a') ?? [])].find(
+        (a) => a.getAttribute('href') === `/projects/${focusProjectId}`,
+      )
+      if (!link) return
+      link.focus()
+    }
+    onFocused?.()
+  }, [focusProjectId, collapsed, onFocused, projects])
   // Set when the menu closes for Rename, so the menu doesn't take focus back from the field.
   const renameChosen = useRef(false)
   // The row whose rename just closed: its "···" trigger takes focus back once it renders.
   const refocusId = useRef(null)
+
+  // The archived row leaves the list, taking the focused "···" trigger with it: focus goes back to
+  // the Projects list (mock key-delete-project.html), or to "+ New project" when no Project is left.
+  async function archive(id) {
+    await onArchive?.(id)
+    const focused = document.activeElement
+    if (!focused || focused === document.body) (list.current?.querySelector('a') ?? newProject.current)?.focus()
+  }
 
   if (collapsed) {
     return (
@@ -98,7 +141,7 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
         </button>
       </div>
       <nav className={styles.nav}>
-        <ul className={styles.list}>
+        <ul ref={list} className={styles.list}>
           {projects.map((project) => {
             const open = project.id === currentId
             const name = project.name ?? t('projects.placeholder')
@@ -157,6 +200,9 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
                           >
                             {t('projects.rename')}
                           </DropdownMenu.Item>
+                          <DropdownMenu.Item className={styles.menuItem} onSelect={() => archive(project.id)}>
+                            {t('projects.archive')}
+                          </DropdownMenu.Item>
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
@@ -168,7 +214,51 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
         </ul>
       </nav>
       <div className={styles.bottom}>
-        <button type="button" className={styles.newProject} aria-busy={creating} onClick={onCreate}>
+        {archivedProjects.length > 0 && (
+          <div className={styles.group}>
+            <button
+              type="button"
+              className={styles.groupToggle}
+              aria-expanded={archivedOpen}
+              onClick={() => setArchivedOpen((open) => !open)}
+            >
+              <Chevron direction={archivedOpen ? 'down' : 'right'} />
+              {t('projects.archivedGroup', { count: archivedProjects.length })}
+            </button>
+            {archivedOpen && (
+              <ul className={`${styles.list} ${styles.groupList}`} data-testid="archived-projects">
+                {archivedProjects.map((project) => {
+                  const open = project.id === currentId
+                  const name = project.name ?? t('projects.placeholder')
+                  return (
+                    <li key={project.id} className={`${styles.item} ${styles.archived} ${open ? styles.open : ''}`}>
+                      <Link
+                        to={`/projects/${project.id}`}
+                        className={styles.link}
+                        aria-current={open ? 'page' : undefined}
+                      >
+                        {name}
+                      </Link>
+                      <DropdownMenu.Root modal={false}>
+                        <DropdownMenu.Trigger className={styles.more} aria-label={t('projects.more', { name })}>
+                          <Dots />
+                        </DropdownMenu.Trigger>
+                        <DropdownMenu.Portal>
+                          <DropdownMenu.Content className={styles.menu} align="start" sideOffset={4}>
+                            <DropdownMenu.Item className={styles.menuItem} onSelect={() => onRestore?.(project.id)}>
+                              {t('projects.restore')}
+                            </DropdownMenu.Item>
+                          </DropdownMenu.Content>
+                        </DropdownMenu.Portal>
+                      </DropdownMenu.Root>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        )}
+        <button ref={newProject} type="button" className={styles.newProject} aria-busy={creating} onClick={onCreate}>
           {t('projects.new')}
         </button>
         <p className={styles.credit}>{t('footer.credit')}</p>
@@ -178,6 +268,13 @@ export default function Sidebar({ projects, currentId, collapsed, onToggle, onCr
 }
 
 function Chevron({ direction }) {
+  if (direction === 'down') {
+    return (
+      <svg className={styles.icon} viewBox="0 0 10 8" aria-hidden="true" focusable="false">
+        <path d="M1 2l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    )
+  }
   const d = direction === 'left' ? 'M6 1L2 5l4 4' : 'M2 1l4 4-4 4'
   return (
     <svg className={styles.icon} viewBox="0 0 8 10" aria-hidden="true" focusable="false">
