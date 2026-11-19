@@ -62,8 +62,8 @@ development_status:
   3-1-generate-a-quiz-from-my-topics: done
   3-2-take-the-quiz-with-immediate-sourced-feedback: done
   3-3-my-wrong-answers-become-mistakes-and-the-project-shows-how-m: done
-  3-4-start-a-mistake-review-round: backlog
-  3-5-clear-mistakes-in-review: backlog
+  3-4-start-a-mistake-review-round: review
+  3-5-clear-mistakes-in-review: review
   epic-3-retrospective: optional
 
   epic-4: backlog

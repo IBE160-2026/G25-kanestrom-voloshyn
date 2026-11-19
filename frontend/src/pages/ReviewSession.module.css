@@ -1,0 +1,75 @@
+/* Mistake Review session (DESIGN.md › Mistake Review session, All cleared panel, Round done panel;
+   components › mistake-review-session, all-cleared-panel, round-done-panel). The activity layout,
+   buttons, and the question itself come from QuizPage.module.css and QuestionView. */
+
+/* Context card: the original mistake, with a mistake-coloured left edge. */
+.context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: var(--space-accent-edge-width) solid var(--color-mistake);
+  border-radius: var(--radius-lg);
+}
+
+.contextQuestion {
+  font-size: var(--type-body-size);
+  overflow-wrap: anywhere;
+}
+
+.contextLine {
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+  overflow-wrap: anywhere;
+}
+
+.yours {
+  color: var(--color-mistake);
+}
+
+.right {
+  color: var(--color-correct);
+}
+
+/* "The file this came from was removed.": a muted caption. */
+.removed {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* End panels: a centred title-lg headline, primary then ghost; no animation. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  text-align: center;
+}
+
+.headline {
+  color: var(--color-text);
+  font-size: var(--type-title-lg-size);
+  font-weight: var(--type-title-lg-weight);
+  letter-spacing: var(--type-title-lg-letter-spacing);
+}
+
+/* Finishing Mistake Review is indigo (DESIGN.md › Colors, rule 7). */
+.allCleared {
+  color: var(--color-primary);
+}
+
+.headline:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.panelActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}

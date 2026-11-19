@@ -61,8 +61,8 @@ describe('Mistakes card', () => {
     expect(shown.compareDocumentPosition(screen.getByTestId('ready-notices')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     // A polite live region, so a new count is announced.
     expect(shown).toHaveAttribute('role', 'status')
-    // No "Start" until Story 3.4.
-    expect(within(shown).queryByRole('button')).not.toBeInTheDocument()
+    // "Start" on the card opens Mistake Review (Story 3.4).
+    expect(within(shown).getByRole('button', { name: en.mistakes.start })).toBeInTheDocument()
   })
 
   it('counts only this Project and leaves out withdrawn mistakes', async () => {

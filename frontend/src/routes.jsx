@@ -10,6 +10,8 @@ import Projects from './pages/Projects.jsx'
 import QuizPage from './pages/QuizPage.jsx'
 import QuizSetup from './pages/QuizSetup.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+import ReviewSession from './pages/ReviewSession.jsx'
+import ReviewStart from './pages/ReviewStart.jsx'
 
 export const routes = [
   { path: '/', element: <Login /> },
@@ -29,6 +31,8 @@ export const routes = [
           { path: '/projects/:projectId', element: <ProjectHome /> },
           { path: '/projects/:projectId/quiz', element: <QuizSetup /> },
           { path: '/projects/:projectId/quizzes/:quizId', element: <QuizPage /> },
+          { path: '/projects/:projectId/review', element: <ReviewStart /> },
+          { path: '/projects/:projectId/review/:roundId', element: <ReviewSession /> },
         ],
       },
     ],

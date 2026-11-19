@@ -106,3 +106,30 @@ def generate_quiz(labels: Sequence[str], texts: Sequence[str], count: int) -> di
             }
         )
     return {"questions": questions}
+
+
+def generate_practice(targets: Sequence[dict[str, Any]], labels: Sequence[str], texts: Sequence[str]) -> dict[str, Any]:
+    """One item per target, in order (AD-4). Each target is `{mistake_id, question, correct_answer,
+    sections}` with 1-based numbers into `labels`/`texts`. Item k asks again about the target's
+    question, cites the target's Sections, keeps its correct answer at index `(k - 1) % 4`, and explains
+    with the start of its first Section."""
+    items = []
+    for k, target in enumerate(targets, start=1):
+        numbers = list(target["sections"])
+        first = numbers[0] if numbers else None
+        label = (labels[first - 1] if first else "") or (f"Section {first}" if first else "the material")
+        snippet = " ".join(texts[first - 1].split()[:QUIZ_SNIPPET_WORDS]) if first else ""
+        correct = target["correct_answer"].strip() or snippet or label
+        wrong = [f"Not this one (practice {k}.{n})" for n in range(1, 4)]
+        correct_index = (k - 1) % 4
+        items.append(
+            {
+                "mistake_id": target["mistake_id"],
+                "question": f"Practice {k}: {target['question']}",
+                "options": wrong[:correct_index] + [correct] + wrong[correct_index:],
+                "correct_index": correct_index,
+                "explanation": f"{label} says: {snippet or correct}",
+                "sections": numbers,
+            }
+        )
+    return {"items": items}

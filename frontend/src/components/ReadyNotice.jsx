@@ -5,19 +5,19 @@ import styles from './ReadyNotice.module.css'
 // message; EXPERIENCE.md › Microcopy): "Your quiz on {topic} is ready · Open" in body type with "Open"
 // as an underlined primary-coloured link, and a × ("Dismiss"). No badge, no fill; not a chat message.
 // The caller puts it in a polite live region. The Topic labels come from model output, so the {topic}
-// text is a React text child, never part of the string <Trans> parses.
-export default function ReadyNotice({ labels, onOpen, onDismiss }) {
+// text is a React text child, never part of the string <Trans> parses. A `review_round` job (Story 3.4)
+// reads "Your practice questions are ready · Open" instead.
+export default function ReadyNotice({ kind = 'quiz', labels, onOpen, onDismiss }) {
   const { t } = useTranslation()
+  const open = <button type="button" className={styles.open} data-notice-open="" onClick={onOpen} />
   return (
     <div className={styles.notice}>
       <p className={styles.text}>
-        <Trans
-          i18nKey="quiz.ready.message"
-          components={{
-            topic: <Plain text={topicText(t, labels)} />,
-            open: <button type="button" className={styles.open} data-notice-open="" onClick={onOpen} />,
-          }}
-        />
+        {kind === 'review_round' ? (
+          <Trans i18nKey="review.ready" components={{ open }} />
+        ) : (
+          <Trans i18nKey="quiz.ready.message" components={{ topic: <Plain text={topicText(t, labels)} />, open }} />
+        )}
       </p>
       <button type="button" className={styles.dismiss} aria-label={t('quiz.ready.dismiss')} onClick={onDismiss}>
         <svg viewBox="0 0 10 10" aria-hidden="true" focusable="false">

@@ -72,7 +72,8 @@
   },
   "mistakes": {
     "card_one": "Du har {{count}} feil å repetere",
-    "card_other": "Du har {{count}} feil å repetere"
+    "card_other": "Du har {{count}} feil å repetere",
+    "start": "Start"
   },
   "activity": {
     "back": "← Tilbake til samtalen"
@@ -118,6 +119,24 @@
       "more": "{{a}} og {{n}} til",
       "dismiss": "Lukk"
     }
+  },
+  "review": {
+    "steps": {
+      "reading": "Ser på feilene dine",
+      "writing": "Skriver øvingsspørsmål"
+    },
+    "ready": "Øvingsspørsmålene dine er klare · <open>Åpne</open>",
+    "progress": "{{n}} av {{m}} repetert",
+    "earlierAnswer": "Det tidligere svaret ditt",
+    "fileRemoved": "Filen dette kom fra, er fjernet.",
+    "next": "Neste feil",
+    "stop": "Stopp for nå",
+    "saved": "Fremgangen din er lagret.",
+    "roundDone_one": "Runden er ferdig. {{count}} feil igjen å repetere.",
+    "roundDone_other": "Runden er ferdig. {{count}} feil igjen å repetere.",
+    "again": "Repeter feil",
+    "allCleared": "Alt er repetert! Bra jobba.",
+    "newQuiz": "Lag en ny quiz"
   },
   "progress": {
     "cancel": "Avbryt",

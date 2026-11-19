@@ -1,12 +1,15 @@
 """The `mistakes` repository (AD-8, AD-10). Plain SQL; scoped by `account_id`.
 
-Only `services/mistakes` calls it. A row is inserted once; only `cleared_at` and `withdrawn_at` change.
+Only `services/mistakes` calls it. A row is inserted once; only `cleared_at` (with `cleared_by_answer_id`)
+and `withdrawn_at` change.
 "Outstanding" means neither is set. Takes the caller's `conn`; never commits.
 """
 
+from typing import Any
 from uuid import UUID
 
 from psycopg import AsyncConnection
+from psycopg.rows import dict_row
 
 OUTSTANDING = "cleared_at IS NULL AND withdrawn_at IS NULL"
 
@@ -78,3 +81,84 @@ async def outstanding_by_material(conn: AsyncConnection, account_id: UUID, proje
             (account_id, project_id),
         )
         return {row[0]: row[1] for row in await cur.fetchall()}
+
+
+async def oldest_outstanding(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, limit: int
+) -> list[dict[str, Any]]:
+    """The Project's oldest outstanding Mistakes, at most `limit`: `id`, `material_ids`, and
+    `question_snapshot` (AD-11)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            f"""
+            SELECT id, material_ids, question_snapshot
+            FROM mistakes
+            WHERE account_id = %s AND project_id = %s AND {OUTSTANDING}
+            ORDER BY created_at, id
+            LIMIT %s
+            """,
+            (account_id, project_id, limit),
+        )
+        return await cur.fetchall()
+
+
+async def outstanding_among(conn: AsyncConnection, account_id: UUID, mistake_ids: list[UUID]) -> set[UUID]:
+    """Which of these Mistakes are still outstanding."""
+    if not mistake_ids:
+        return set()
+    async with conn.cursor() as cur:
+        await cur.execute(
+            f"SELECT id FROM mistakes WHERE account_id = %s AND id = ANY(%s) AND {OUTSTANDING}",
+            (account_id, mistake_ids),
+        )
+        return {row[0] for row in await cur.fetchall()}
+
+
+async def snapshots(conn: AsyncConnection, account_id: UUID, mistake_ids: list[UUID]) -> dict[UUID, dict[str, Any]]:
+    """By Mistake id: `material_ids`, `question_snapshot`, and the wrong Quiz answer's
+    `submitted_option_id`, for the review context card."""
+    if not mistake_ids:
+        return {}
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT m.id, m.material_ids, m.question_snapshot, qa.submitted_option_id
+            FROM mistakes m JOIN quiz_answers qa ON qa.id = m.failed_answer_id
+            WHERE m.account_id = %s AND m.id = ANY(%s)
+            """,
+            (account_id, mistake_ids),
+        )
+        return {row["id"]: row for row in await cur.fetchall()}
+
+
+async def clear(conn: AsyncConnection, mistake_id: UUID, practice_answer_id: UUID) -> bool:
+    """Stamp `cleared_at` and link the answer, only for a correct answer to a Practice Question of this
+    same Mistake and Account, and only while the Mistake is outstanding. Idempotent: True when the
+    Mistake is cleared by this answer, now or before."""
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            UPDATE mistakes m SET cleared_at = now(), cleared_by_answer_id = pa.id
+            FROM practice_answers pa JOIN practice_questions pq ON pq.id = pa.practice_question_id
+            WHERE m.id = %s AND pa.id = %s AND pq.mistake_id = m.id AND pa.is_correct
+              AND pa.account_id = m.account_id AND pq.account_id = m.account_id
+              AND m.cleared_at IS NULL AND m.withdrawn_at IS NULL
+            """,
+            (mistake_id, practice_answer_id),
+        )
+        await cur.execute(
+            "SELECT 1 FROM mistakes WHERE id = %s AND cleared_by_answer_id = %s", (mistake_id, practice_answer_id)
+        )
+        return await cur.fetchone() is not None
+
+
+async def cleared_by(conn: AsyncConnection, account_id: UUID, answer_ids: list[UUID]) -> set[UUID]:
+    """Which of these Practice answers cleared a Mistake."""
+    if not answer_ids:
+        return set()
+    async with conn.cursor() as cur:
+        await cur.execute(
+            "SELECT cleared_by_answer_id FROM mistakes WHERE account_id = %s AND cleared_by_answer_id = ANY(%s)",
+            (account_id, answer_ids),
+        )
+        return {row[0] for row in await cur.fetchall()}

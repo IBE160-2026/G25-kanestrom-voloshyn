@@ -14,6 +14,7 @@ import json
 import logging
 import time
 from collections.abc import Sequence
+from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import Any, Protocol
@@ -25,7 +26,7 @@ from app.config import ConfigError, LlmMode, Settings
 from app.extraction.text import count_words
 from app.llm import fixtures
 from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
-from app.llm.schemas import QUIZ_MAX, DetectedTopics, ImageText, ProjectName, QuizDraft
+from app.llm.schemas import PRACTICE_MAX, QUIZ_MAX, DetectedTopics, ImageText, PracticeDraft, ProjectName, QuizDraft
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,34 @@ class LabelledSection(SectionLike, Protocol):
 
     @property
     def label(self) -> str: ...
+
+
+class IdentifiedSection(LabelledSection, Protocol):
+    """A stored Section with its id, so targets sharing a Section send it once."""
+
+    @property
+    def id(self) -> Any: ...
+
+
+@dataclass(frozen=True)
+class PracticeTarget:
+    """A Mistake to write a practice question for (AD-11): the original question, its correct answer's
+    text, and the Sections it cited."""
+
+    mistake_id: Any
+    question_text: str
+    correct_text: str
+    sections: Sequence[IdentifiedSection]
+
+
+def practice_sections(targets: Sequence[PracticeTarget]) -> list[IdentifiedSection]:
+    """Every target's Sections once, in first-seen order: what `S1…Sn` number in `generate_practice`.
+    The caller maps an item's numbers back with this same list."""
+    seen: dict[Any, IdentifiedSection] = {}
+    for target in targets:
+        for section in target.sections:
+            seen.setdefault(section.id, section)
+    return list(seen.values())
 
 
 @cache
@@ -269,6 +298,39 @@ class Gateway:
                 {"role": "user", "content": user},
             ],
             fixture=lambda: fixtures.generate_quiz(labels, texts, mock_count),
+        )
+
+    async def generate_practice(self, targets: Sequence[PracticeTarget]) -> PracticeDraft:
+        """One practice question per target (at most 20), in one batched call (FR-18, AD-11). The targets'
+        Sections are sent once each as `S1…Sn` (`practice_sections` gives the order), and each target
+        lists its own numbers; items cite those numbers and copy the target's `mistake_id`. Mock mode
+        writes one item per target from its question text (`fixtures.generate_practice`)."""
+        targets = list(targets)[:PRACTICE_MAX]
+        sections = practice_sections(targets)
+        number = {section.id: n for n, section in enumerate(sections, start=1)}
+        texts = [s.text for s in sections]
+        labels = [s.label for s in sections]
+        described = [
+            {
+                "mistake_id": str(target.mistake_id),
+                "question": target.question_text,
+                "correct_answer": target.correct_text,
+                "sections": [number[section.id] for section in target.sections],
+            }
+            for target in targets
+        ]
+        # Targets come from earlier model output and student answers: data in the user message only.
+        lines = "\n".join(json.dumps(target, ensure_ascii=False) for target in described)
+        user = f"Targets:\n{lines}\n\n{label_sections(texts)}"
+        return await self._run(
+            task="generate_practice",
+            schema=PracticeDraft,
+            model=self._settings.llm_text_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("generate_practice")},
+                {"role": "user", "content": user},
+            ],
+            fixture=lambda: fixtures.generate_practice(described, labels, texts),
         )
 
     async def mock_pause(self) -> None:
