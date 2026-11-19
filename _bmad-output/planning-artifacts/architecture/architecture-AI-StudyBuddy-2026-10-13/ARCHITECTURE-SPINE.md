@@ -466,7 +466,8 @@ Arrows are the only allowed dependency directions. Adapters never import service
          - It runs **only on a request whose token comes from a Google sign-in** (`amr` includes `oauth`).
          - A request from any other session of that Account gets its own session deleted and `unauthorized`, and doesn't count as the takeover.
          - The takeover sets a random password with the caller's own token (`PUT /auth/v1/user` through `supabase_auth.py`; never the admin update, which would also end the caller's session).
-         - It then deletes every other `auth.sessions` row and sets `google_takeover_at` and `notice_google_takeover`, in its own transaction before the route handler (AD-18).
+         - It then deletes every other `auth.sessions` row and sets `google_takeover_at`, `notice_google_takeover` and `email_verified_at` (Google has proven the address), in its own transaction before the route handler (AD-18).
+         - Only a Google identity whose `identity_data.email_verified` is true counts as matching.
       - The backend never sets a password on a Google-only Account, and the app never offers one.
     - A Google identity already linked elsewhere → `google_identity_in_use`.
     - Settings' "Link Google" (`linkIdentity`) is offered only while `email_verified_at` is set. The backend re-checks after linking: a link made without verification is removed through the same own-token identity unlink (`email_not_verified`).
