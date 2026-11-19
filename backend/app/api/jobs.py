@@ -1,7 +1,7 @@
 """Background jobs (AD-20).
 
 - `GET /api/projects/{project_id}/jobs`: active jobs plus finished ones not yet seen; the SPA polls
-  it every 2 s while something is active.
+  it every 2 s while something is active. A `quiz` job carries its frozen `topic_labels` (Story 3.1b).
 - `POST /api/jobs/{job_id}/seen`: dismisses a finished job (bookkeeping, on the guard's allowlist).
 - `POST /api/jobs/{job_id}/cancel`: a student's cancel (bookkeeping, on the allowlist, so it also works
   in an archived Project); `204`, also for a job that already finished. A queued job ends `cancelled`
@@ -32,12 +32,23 @@ class Job(BaseModel):
     error_code: str | None
     created_at: datetime
     finished_at: datetime | None
+    # A `quiz` job's frozen focus labels (Story 3.1b), for the "is ready" notice; empty means "All topics"
+    # and is always empty for other kinds.
+    topic_labels: list[str] = []
+
+    @classmethod
+    def from_row(cls, row: dict) -> "Job":
+        params = row.get("params")
+        labels = params.get("topic_labels") if row["kind"] == "quiz" and isinstance(params, dict) else None
+        # Only string items of a list; anything else (missing, null, a bad type) is no labels.
+        kept = [label for label in labels if isinstance(label, str)] if isinstance(labels, list) else []
+        return cls.model_validate({**row, "topic_labels": kept})
 
 
 @router.get("/projects/{project_id}/jobs", response_model=list[Job])
 async def list_jobs(project_id: UUID, user: UserAuth, conn: Conn) -> list[Job]:
     await projects.get(conn, user.account_id, project_id)
-    return [Job.model_validate(row) for row in await jobs.list_for_project(conn, user.account_id, project_id)]
+    return [Job.from_row(row) for row in await jobs.list_for_project(conn, user.account_id, project_id)]
 
 
 @router.post("/jobs/{job_id}/seen", status_code=204)

@@ -105,7 +105,14 @@
     },
     "score": "<score>{{correct}}</score> <muted>of {{total}} correct</muted>",
     "missedStay": "Missed questions stay in your review.",
-    "newQuiz": "New quiz"
+    "newQuiz": "New quiz",
+    "ready": {
+      "message": "Your quiz on <topic></topic> is ready · <open>Open</open>",
+      "allTopics": "all topics",
+      "two": "{{a}} and {{b}}",
+      "more": "{{a}} and {{n}} more",
+      "dismiss": "Dismiss"
+    }
   },
   "progress": {
     "cancel": "Cancel",

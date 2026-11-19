@@ -48,11 +48,15 @@ async function openProject(options) {
   const state = fakeApi({ projects: [project('a')], ...options })
   const result = renderRoute('/projects/a')
   await loaded()
+  // Opening the Project reads its jobs once for the quiz notices (Story 3.1b); polls are the reads after.
+  await waitFor(() => expect(callsTo('/api/projects/a/jobs').length).toBeGreaterThan(0))
+  openReads = callsTo('/api/projects/a/jobs').length
   return { state, ...result }
 }
 
 const uploads = () => callsTo('/api/projects/a/materials', 'POST')
-const polls = () => callsTo('/api/projects/a/jobs')
+let openReads = 0
+const polls = () => callsTo('/api/projects/a/jobs').slice(openReads)
 
 describe('Files panel', () => {
   it('lists every file with its last status, and counts Reading… and Ready toward 10 (FR-8)', async () => {

@@ -106,7 +106,14 @@
     },
     "score": "<score>{{correct}}</score> <muted>av {{total}} riktige</muted>",
     "missedStay": "Spørsmål du bommet på, ligger i repetisjonen din.",
-    "newQuiz": "Ny quiz"
+    "newQuiz": "Ny quiz",
+    "ready": {
+      "message": "Quizen din om <topic></topic> er klar · <open>Åpne</open>",
+      "allTopics": "alle emner",
+      "two": "{{a}} og {{b}}",
+      "more": "{{a}} og {{n}} til",
+      "dismiss": "Lukk"
+    }
   },
   "progress": {
     "cancel": "Avbryt",

@@ -23,6 +23,16 @@
   flex-direction: column;
 }
 
+/* Finished-generation messages at the top of the chat column (Story 3.1b), newest first. */
+.notices {
+  display: flex;
+  flex-direction: column;
+}
+
+.notices:not(:empty) {
+  margin-bottom: var(--space-3);
+}
+
 /* Upload drop zone (DESIGN.md › Upload drop zone): dashed box filling the chat area. */
 .dropZone {
   flex: 1;
@@ -93,6 +103,11 @@
   gap: var(--space-2);
   min-height: var(--space-touch-target-min);
   margin-top: var(--space-2);
+}
+
+/* Focus lands on the row only after the last notice is dismissed and no tool is enabled. */
+.tools:focus {
+  outline: none;
 }
 
 .tool {

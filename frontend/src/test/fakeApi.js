@@ -56,7 +56,8 @@ export const IMAGE_LIMIT = 25
  * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
  * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions`: a
  * number, or a function of the scope (Story 3.1a). A quiz request adds a running `quiz` job at the
- * `reading` step; `stepJob`, `finishQuiz`, and `failJob` move it on. `quizzes` lists stored Quizzes
+ * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
+ * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2). Returns the live state.
  */
 export function fakeApi({
@@ -170,6 +171,10 @@ export function fakeApi({
           result_ref: null,
           error_code: null,
           count: Math.min(body.count, max),
+          // Like the server: the chosen Topics' labels, frozen in order; none for "All topics" (Story 3.1b).
+          topic_labels: (body.scope?.topic_ids ?? []).map(
+            (topicId) => (state.materials[id] ?? []).flatMap((m) => m.topics ?? []).find((t) => t.id === topicId)?.label,
+          ).filter((label) => label !== undefined),
         }
         state.jobs.push(job)
         return { job_id: job.id }
