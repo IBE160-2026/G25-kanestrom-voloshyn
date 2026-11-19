@@ -5,6 +5,7 @@
 | PDF, .pptx (paged) | >= 80 % readable pages | 30-80 % | < 30 %, or < 200 characters in total |
 | .docx, .txt, .md | >= 1,000 characters | 200-999 | < 200 |
 | Image (JPG, PNG, HEIC) | legibility `readable` | `partial` | `unreadable`, or < 50 characters |
+| Phone batch | every photo readable | some partial or unreadable (named) | every photo unreadable |
 
 A readable page has at least `min_page_chars` characters. Every number comes from the settings.
 """
@@ -89,3 +90,25 @@ def judge_image(legibility: str, text: str, t: Thresholds) -> Verdict:
     if legibility == "partial":
         return Verdict("accepted_with_warning")
     return ACCEPTED
+
+
+PhotoState = Literal["readable", "partial", "unreadable"]
+
+
+def photo_state(legibility: str, text: str, t: Thresholds) -> PhotoState:
+    """One photo, judged as a single image would be: `unreadable` or under the minimum characters is
+    unreadable; `partial` is partial; anything else readable."""
+    if legibility == "unreadable" or _chars(text) < t.min_image_chars:
+        return "unreadable"
+    return "partial" if legibility == "partial" else "readable"
+
+
+def judge_batch(photos: list[tuple[str, str]], t: Thresholds) -> Verdict:
+    """A phone batch (FR-21, AD-6 phone row) from each photo's (legibility, text), in page order: every
+    photo readable accepts; every photo unreadable rejects; otherwise it is accepted with a warning
+    naming the 1-based pages that were partial or unreadable."""
+    states = [photo_state(legibility, text, t) for legibility, text in photos]
+    if not states or all(state == "unreadable" for state in states):
+        return UNREADABLE
+    flagged = tuple(n for n, state in enumerate(states, start=1) if state != "readable")
+    return Verdict("accepted_with_warning", warning_pages=flagged) if flagged else ACCEPTED

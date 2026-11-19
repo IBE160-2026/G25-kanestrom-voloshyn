@@ -221,7 +221,8 @@
       "confirm": "Fjern",
       "failed": "Vi fikk ikke fjernet filen.",
       "withdrawMistakes": "Fjern også feilene fra repetisjonen min"
-    }
+    },
+    "uploadPhone": "Last opp fra mobilen"
   },
   "account": {
     "welcome": "Velkommen, {{firstName}}",
@@ -280,7 +281,8 @@
     "quota_exceeded": "Du har brukt dagens {{limit}} bilder. Prøv igjen i morgen.",
     "scope_too_large": "Det er mye materiale. Velg færre emner eller én fil.",
     "insufficient_material": "Det er ikke nok ferdig materiale til dette ennå.",
-    "material_removed": "Filen dette kom fra, er fjernet."
+    "material_removed": "Filen dette kom fra, er fjernet.",
+    "link_expired": "Lenken er utløpt. Skann en ny kode på datamaskinen."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",
@@ -293,5 +295,31 @@
     "accept": "Forstått, last opp",
     "link": "Slik brukes filene dine",
     "close": "Lukk"
+  },
+  "qr": {
+    "title": "Last opp fra mobilen",
+    "waiting": "Venter på bilder …",
+    "expiry": "Koden gjelder i 10 minutter og slutter å virke når du lukker dette vinduet.",
+    "close": "Lukk"
+  },
+  "phone": {
+    "header": "Laster opp til {{project}}",
+    "take": "Ta bilder",
+    "gallery": "Velg fra galleriet",
+    "send_one": "Send {{count}} bilde",
+    "send_other": "Send {{count}} bilder",
+    "sendNone": "Send bilder",
+    "countdownMin": "Lenken utløper om {{n}} min",
+    "countdownSec": "Lenken utløper om {{m}}:{{ss}}",
+    "expiredTitle": "Lenken er utløpt.",
+    "expiredBody": "Skann en ny kode på datamaskinen.",
+    "sent": "Bildene er i {{project}}. Datamaskinen viser når de er klare.",
+    "sendMore": "Send flere",
+    "overLimitAllowed_one": "Du kan sende {{count}} bilde til i dag.",
+    "overLimitAllowed_other": "Du kan sende {{count}} bilder til i dag.",
+    "overLimitDropped_one": "{{count}} bilde blir ikke sendt.",
+    "overLimitDropped_other": "{{count}} bilder blir ikke sendt.",
+    "tooLarge": "Dette bildet er over 50 MB og blir ikke sendt.",
+    "projectFull": "Prosjektet har allerede 10 filer, så disse bildene kan ikke legges til."
   }
 }

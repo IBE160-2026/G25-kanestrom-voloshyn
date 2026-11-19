@@ -33,6 +33,7 @@ def test_config_shape_uses_public_url():
         "supabase_url": "http://127.0.0.1:54321",
         "supabase_publishable_key": "sb_publishable_test",
         "google_enabled": False,
+        "app_public_url": "http://localhost:8000",
     }
 
 

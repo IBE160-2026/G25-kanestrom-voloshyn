@@ -6,6 +6,7 @@ import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
 import MistakesCard from '../components/MistakesCard.jsx'
 import PrivacyNotice from '../components/PrivacyNotice.jsx'
+import QrDialog from '../components/QrDialog.jsx'
 import ReadyNotice from '../components/ReadyNotice.jsx'
 import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
@@ -36,6 +37,9 @@ export const NAME_WAIT_MS = 30000
 // Its "Start" opens Mistake Review (Story 3.4). Leaving a review session ("Stop for now", "← Back to
 // chat") comes back here with "Your progress is saved." under the card (Story 3.5); a review round
 // finished while the student was elsewhere shows "Your practice questions are ready · Open".
+// "Upload from phone" (Story 6.2, FR-21), in the Files panel and the empty-Project drop zone, opens
+// the QR dialog (the Privacy notice first, until accepted); while it is open the files are polled, so
+// a batch from the phone shows up live. Closing it ends the phone link.
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -50,7 +54,9 @@ export default function ProjectHome() {
     if (reviewSaved) navigate(location.pathname, { replace: true, state: null })
   }, [reviewSaved, location.pathname, navigate])
   const picker = useRef(null)
-  const projectFiles = useProjectFiles(projectId)
+  const [phoneFor, setPhoneFor] = useState(null) // the Project whose QR dialog is open
+  const phoneOpen = phoneFor === projectId
+  const projectFiles = useProjectFiles(projectId, { live: phoneOpen })
   const quizNotices = useQuizNotices(projectId)
   const mistakes = useMistakes(projectId)
   const { me, activeProjects, upsertProject, markOpened, forgetProject, saveFilesCollapsed, markPrivacyAccepted } =
@@ -59,7 +65,7 @@ export default function ProjectHome() {
   // Privacy notice (Story 2.3, FR-6, §5.3): until the Account has accepted it, Upload, "browse", and
   // a drop open it first; "Got it, upload" saves the acceptance and continues that action.
   const accepted = me?.privacy_notice_accepted === true
-  const [notice, setNotice] = useState(null) // { mode: 'ask' | 'info', files?, picker? }
+  const [notice, setNotice] = useState(null) // { mode: 'ask' | 'info', files?, picker?, phone? }
   const [noticeBusy, setNoticeBusy] = useState(false)
   const [noticeError, setNoticeError] = useState(null)
   const acceptance = useRef(null) // the pending save, which a picker upload waits for
@@ -98,6 +104,7 @@ export default function ProjectHome() {
     markPrivacyAccepted?.()
     setNotice(null)
     if (pending?.files) projectFiles.upload(pending.files)
+    if (pending?.phone) setPhoneFor(projectId)
   }
   const [loaded, setLoaded] = useState(null) // { id, project } of the Project shown
   const [error, setError] = useState(null) // { id, apiError }
@@ -213,6 +220,12 @@ export default function ProjectHome() {
     setNoticeError(null)
     setNotice({ mode: 'ask', picker: true })
   }
+  const openPhone = () => {
+    if (readOnly) return
+    if (accepted) return setPhoneFor(projectId)
+    setNoticeError(null)
+    setNotice({ mode: 'ask', phone: true })
+  }
 
   return (
     <div className={styles.home} aria-busy={!ready && !failed}>
@@ -283,6 +296,10 @@ export default function ProjectHome() {
                 />
               </p>
               <p className={styles.dropTypes}>{t('files.types')}</p>
+              <p className={styles.dropOr}>{t('login.or')}</p>
+              <button type="button" className={styles.phone} onClick={openPhone} disabled={readOnly}>
+                {t('files.uploadPhone')}
+              </button>
             </div>
           )}
           {ready && anyReady && <div className={styles.thread} />}
@@ -311,6 +328,7 @@ export default function ProjectHome() {
         loading={!ready && !failed}
         readOnly={readOnly}
         onBrowse={openPicker}
+        onPhone={openPhone}
         collapsed={filesCollapsed}
         onToggle={toggleFiles}
         onPrivacyInfo={() => {
@@ -324,6 +342,12 @@ export default function ProjectHome() {
         error={noticeError}
         onAccept={acceptNotice}
         onClose={() => setNotice(null)}
+      />
+      <QrDialog
+        open={phoneOpen && ready && !readOnly}
+        projectId={projectId}
+        materials={files.materials}
+        onClose={() => setPhoneFor(null)}
       />
     </div>
   )

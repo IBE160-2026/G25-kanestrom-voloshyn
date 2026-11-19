@@ -150,6 +150,12 @@ async def mark_vision_started(pool: AsyncConnectionPool, job_id: UUID) -> bool:
             return await repo.mark_vision_started(conn, job_id)
 
 
+async def mark_vision_started_in(conn: AsyncConnection, job_id: UUID) -> bool:
+    """`mark_vision_started` in the caller's transaction, so the caller can record its own side of the
+    call (a phone photo's settled unit) atomically with the check that no cancel was requested."""
+    return await repo.mark_vision_started(conn, job_id)
+
+
 async def set_progress(pool: AsyncConnectionPool, job_id: UUID, step: str) -> bool:
     """Move a running job to the next progress step, in its own short transaction (AD-20)."""
     async with pool.connection() as conn:

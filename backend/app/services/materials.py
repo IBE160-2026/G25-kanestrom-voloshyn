@@ -25,6 +25,14 @@ and from there it is handled like any other file. Right before the vision call t
 back only when the call never started (removed or cancelled before it, a job that never reached it,
 a file that can't be decoded) or failed at the provider; once the call started it stays used.
 
+A phone batch (FR-21, AD-24) becomes one Material through `create_from_batch`, which takes its slot
+under the same Project lock; its job reads the staged photos from storage, one after another: each is
+normalized, read by `extract_image_text`, and becomes the Section "Page n" (an unreadable photo an
+empty page), judged as a whole by `integrity.judge_batch`. Each photo reserved its own unit when it
+arrived; `phone_batch_photos.unit_settled_at` is stamped right before its vision call, or when its
+unit is given back, so every unit is either used or released exactly once. The staged photos are
+deleted once the batch is processed, rejected, removed, or its job ends.
+
 Removal (FR-20, AD-23): one transaction sets `removed_at`, empties the Sections' text, cancels the
 Material's job, and, when asked, withdraws the file's outstanding Mistakes; the stored original is deleted
 after the commit.
@@ -43,6 +51,8 @@ from psycopg_pool import AsyncConnectionPool
 from app import extraction
 from app.config import Settings
 from app.db import materials as repo
+from app.db import phone as phone_repo
+from app.db import profiles
 from app.errors import AppError
 from app.extraction import Extracted, ExtractedSection, images, integrity
 from app.extraction.types import clean
@@ -72,6 +82,15 @@ DOCUMENT_TYPES = {
 IMAGE_TYPES = images.IMAGE_TYPES
 # The one Section an image becomes.
 IMAGE_SECTION_LABEL = "Image"
+
+# A finalized phone batch (FR-21, AD-24): its file type, and its name in the Account's language
+# (EXPERIENCE.md › Phone batch name), stored as the Material's file name.
+PHONE_BATCH = "phone_batch"
+BATCH_NAMES = {
+    "en": ("Handwritten notes, 1 page", "Handwritten notes, {n} pages"),
+    "nb": ("Håndskrevne notater, 1 side", "Håndskrevne notater, {n} sider"),
+}
+PAGE_LABEL = "Page {n}"
 
 # Reject reasons (AD-6): codes the SPA translates.
 UNREADABLE = "unreadable"
@@ -147,8 +166,8 @@ async def upload(
     if file_type in IMAGE_TYPES:
         # Its own short transaction: no counter row lock is held while storing, so a removal (which
         # releases under the Project lock) can't deadlock with an upload. The 26th image stops here.
-        day = await _reserve_image(pool, account_id)
-        on_rollback(lambda: _release_image(pool, account_id, day))
+        day = await reserve_image(pool, account_id)
+        on_rollback(lambda: release_image(pool, account_id, day))
         # The mock reads the outcome from the file name (AD-4).
         params.update(usage_day=day.isoformat(), file_name=file_name)
 
@@ -175,16 +194,53 @@ async def upload(
     return material, job
 
 
+async def slot_available(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> bool:
+    """Whether the Project has a free slot now (AD-5); a hint for the phone page, re-checked on finalize."""
+    return await repo.count_slots(conn, account_id, project_id) < MAX_MATERIALS
+
+
+def batch_name(pages: int, language: str | None) -> str:
+    one, other = BATCH_NAMES.get(language or "en", BATCH_NAMES["en"])
+    return one if pages == 1 else other.format(n=pages)
+
+
+async def create_from_batch(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, pages: int, size_bytes: int
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """A finalized phone batch becomes one Material (FR-21, AD-24): AD-5 step 3 and 4 for the batch.
+    Locks the Project (`require_active`), re-checks the slot count (`material_limit_reached`), inserts
+    the Material `phone_batch` named in the Account's language, and enqueues its job. The caller
+    submits the job after the commit; the job reads the photos from the batch."""
+    await projects.require_active(conn, account_id, project_id)
+    if await repo.count_slots(conn, account_id, project_id) >= MAX_MATERIALS:
+        raise MaterialLimitReached()
+    profile = await profiles.get(conn, account_id)
+    material_id = uuid4()
+    material = await repo.insert(
+        conn,
+        material_id=material_id,
+        account_id=account_id,
+        project_id=project_id,
+        file_name=batch_name(pages, profile["language"] if profile else None),
+        file_type=PHONE_BATCH,
+        size_bytes=size_bytes,
+    )
+    job = await jobs.enqueue(
+        conn, account_id, project_id, KIND, params={"file_type": PHONE_BATCH}, result_ref=material_id
+    )
+    return material, job
+
+
 # --- The daily image limit (FR-7, AD-12) ---
 
 
-async def _reserve_image(pool: AsyncConnectionPool, account_id: UUID) -> date:
+async def reserve_image(pool: AsyncConnectionPool, account_id: UUID) -> date:
     async with pool.connection() as conn:
         async with conn.transaction():
             return await usage.reserve(conn, account_id, usage.IMAGE_EXTRACTION)
 
 
-async def _release_image(pool: AsyncConnectionPool, account_id: UUID, day: date) -> None:
+async def release_image(pool: AsyncConnectionPool, account_id: UUID, day: date) -> None:
     async with pool.connection() as conn:
         async with conn.transaction():
             await usage.release(conn, account_id, usage.IMAGE_EXTRACTION, day)
@@ -198,11 +254,42 @@ def _image_unit(job: dict[str, Any]) -> date | None:
     return date.fromisoformat(params["usage_day"])
 
 
+def _is_batch(job: dict[str, Any]) -> bool:
+    return (job.get("params") or {}).get("file_type") == PHONE_BATCH
+
+
+async def _release_unsettled(conn: AsyncConnection, account_id: UUID, photos: list[dict[str, Any]]) -> None:
+    """Give back the units of these batch photos that are not settled yet, and mark them settled, in
+    the caller's transaction, so no other path gives them back again (AD-12)."""
+    for photo in await phone_repo.settle_photos(conn, [p["id"] for p in photos]):
+        await usage.release(conn, account_id, usage.IMAGE_EXTRACTION, photo["usage_day"])
+
+
 async def _release_if_unread(conn: AsyncConnection, job: dict[str, Any]) -> None:
-    """Give back an image job's unit when its vision call never started (no `vision_started_at`)."""
+    """Give back an image job's unit when its vision call never started (no `vision_started_at`), or a
+    phone batch job's units of every photo whose call never started."""
+    if _is_batch(job):
+        if job.get("result_ref") is not None:
+            photos = await phone_repo.photos_of_material(conn, job["account_id"], job["result_ref"])
+            await _release_unsettled(conn, job["account_id"], photos)
+        return
     day = _image_unit(job)
     if day is not None and job.get("vision_started_at") is None:
         await usage.release(conn, job["account_id"], usage.IMAGE_EXTRACTION, day)
+
+
+async def _photo_paths(conn: AsyncConnection, account_id: UUID, material_id: UUID) -> list[str]:
+    return [p["storage_path"] for p in await phone_repo.photos_of_material(conn, account_id, material_id)]
+
+
+def delete_paths(storage: Storage, paths: list[str]) -> Callable[[], Any]:
+    """The after-commit step that deletes these stored objects (AD-16)."""
+
+    async def delete() -> None:
+        for path in paths:
+            await storage.delete(path)
+
+    return delete
 
 
 async def list_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> list[dict[str, Any]]:
@@ -245,6 +332,9 @@ async def remove(
     if withdraw_mistakes:
         await mistakes.withdraw_for_material(conn, account_id, project_id, material_id)
     path = material_path(account_id, project_id, material_id)
+    if material["file_type"] == PHONE_BATCH:
+        # A batch has no original; its staged photos go instead (already gone once it was processed).
+        return delete_paths(storage, await _photo_paths(conn, account_id, material_id))
     return lambda: storage.delete(path)
 
 
@@ -277,7 +367,7 @@ def processing_kind(
         except ProviderError:
             # The provider did no work: the unit comes back, and the job fails as usual.
             try:
-                await _release_image(pool, job["account_id"], _image_unit(job))
+                await release_image(pool, job["account_id"], _image_unit(job))
             except Exception as exc:  # noqa: BLE001 -- the job still fails with the provider error
                 logger.warning("Image unit release failed: %s", type(exc).__name__)
             raise
@@ -288,8 +378,95 @@ def processing_kind(
     async def nothing(conn: AsyncConnection) -> None:
         return None
 
+    async def give_back(account_id: UUID, photo: dict[str, Any]) -> None:
+        """Give back one batch photo's unit (its vision call never started), in a short transaction of
+        its own; a unit already settled is left alone (AD-12)."""
+        async with pool.connection() as conn:
+            async with conn.transaction():
+                await _release_unsettled(conn, account_id, [photo])
+
+    async def start_vision(job_id: UUID, photo: dict[str, Any]) -> bool:
+        """In one short transaction: confirm the job is still running with no cancel requested, and
+        mark the photo's unit used. A removal (which requests the cancel, then gives back unsettled
+        units) is either seen here, so the call doesn't start, or waits and finds the photo settled."""
+        async with pool.connection() as conn:
+            async with conn.transaction():
+                if not await jobs.mark_vision_started_in(conn, job_id):
+                    return False
+                return bool(await phone_repo.settle_photos(conn, [photo["id"]]))
+
+    async def read_batch(
+        job: dict[str, Any], photos: list[dict[str, Any]]
+    ) -> tuple[Extracted, integrity.Verdict] | None:
+        """Each staged photo in page order (AD-6 phone row): normalize (in a thread), then its vision
+        call with no connection held (AD-18). A photo that can't be decoded becomes an empty page and
+        its unit comes back; an unreadable one becomes an empty page. None when a cancel came first;
+        the terminal hook then gives back the units of the photos not yet read."""
+        account_id = job["account_id"]
+        reads: list[tuple[str, str]] = []
+        for photo in photos:
+            # A removal meanwhile: stop before the next photo; the save step ends the job cancelled.
+            if await jobs.should_stop(pool, job["id"]):
+                return None
+            try:
+                jpeg = await images.normalize(await storage.get(photo["storage_path"]), photo["file_type"])
+            except extraction.Unparseable:
+                # It never reached the vision call: its unit comes back.
+                await give_back(account_id, photo)
+                reads.append(("unreadable", ""))
+                continue
+            if not await start_vision(job["id"], photo):
+                return None
+            try:
+                read = await llm.extract_image_text(jpeg, photo["file_name"])
+            except ProviderError:
+                # The provider did no work: this photo's unit comes back; the terminal hook gives back
+                # those of the photos after it, and the job fails as usual.
+                try:
+                    await release_image(pool, account_id, photo["usage_day"])
+                except Exception as exc:  # noqa: BLE001 -- the job still fails with the provider error
+                    logger.warning("Image unit release failed: %s", type(exc).__name__)
+                raise
+            reads.append((read.legibility, clean(read.text)))
+        verdict = integrity.judge_batch(reads, thresholds)
+        sections = tuple(
+            ExtractedSection(
+                PAGE_LABEL.format(n=number),
+                "" if integrity.photo_state(legibility, text, thresholds) == "unreadable" else text,
+            )
+            for number, (legibility, text) in enumerate(reads, start=1)
+        )
+        return Extracted(paged=True, sections=sections), verdict
+
+    async def run_batch(job: dict[str, Any]) -> jobs.SavePlan:
+        """A phone batch (AD-24): read every photo, then the same save as any file. The staged photos
+        are deleted once the save has committed, whatever the outcome."""
+        account_id, material_id = job["account_id"], job["result_ref"]
+        async with pool.connection() as conn:
+            photos = await phone_repo.photos_of_material(conn, account_id, material_id)
+        if not photos:
+            raise RuntimeError("the batch has no photos")
+        delete_photos = delete_paths(storage, [p["storage_path"] for p in photos])
+        read = await read_batch(job, photos)
+        if read is None:
+            # Cancelled before a vision call: the save step ends the job, and the terminal hook gives
+            # back the units not yet used and deletes the photos.
+            return jobs.SavePlan(apply=nothing, material_ids=(material_id,), result_ref=material_id)
+        extracted, verdict = read
+        if verdict.outcome == "rejected":
+
+            async def save_rejected(conn: AsyncConnection) -> None:
+                await repo.set_rejected(conn, account_id, material_id, verdict.reason)
+
+            return jobs.SavePlan(
+                apply=save_rejected, material_ids=(material_id,), result_ref=material_id, after_commit=delete_photos
+            )
+        return await ready_plan(job, extracted, verdict, delete_photos)
+
     async def run(job: dict[str, Any], data: bytes | None) -> jobs.SavePlan:
         account_id, material_id = job["account_id"], job["result_ref"]
+        if _is_batch(job):
+            return await run_batch(job)
         if data is None:
             raise RuntimeError("the upload is no longer in memory")
         file_type = job["params"]["file_type"]
@@ -330,6 +507,17 @@ def processing_kind(
                 apply=save_rejected, material_ids=(material_id,), result_ref=material_id, after_commit=after_rejected
             )
 
+        return await ready_plan(job, extracted, verdict)
+
+    async def ready_plan(
+        job: dict[str, Any],
+        extracted: Extracted,
+        verdict: integrity.Verdict,
+        then: jobs.AfterCommit | None = None,
+    ) -> jobs.SavePlan:
+        """Topics, then one save transaction with the Sections, the Topics, and `ready` (AD-5). `then`
+        runs after the commit, before auto-naming."""
+        account_id, material_id = job["account_id"], job["result_ref"]
         # The LLM call happens here, with no connection held (AD-18); an error fails the job.
         drafts = await topics.detect(llm, extracted)
         sections = [(section.label, section.text) for section in extracted.sections]
@@ -352,6 +540,11 @@ def processing_kind(
             saved.append(True)
 
         async def after_ready() -> None:
+            if then is not None:
+                try:
+                    await then()
+                except Exception as exc:  # noqa: BLE001 -- naming still runs
+                    logger.warning("After-save step failed: %s", type(exc).__name__)
             # Only a Material this job saved as ready names the Project; never inside a transaction.
             if any(saved):
                 await projects.auto_name_if_unnamed(pool, llm, account_id, job["project_id"], extracted.sections)
@@ -363,11 +556,14 @@ def processing_kind(
     async def on_terminal(conn: AsyncConnection, job: dict[str, Any]) -> jobs.AfterCommit | None:
         """A failed, interrupted, or cancelled job rejects its Material, freeing the slot (AD-5). An
         image job whose vision call never started gives its unit back (a provider error already did,
-        and its marker stays, so it isn't given back twice)."""
+        and its marker stays, so it isn't given back twice); a batch job gives back the units of the
+        photos whose call never started, and its staged photos are deleted."""
         if job.get("result_ref") is None:
             return None
         await _release_if_unread(conn, job)
         rejected = await repo.set_rejected(conn, job["account_id"], job["result_ref"], _reject_reason(job))
+        if _is_batch(job):
+            return delete_paths(storage, await _photo_paths(conn, job["account_id"], job["result_ref"]))
         return _delete_original(job) if rejected is not None else None
 
     return jobs.JobKind(run=run, on_terminal=on_terminal)

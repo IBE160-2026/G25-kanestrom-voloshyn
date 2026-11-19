@@ -64,6 +64,8 @@ class Settings(BaseSettings):
 
     # What the phone QR code encodes (AD-17, AD-24).
     app_public_url: str = "http://localhost:8000"
+    # Seconds a phone upload link works after it is created (AD-24).
+    phone_link_ttl_seconds: int = Field(600, ge=30, le=86_400)
 
     # Outgoing SMTP for auth emails, used only by mailer.py (AD-19). Locally: Mailpit from
     # `npx supabase start`. docker-compose.yml sets the container's host (host.docker.internal).

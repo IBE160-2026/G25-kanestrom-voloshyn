@@ -16,6 +16,7 @@ from app.api import jobs as jobs_api
 from app.api import materials as materials_api
 from app.api import me as me_api
 from app.api import mistakes as mistakes_api
+from app.api import phone as phone_api
 from app.api import projects as projects_api
 from app.api import quizzes as quizzes_api
 from app.api import review as review_api
@@ -25,7 +26,7 @@ from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
 from app.llm import create_gateway
-from app.services import jobs, materials, password_reset, quiz, review
+from app.services import jobs, materials, password_reset, phone, quiz, review
 from app.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -40,18 +41,23 @@ ALL_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 _TOKEN_QUERY = re.compile(r"(?<=[?&])((?:[a-z_]*token(?:_hash)?|code)=)[^&\s]*", re.IGNORECASE)
 _REDACTED = "[redacted]"
 _REPLACEMENT = r"\1" + _REDACTED
+# The phone-link token sits in the path: the phone page `/u/{token}` and `/api/phone/{token}/...` (AD-24).
+_TOKEN_PATH = re.compile(r"(/u/|/api/phone/)[^/?#\s\"]+")
+
+
+def _redact(text: str) -> str:
+    return _TOKEN_PATH.sub(_REPLACEMENT, _TOKEN_QUERY.sub(_REPLACEMENT, text))
 
 
 class _RedactTokens(logging.Filter):
-    """Blanks token query values (`token=`, `token_hash=`, `access_token=`, `code=`, any case) in access-log lines (AD-19)."""
+    """Blanks token query values (`token=`, `token_hash=`, `access_token=`, `code=`, any case) in access-log
+    lines (AD-19), and the phone-link token in `/u/{token}` and `/api/phone/{token}` paths (AD-24)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
         if isinstance(record.args, tuple):
-            record.args = tuple(
-                _TOKEN_QUERY.sub(_REPLACEMENT, arg) if isinstance(arg, str) else arg for arg in record.args
-            )
+            record.args = tuple(_redact(arg) if isinstance(arg, str) else arg for arg in record.args)
         if isinstance(record.msg, str):
-            record.msg = _TOKEN_QUERY.sub(_REPLACEMENT, record.msg)
+            record.msg = _redact(record.msg)
         return True
 
 
@@ -74,6 +80,8 @@ def _api_router() -> APIRouter:
     api.include_router(review_api.router)
     api.include_router(jobs_api.router)
     api.include_router(usage_api.router)
+    api.include_router(phone_api.links)
+    api.include_router(phone_api.router)
 
     # Registered last, so it only catches paths no real API route matched.
     @api.api_route("", methods=ALL_METHODS, include_in_schema=False)
@@ -131,11 +139,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.runner = runner
         sweep = asyncio.create_task(_sweep_until_done(pool, kinds))
         app.state.sweep = sweep
+        # The stale phone-batch cleanup (AD-24): at startup, then hourly, in this process.
+        cleanup = asyncio.create_task(phone.cleanup_forever(pool, storage))
+        app.state.phone_cleanup = cleanup
         try:
             yield
         finally:
             sweep.cancel()
-            await asyncio.gather(sweep, return_exceptions=True)
+            cleanup.cancel()
+            await asyncio.gather(sweep, cleanup, return_exceptions=True)
             # Let running jobs and reset emails finish before their pool and client close.
             await runner.drain()
             await password_reset.drain()
@@ -153,6 +165,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
     install_error_handlers(app)
+
+    @app.middleware("http")
+    async def _no_referrer_on_phone_page(request, call_next):
+        """The phone page's URL holds the link token: never send it on as a Referer (AD-24)."""
+        response = await call_next(request)
+        if request.url.path.startswith("/u/"):
+            response.headers["Referrer-Policy"] = "no-referrer"
+        return response
     app.include_router(_api_router())
 
     dist = settings.frontend_dist

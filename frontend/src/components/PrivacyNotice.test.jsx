@@ -185,7 +185,7 @@ describe('Privacy notice', () => {
     expect(await screen.findByRole('dialog', { name: en.privacyNotice.title })).toBeInTheDocument()
     await user.keyboard('{Escape}')
 
-    const browse = within(screen.getByTestId('drop-zone')).getByRole('button')
+    const browse = within(screen.getByTestId('drop-zone')).getByRole('button', { name: 'browse' })
     await user.click(browse)
     expect(await screen.findByRole('dialog', { name: en.privacyNotice.title })).toBeInTheDocument()
     expect(uploads()).toEqual([])

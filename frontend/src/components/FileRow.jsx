@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import styles from './FileRow.module.css'
 import { IMAGE_TYPES } from '../pages/useProjectFiles.js'
 import TopicList from './TopicList.jsx'
+import { fileState, tileLabel } from './fileStatus.js'
 
 // File row (DESIGN.md › File row, File status; EXPERIENCE.md › State Patterns › Study Material):
 // a file-type tile, the name, and the status line, with a muted note when partly unreadable and the
@@ -20,25 +21,11 @@ import TopicList from './TopicList.jsx'
 // offers rename, delete, merge, and add; without it the list is read-only. With 2+ Topics the "···"
 // menu also offers "Merge topics", which starts the list's merge mode (Ctrl+click or Space on a chip
 // starts it too); Cancel returns focus to "···", or to the chip that started it.
-function fileState(material) {
-  if (material.status === 'processing') return 'processing'
-  if (material.status === 'rejected') return 'rejected'
-  return material.warning ? 'warning' : 'ready'
-}
-
-const TILE = { pdf: 'PDF', docx: 'DOCX', pptx: 'PPTX', txt: 'TXT', md: 'MD', jpg: 'JPG', png: 'PNG', heic: 'HEIC' }
-
-/** The rejection note's key: an unreadable photo (FR-7) has its own "too blurry" copy. */
+/** The rejection note's key: an unreadable photo (FR-7), or a phone batch of them (FR-21), has its own
+ * "too blurry" copy. */
 function reasonKey(material) {
   if (material.reject_reason === 'unreadable' && IMAGE_TYPES.has(material.file_type)) return 'files.reason.unreadable_image'
   return `files.reason.${material.reject_reason}`
-}
-
-function tileLabel(material) {
-  if (material.file_type) return TILE[material.file_type] ?? material.file_type.toUpperCase()
-  const ext = String(material.file_name).split('.').pop().toLowerCase()
-  if (ext === 'jpeg') return TILE.jpg
-  return ext ? ext.toUpperCase().slice(0, 4) : ''
 }
 
 export default function FileRow({ material, onRemove, onRemoveNow, onEditTopics, removing = false }) {
