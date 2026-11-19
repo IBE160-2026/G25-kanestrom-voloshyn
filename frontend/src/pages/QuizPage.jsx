@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import InlineError from '../components/InlineError.jsx'
+import QuestionView from '../components/QuestionView.jsx'
 import { errorText } from '../i18n/errors.js'
 import styles from './QuizPage.module.css'
 
@@ -10,8 +11,9 @@ import styles from './QuizPage.module.css'
 // Progress bar, Key hint, Source label; EXPERIENCE.md › Answer option, Feedback panel, Score summary,
 // Keyboard shortcuts; mock key-quiz-feedback.html states 1-2).
 //
-// - One question at a time with a progress bar and four Answer options. Keys 1–4 or a click answer
-//   (desktop Key hints; keys are ignored while focus is in a text input or a modifier is held).
+// - One question at a time with a progress bar and four Answer options (the shared QuestionView, also
+//   used by Mistake Review). Keys 1–4 or a click answer (desktop Key hints; keys are ignored while focus
+//   is in a text input or a modifier is held).
 // - The answer is scored and saved by the server; the Feedback panel appears once the save returns, in
 //   a polite live region: "Correct", or "Not quite" + "It stays in your review." in the mistake colour,
 //   then the explanation and its Source labels. The options then read "Your answer" / "Correct
@@ -29,10 +31,7 @@ import styles from './QuizPage.module.css'
 //   is open and "→ next" once the student can move on.
 // - Focus: "Next question" after an answer, the next question's first option after →, the score after
 //   "See results".
-const KEYS = { 1: 0, 2: 1, 3: 2, 4: 3 }
 const SUMMARY = 'summary'
-const ARROW = '→'
-const TEXT_INPUT = /^(INPUT|TEXTAREA|SELECT)$/
 // Save refusals that name a rule: sending the same answer again can't help.
 const SAVE_RULES = new Set(['project_read_only', 'not_found'])
 
@@ -54,12 +53,8 @@ export default function QuizPage() {
   const [saveError, setSaveError] = useState(null) // { questionId, optionId, error, rule }
   const [refusedKey, setRefusedKey] = useState(null) // the Quiz whose save said project_read_only
   const [attempt, setAttempt] = useState(0) // load attempts ("Try again")
-  const progressId = useId()
-  const focusNext = useRef(null) // 'option' | 'next' | 'score': where focus goes after the next render
-  const firstOption = useRef(null)
-  const nextButton = useRef(null)
+  const focusScore = useRef(false) // the score heading takes focus after "See results"
   const scoreHeading = useRef(null)
-  const errorBox = useRef(null)
 
   useEffect(() => {
     let live = true
@@ -119,7 +114,6 @@ export default function QuizPage() {
             }
           : current,
       )
-      focusNext.current = 'next'
     } catch (err) {
       if (SIGNED_OUT_CODES.has(err?.code)) return
       if (err?.code === 'project_read_only') setRefusedKey(key)
@@ -132,52 +126,20 @@ export default function QuizPage() {
   function next() {
     if (!canMove) return
     if (isLast) {
-      focusNext.current = 'score'
+      focusScore.current = true
       setAt({ key, index: SUMMARY })
     } else {
-      focusNext.current = 'option'
       setAt({ key, index: index + 1 })
     }
   }
 
-  // Keys 1–4 answer, → moves on (EXPERIENCE.md › Keyboard shortcuts); never while typing.
+  // The score heading takes focus after "See results" (EXPERIENCE.md › Accessibility); the question
+  // view moves focus between questions itself.
   useEffect(() => {
-    if (!question) return undefined
-    const onKey = (event) => {
-      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
-      const target = event.target
-      if (target && (TEXT_INPUT.test(target.tagName ?? '') || target.isContentEditable)) return
-      if (event.key in KEYS) {
-        const option = question.options[KEYS[event.key]]
-        if (option && !answer && !saving && !readOnly) {
-          event.preventDefault()
-          submit(option.id)
-        }
-      } else if (event.key === 'ArrowRight' && canMove) {
-        event.preventDefault()
-        next()
-      }
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-    // `submit` and `next` read the same state listed here.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [question, answer, saving, readOnly, canMove, index, isLast])
-
-  // Focus follows the student's step (EXPERIENCE.md › Accessibility).
-  useEffect(() => {
-    const target = focusNext.current
-    if (!target) return
-    focusNext.current = null
-    if (target === 'option') firstOption.current?.focus()
-    else if (target === 'next') nextButton.current?.focus()
-    else if (target === 'score') scoreHeading.current?.focus()
+    if (!focusScore.current) return
+    focusScore.current = false
+    scoreHeading.current?.focus()
   })
-
-  // "Try again" takes focus after a failed save (EXPERIENCE.md › Inline error).
-  useEffect(() => {
-    if (saveError && !saveError.rule) errorBox.current?.querySelector('button')?.focus()
-  }, [saveError])
 
   const backToChat = () => navigate(`/projects/${projectId}`)
   const retryLoad = () => {
@@ -186,13 +148,6 @@ export default function QuizPage() {
   }
   const optionText = (q, id) => q.options.find((o) => o.id === id)?.text ?? ''
 
-  function optionState(option) {
-    if (!answer) return null
-    if (option.id === answer.correct_option_id) return 'correct'
-    if (option.id === answer.submitted_option_id) return 'mistake'
-    return 'dim'
-  }
-
   function renderQuestion() {
     return (
       <section className={styles.quiz}>
@@ -200,97 +155,26 @@ export default function QuizPage() {
           <p className={styles.muted}>{t('quiz.fewer', { count: data.quiz.question_count })}</p>
         )}
         {readOnly && <InlineError>{errorText(t, { code: 'project_read_only' })}</InlineError>}
-        <div id={progressId} className={styles.progressLine} aria-live="polite">
-          {t('quiz.progress', { n: index + 1, total })}
-        </div>
-        <div
-          className={styles.bar}
-          role="progressbar"
-          aria-labelledby={progressId}
-          aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={answeredCount}
-        >
-          <span className={styles.fill} style={{ width: `${(answeredCount / total) * 100}%` }} />
-        </div>
-
-        <h2 className={styles.question}>{question.question}</h2>
-
-        <ol className={styles.options}>
-          {question.options.map((option, i) => {
-            const state = optionState(option)
-            return (
-              <li key={option.id}>
-                <button
-                  type="button"
-                  ref={i === 0 ? firstOption : undefined}
-                  className={`${styles.option} ${state ? styles[state] : ''}`}
-                  data-state={state ?? 'open'}
-                  disabled={Boolean(answer) || saving || readOnly}
-                  onClick={() => submit(option.id)}
-                >
-                  <kbd className={styles.key} aria-hidden="true">
-                    {i + 1}
-                  </kbd>
-                  <span className={styles.optionText}>{option.text}</span>
-                  {state === 'correct' && <span className={styles.tag}>{t('quiz.correctAnswer')}</span>}
-                  {state === 'mistake' && <span className={styles.tag}>{t('quiz.yourAnswer')}</span>}
-                </button>
-              </li>
-            )
-          })}
-        </ol>
-
-        {failedSave && (
-          <div ref={errorBox} className={styles.error}>
-            <InlineError onRetry={failedSave.rule ? undefined : () => submit(failedSave.optionId)}>
-              {errorText(t, failedSave.error)}
-            </InlineError>
-          </div>
-        )}
-
-        <div role="status" aria-live="polite" className={styles.live}>
-          {answer && (
-            <div className={`${styles.feedback} ${answer.is_correct ? styles.feedbackCorrect : styles.feedbackMistake}`}>
-              <h3 className={styles.feedbackHead}>{answer.is_correct ? t('quiz.correct') : t('quiz.notQuite')}</h3>
-              {!answer.is_correct && <p className={styles.stays}>{t('quiz.staysInReview')}</p>}
-              <p className={styles.why}>{answer.explanation}</p>
-              {answer.sources.length > 0 && (
-                <ul className={styles.sources}>
-                  {answer.sources.map((source) => (
-                    <li key={source.label} className={styles.source}>
-                      {source.label}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className={styles.actions}>
-          <p className={styles.hints} aria-hidden="true" data-testid="key-hints">
-            {canMove ? (
-              <span>
-                <kbd className={styles.key}>{ARROW}</kbd> {t('quiz.keys.next')}
-              </span>
-            ) : (
-              <span>
-                <kbd className={styles.key}>{'1'}</kbd>
-                {'–'}
-                <kbd className={styles.key}>{'4'}</kbd> {t('quiz.keys.answer')}
-              </span>
-            )}
-          </p>
-          {canMove && (
-            <button type="button" ref={nextButton} className={styles.primary} onClick={next}>
-              {isLast ? t('quiz.seeResults') : t('quiz.next')}
-              <kbd className={`${styles.key} ${styles.onPrimary}`} aria-hidden="true">
-                {ARROW}
-              </kbd>
-            </button>
-          )}
-        </div>
+        <QuestionView
+          progressText={t('quiz.progress', { n: index + 1, total })}
+          answered={answeredCount}
+          total={total}
+          question={question}
+          answer={answer}
+          disabled={saving || readOnly}
+          onAnswer={submit}
+          error={
+            failedSave
+              ? {
+                  message: errorText(t, failedSave.error),
+                  onRetry: failedSave.rule ? undefined : () => submit(failedSave.optionId),
+                }
+              : null
+          }
+          canMove={canMove}
+          nextLabel={isLast ? t('quiz.seeResults') : t('quiz.next')}
+          onNext={next}
+        />
       </section>
     )
   }

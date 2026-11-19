@@ -151,3 +151,24 @@ def test_mistakes_summary_is_an_unguarded_read():
     route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/mistakes/summary")
     assert route.methods == {"GET"}
     assert active_project not in _calls(route.dependant)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/projects/{project_id}/review-rounds",
+        "/api/projects/{project_id}/review-rounds/{round_id}/items/{practice_question_id}/answer",
+    ],
+)
+def test_review_start_and_answers_are_guarded(path):
+    # Stories 3.4 + 3.5: starting a round and answering are content mutations (AD-22).
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == path and "POST" in r.methods)
+    assert active_project in _calls(route.dependant)
+
+
+def test_a_review_round_is_an_unguarded_read():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/review-rounds/{round_id}")
+    assert route.methods == {"GET"}
+    assert active_project not in _calls(route.dependant)

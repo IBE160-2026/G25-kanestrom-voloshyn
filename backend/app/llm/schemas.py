@@ -101,3 +101,38 @@ class QuizDraft(BaseModel):
     @classmethod
     def _cap(cls, value: object) -> object:
         return value[:QUIZ_MAX] if isinstance(value, list) else value
+
+
+# At most this many Practice Questions per Mistake Review round (AD-11, AD-12).
+PRACTICE_MAX = 20
+
+
+class DraftPractice(BaseModel):
+    """One practice question for one Mistake, as the model writes it (AD-9, AD-11): the target's
+    `mistake_id` copied back, four options with the index of the correct one, an explanation, and the
+    1-based Section numbers (`S1…Sn`) it rests on. The service shuffles the options, maps the numbers
+    back to Section ids, and falls back to the original question when an item is unusable."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mistake_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    question: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    # A blank or repeated option makes the service use the original question, not a retry.
+    options: Annotated[list[str], Field(min_length=QUIZ_OPTIONS, max_length=QUIZ_OPTIONS)]
+    correct_index: Annotated[int, Field(ge=0, le=QUIZ_OPTIONS - 1)]
+    explanation: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    # May be empty: an uncited item falls back to the original question.
+    sections: list[int]
+
+
+class PracticeDraft(BaseModel):
+    """`generate_practice`: at most one item per target, at most 20 (FR-18, AD-11). Extra items are cut."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: Annotated[list[DraftPractice], Field(max_length=PRACTICE_MAX)]
+
+    @field_validator("items", mode="before")
+    @classmethod
+    def _cap(cls, value: object) -> object:
+        return value[:PRACTICE_MAX] if isinstance(value, list) else value

@@ -1,6 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
-// 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), and Mistakes (Story
-// 3.3), installed on the
+// 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), Mistakes (Story
+// 3.3), and Mistake Review rounds (Stories 3.4 + 3.5), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
@@ -62,7 +62,11 @@ export const IMAGE_LIMIT = 25
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
  * answer adds an outstanding Mistake (Story 3.3). `mistakes` lists outstanding Mistakes ({project_id,
  * material_ids}, see `mistake`); GET .../mistakes/summary counts them, and a removal with
- * `?withdraw_mistakes=true` withdraws the file's. Returns the live state.
+ * `?withdraw_mistakes=true` withdraws the file's. A review-round request adds a running `review_round`
+ * job at the `reading` step (one at a time, like the server); `finishReview` saves its round from the
+ * oldest outstanding Mistakes. `rounds` lists stored rounds (see `reviewRound`); a practice answer is
+ * scored and saved once, and a correct one clears its Mistake (Stories 3.4 + 3.5). Returns the live
+ * state.
  */
 export function fakeApi({
   me = PROFILE,
@@ -74,6 +78,7 @@ export function fakeApi({
   capacity = 20,
   quizzes = [],
   mistakes = [],
+  rounds = [],
 } = {}) {
   const state = {
     me: { ...me },
@@ -91,7 +96,10 @@ export function fakeApi({
     quizzes: Object.fromEntries(quizzes.map((q) => [q.id, structuredClone(q)])), // { [quizId]: quiz(...) }
     answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
-    mistakes: mistakes.map((m) => ({ withdrawn: false, ...m })), // Story 3.3
+    mistakes: mistakes.map((m) => ({ withdrawn: false, cleared: false, ...m })), // Story 3.3
+    rounds: Object.fromEntries(rounds.map((r) => [r.id, structuredClone(r)])), // { [roundId]: reviewRound(...) }
+    reviewRequests: 0, // POST .../review-rounds calls answered 202
+    practiceAnswers: [], // bodies of POST .../items/{id}/answer, with their item id
     removeQueries: [], // query strings of DELETE .../materials/{id} (Story 3.3), '' for none
   }
 
@@ -193,12 +201,84 @@ export function fakeApi({
         return { job_id: job.id }
       }
     }
+    // Mistake Review (Stories 3.4 + 3.5): like the server, one active round job per Project, answers
+    // scored and saved once, and a correct answer clears its Mistake.
+    const practiceCall = path.match(/^\/api\/projects\/([^/]+)\/review-rounds\/([^/]+)\/items\/([^/]+)\/answer$/)
+    if (practiceCall && method === 'POST') {
+      const [, id, roundId, itemId] = practiceCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+      if (!['a', 'b', 'c', 'd'].includes(body?.option_id)) throw rule('invalid_request', { fields: ['option_id'] })
+      const round = state.rounds[roundId]
+      const item = round?.project_id === id && round.items.find((i) => i.id === itemId)
+      if (!item) throw notFound()
+      state.practiceAnswers.push({ item_id: itemId, ...body })
+      if (!item.answered) {
+        item.answered = { submitted_option_id: body.option_id, is_correct: body.option_id === item.correct_option_id }
+        const target = state.mistakes.find((m) => m.id === item.mistake_id)
+        if (item.answered.is_correct && target && !target.cleared && !target.withdrawn) {
+          target.cleared = true
+          item.cleared = true
+        }
+      }
+      return {
+        ...shownItem(state, item),
+        cleared: Boolean(item.cleared),
+        cleared_count: round.items.filter((i) => i.cleared).length,
+        remaining_outstanding: outstandingOf(state, id).length,
+      }
+    }
+    const roundCall = path.match(/^\/api\/projects\/([^/]+)\/review-rounds(?:\/([^/]+))?$/)
+    if (roundCall) {
+      const [, id, roundId] = roundCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (roundId && method === 'GET') {
+        const round = state.rounds[roundId]
+        if (!round || round.project_id !== id) throw notFound()
+        // Like the server: the round's job status, so one still being made isn't "missing".
+        const job = state.jobs.find((j) => j.id === round.job_id)
+        return {
+          id: round.id,
+          status: job ? job.status : 'completed',
+          error_code: job?.error_code ?? null,
+          items: round.items.map((item) => shownItem(state, item)),
+          cleared_count: round.items.filter((i) => i.cleared).length,
+          total: round.items.length,
+          remaining_outstanding: outstandingOf(state, id).length,
+        }
+      }
+      if (!roundId && method === 'POST') {
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        if (outstandingOf(state, id).length === 0) throw rule('insufficient_material')
+        const busy = state.jobs.some(
+          (j) => j.project_id === id && j.kind === 'review_round' && ['queued', 'running'].includes(j.status),
+        )
+        if (busy) throw rule('review_in_progress')
+        state.reviewRequests += 1
+        const job = {
+          id: `rv-${state.reviewRequests}`,
+          project_id: id,
+          kind: 'review_round',
+          status: 'running',
+          progress_step: 'reading',
+          result_ref: null,
+          error_code: null,
+          topic_labels: [],
+          round_id: `round-${state.reviewRequests}`,
+        }
+        state.jobs.push(job)
+        state.rounds[job.round_id] = { id: job.round_id, project_id: id, job_id: job.id, items: [] }
+        return { job_id: job.id, round_id: job.round_id }
+      }
+    }
     // Mistakes summary (Story 3.3): a read, so a read-only Project answers too.
     const summaryCall = path.match(/^\/api\/projects\/([^/]+)\/mistakes\/summary$/)
     if (summaryCall && method === 'GET') {
       const id = summaryCall[1]
       if (!state.projects.some((p) => p.id === id)) throw notFound()
-      const outstanding = state.mistakes.filter((m) => m.project_id === id && !m.withdrawn)
+      const outstanding = outstandingOf(state, id)
       const byMaterial = {}
       for (const m of outstanding) for (const mid of m.material_ids) byMaterial[mid] = (byMaterial[mid] ?? 0) + 1
       return { outstanding: outstanding.length, by_material: byMaterial }
@@ -300,6 +380,38 @@ export function fakeApi({
 }
 
 const rule = (code, params = {}) => ({ code, params })
+
+/** The Project's outstanding Mistakes, oldest first: neither withdrawn nor cleared. */
+function outstandingOf(state, projectId) {
+  return state.mistakes.filter((m) => m.project_id === projectId && !m.withdrawn && !m.cleared)
+}
+
+/** A round item as the server shows it: the key, sources, and the original's correct answer only once
+ * answered; the context comes from its Mistake. */
+function shownItem(state, item) {
+  const target = state.mistakes.find((m) => m.id === item.mistake_id) ?? {}
+  return {
+    id: item.id,
+    position: item.position,
+    question: item.question,
+    options: item.options.map((o) => ({ ...o })),
+    context: {
+      question: target.question ?? '',
+      earlier_answer_text: target.earlier ?? '',
+      correct_text: item.answered ? (target.correct ?? '') : null,
+    },
+    file_removed: Boolean(target.file_removed),
+    from_original: Boolean(item.from_original),
+    answer: item.answered
+      ? {
+          ...item.answered,
+          correct_option_id: item.correct_option_id,
+          explanation: item.explanation,
+          sources: item.sources.map((label) => ({ label })),
+        }
+      : null,
+  }
+}
 
 /** A stored Question as the server shows it: the key, explanation, and sources only once answered. */
 function shownQuestion(q) {
@@ -405,9 +517,69 @@ export function topics(n, { groupSize = null, prefix = 'Topic' } = {}) {
   }))
 }
 
-/** An outstanding Mistake of Project `projectId` citing `materialIds` (Story 3.3). */
-export function mistake(projectId, materialIds = ['notes']) {
-  return { project_id: projectId, quiz_question_id: null, material_ids: [...materialIds], withdrawn: false }
+let mistakeCount = 0
+
+/** An outstanding Mistake of Project `projectId` citing `materialIds` (Story 3.3). For Mistake Review
+ * (Stories 3.4 + 3.5) it carries its original question "Original {k}?", the earlier wrong answer "Wrong
+ * {k}", and the correct one "Right {k}" (k counts every Mistake made); `overrides` may set `id`,
+ * `file_removed`, `from_original` (its round item is the original question), and the rest. */
+export function mistake(projectId, materialIds = ['notes'], overrides = {}) {
+  mistakeCount += 1
+  const k = mistakeCount
+  return {
+    id: `mk-${k}`,
+    project_id: projectId,
+    quiz_question_id: null,
+    material_ids: [...materialIds],
+    withdrawn: false,
+    cleared: false,
+    question: `Original ${k}?`,
+    earlier: `Wrong ${k}`,
+    correct: `Right ${k}`,
+    file_removed: false,
+    ...overrides,
+  }
+}
+
+/** Round items for `mistakes` (in order): item i reads "Practice {i}?" with options "Choice {i}A".."Choice
+ * {i}D", correct `correct`, explanation "Since {i}.", source "notes.pdf · Page {i}" (1-based). `answered`
+ * maps a 0-based index to the submitted option id; a correct one counts as cleared. */
+function roundItems(roundId, mistakes, { correct = 'b', answered = {} } = {}) {
+  return mistakes.map((m, i) => ({
+    id: `${roundId}-p${i + 1}`,
+    position: i,
+    mistake_id: m.id,
+    question: `Practice ${i + 1}?`,
+    options: ['a', 'b', 'c', 'd'].map((o) => ({ id: o, text: `Choice ${i + 1}${o.toUpperCase()}` })),
+    correct_option_id: correct,
+    explanation: `Since ${i + 1}.`,
+    sources: [`notes.pdf · Page ${i + 1}`],
+    from_original: Boolean(m.from_original),
+    answered:
+      answered[i] === undefined ? null : { submitted_option_id: answered[i], is_correct: answered[i] === correct },
+    cleared: answered[i] !== undefined && answered[i] === correct,
+  }))
+}
+
+/** A stored round `id` of Project `projectId` with one item per Mistake in `mistakes` (see roundItems).
+ * Mistakes answered correctly here should be passed to fakeApi with `cleared: true`. */
+export function reviewRound(id, projectId, mistakes, options = {}) {
+  return { id, project_id: projectId, items: roundItems(id, mistakes, options) }
+}
+
+/** Complete a review job: its round holds the oldest outstanding Mistakes (at most 20), each with a new
+ * practice question. Returns the round id. */
+export function finishReview(state, jobId) {
+  const job = state.jobs.find((j) => j.id === jobId)
+  const picked = outstandingOf(state, job.project_id).slice(0, 20)
+  state.rounds[job.round_id] = {
+    id: job.round_id,
+    project_id: job.project_id,
+    job_id: job.id,
+    items: roundItems(job.round_id, picked),
+  }
+  Object.assign(job, { status: 'completed', progress_step: null, result_ref: job.round_id })
+  return job.round_id
 }
 
 /** The calls the SPA made with `method` to `path`. */

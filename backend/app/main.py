@@ -18,13 +18,14 @@ from app.api import me as me_api
 from app.api import mistakes as mistakes_api
 from app.api import projects as projects_api
 from app.api import quizzes as quizzes_api
+from app.api import review as review_api
 from app.api import topics as topics_api
 from app.api import usage as usage_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
 from app.llm import create_gateway
-from app.services import jobs, materials, password_reset, quiz
+from app.services import jobs, materials, password_reset, quiz, review
 from app.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -70,6 +71,7 @@ def _api_router() -> APIRouter:
     api.include_router(topics_api.router)
     api.include_router(quizzes_api.router)
     api.include_router(mistakes_api.router)
+    api.include_router(review_api.router)
     api.include_router(jobs_api.router)
     api.include_router(usage_api.router)
 
@@ -123,6 +125,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         kinds = {
             materials.KIND: materials.processing_kind(settings, storage, pool, llm),
             quiz.KIND: quiz.quiz_kind(pool, llm),
+            review.KIND: review.review_kind(pool, llm, settings.llm_context_budget_tokens),
         }
         runner = jobs.Runner(pool, kinds, settings.jobs_max_concurrent)
         app.state.runner = runner

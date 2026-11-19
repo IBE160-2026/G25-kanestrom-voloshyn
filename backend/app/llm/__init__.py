@@ -5,21 +5,34 @@
 """
 
 from app.llm.errors import LLMError, LLMOutputError, ProviderError, ProviderRateLimited, ProviderUnavailable
-from app.llm.gateway import Gateway, create_gateway
-from app.llm.schemas import DetectedTopic, DetectedTopics, DraftQuestion, ImageText, ProjectName, QuizDraft
+from app.llm.gateway import Gateway, PracticeTarget, create_gateway, practice_sections
+from app.llm.schemas import (
+    DetectedTopic,
+    DetectedTopics,
+    DraftPractice,
+    DraftQuestion,
+    ImageText,
+    PracticeDraft,
+    ProjectName,
+    QuizDraft,
+)
 
 __all__ = [
     "DetectedTopic",
     "DetectedTopics",
+    "DraftPractice",
     "DraftQuestion",
     "Gateway",
     "ImageText",
     "LLMError",
     "LLMOutputError",
+    "PracticeDraft",
+    "PracticeTarget",
     "ProjectName",
     "ProviderError",
     "ProviderRateLimited",
     "ProviderUnavailable",
     "QuizDraft",
     "create_gateway",
+    "practice_sections",
 ]

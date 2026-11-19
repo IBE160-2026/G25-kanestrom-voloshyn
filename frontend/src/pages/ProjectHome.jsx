@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
-import { useNavigate, useOutletContext, useParams } from 'react-router'
+import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import ErrorLine from '../components/ErrorLine.jsx'
 import FilesPanel from '../components/FilesPanel.jsx'
@@ -33,10 +33,22 @@ export const NAME_WAIT_MS = 30000
 // Above those, the Mistakes card "{n} mistakes to review" shows while the Project is active and has
 // outstanding Mistakes (Story 3.3, FR-9; see useMistakes). It is read when the chat mounts, so coming
 // back from a Quiz shows the new count, and again after a file removal (which may withdraw Mistakes).
+// Its "Start" opens Mistake Review (Story 3.4). Leaving a review session ("Stop for now", "← Back to
+// chat") comes back here with "Your progress is saved." under the card (Story 3.5); a review round
+// finished while the student was elsewhere shows "Your practice questions are ready · Open".
 export default function ProjectHome() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
   const { projectId } = useParams()
+  // "Your progress is saved." (Story 3.5): taken from the router state once, which is then cleared, so a
+  // reload or a later Back doesn't show it again. It stays for this visit to this Project.
+  const reviewSaved = location.state?.reviewSaved === true
+  const [savedFor, setSavedFor] = useState(null)
+  if (reviewSaved && savedFor !== projectId) setSavedFor(projectId)
+  useEffect(() => {
+    if (reviewSaved) navigate(location.pathname, { replace: true, state: null })
+  }, [reviewSaved, location.pathname, navigate])
   const picker = useRef(null)
   const projectFiles = useProjectFiles(projectId)
   const quizNotices = useQuizNotices(projectId)
@@ -225,15 +237,25 @@ export default function ProjectHome() {
       <section className={styles.chat}>
         <div className={styles.chatInner}>
           {/* Mistakes card (Story 3.3): only in an active Project, never at 0. */}
-          {project !== null && !readOnly && <MistakesCard count={mistakes.outstanding} />}
+          {project !== null && !readOnly && (
+            <MistakesCard count={mistakes.outstanding} onStart={() => navigate(`/projects/${projectId}/review`)} />
+          )}
+          {savedFor === projectId && (
+            <p className={styles.saved} role="status">
+              {t('review.saved')}
+            </p>
+          )}
           {/* A polite live region, present from the start so a notice that arrives is announced. */}
           <div ref={noticeBox} className={styles.notices} aria-live="polite" data-testid="ready-notices">
             {quizNotices.notices.map((job, index) => (
               <ReadyNotice
                 key={job.id}
+                kind={job.kind}
                 labels={job.topic_labels}
                 onOpen={() => {
-                  if (quizNotices.open(job)) navigate(`/projects/${projectId}/quizzes/${job.result_ref}`)
+                  if (!quizNotices.open(job)) return
+                  if (job.kind === 'review_round') navigate(`/projects/${projectId}/review/${job.result_ref}`)
+                  else navigate(`/projects/${projectId}/quizzes/${job.result_ref}`)
                 }}
                 onDismiss={async () => {
                   focusAfter.current = { id: job.id, index }

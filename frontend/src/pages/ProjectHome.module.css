@@ -33,6 +33,14 @@
   margin-bottom: var(--space-3);
 }
 
+/* "Your progress is saved." after leaving Mistake Review: a muted line (DESIGN.md › Mistake Review
+   session). */
+.saved {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+}
+
 /* Upload drop zone (DESIGN.md › Upload drop zone): dashed box filling the chat area. */
 .dropZone {
   flex: 1;

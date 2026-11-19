@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
-// The "quiz is ready" notices on the Project home (Story 3.1b, FR-26, AD-20; EXPERIENCE.md ›
-// Finished-generation message).
+// The "is ready" notices on the Project home (Story 3.1b, FR-26, AD-20; EXPERIENCE.md ›
+// Finished-generation message): quizzes, and Mistake Review rounds (Story 3.4), under the same rules.
 //
-// - Opening the Project reads its jobs once; while any `quiz` job is queued or running, it reads them
-//   again every 2 s, and stops when none is (or when the page goes away).
-// - Each completed `quiz` job not yet seen is a notice, newest first. Failed and cancelled ones are
-//   left alone, and other job kinds keep their own handling.
+// - Opening the Project reads its jobs once; while any `quiz` or `review_round` job is queued or
+//   running, it reads them again every 2 s, and stops when none is (or when the page goes away).
+// - Each completed `quiz` or `review_round` job not yet seen is a notice, newest first. Failed and
+//   cancelled ones are left alone, and other job kinds keep their own handling.
 // - A failed read is tried again every 2 s until one succeeds.
 // - `open(job)` hides the notice at once and marks the job seen in the background; `dismiss(job)`
 //   marks it seen and drops the notice only once that worked.
 export const NOTICE_POLL_MS = 2000
-const KIND = 'quiz'
+const KINDS = new Set(['quiz', 'review_round'])
 const ACTIVE = new Set(['queued', 'running'])
 
 export function useQuizNotices(projectId) {
-  const [read, setRead] = useState(null) // { id, jobs }: the Project's quiz jobs as last listed
+  const [read, setRead] = useState(null) // { id, jobs }: the Project's quiz and review jobs as last listed
   const [hidden, setHidden] = useState(() => new Set()) // jobs marked seen in this visit
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function useQuizNotices(projectId) {
       try {
         const list = await apiFetch(`/api/projects/${projectId}/jobs`)
         if (!handle.live) return
-        const jobs = (Array.isArray(list) ? list : []).filter((job) => job.kind === KIND)
+        const jobs = (Array.isArray(list) ? list : []).filter((job) => KINDS.has(job.kind))
         setRead({ id: projectId, jobs })
         handle.active = jobs.some((job) => ACTIVE.has(job.status))
       } catch (err) {

@@ -34,16 +34,17 @@ from psycopg import AsyncConnection
 from psycopg_pool import AsyncConnectionPool
 
 from app.db import quizzes as repo
+from app.db import sections as section_repo
 from app.errors import AppError
 from app.llm import Gateway, LLMOutputError, ProviderError, QuizDraft
 from app.llm.schemas import QUIZ_MAX
-from app.services import jobs, mistakes, projects, topics
+from app.services import jobs, mistakes, projects, questions, topics
 
 logger = logging.getLogger(__name__)
 
 KIND = "quiz"
 COUNTS = (5, 10, 20)
-OPTION_IDS = ("a", "b", "c", "d")
+OPTION_IDS = questions.OPTION_IDS
 
 LLM_UNAVAILABLE = "llm_unavailable"
 LLM_OUTPUT_INVALID = "llm_output_invalid"
@@ -110,10 +111,10 @@ async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id
     rows = await repo.questions_for(conn, account_id, quiz_id)
     answers = await repo.answers_for(conn, account_id, [row["id"] for row in rows])
     answered = [row for row in rows if row["id"] in answers]
-    labels = await repo.source_labels(conn, account_id, _section_ids(answered))
+    labels = await section_repo.source_labels(conn, account_id, questions.section_ids(answered))
     return {
         **quiz,
-        "questions": [_question(row, answers.get(row["id"]), labels) for row in rows],
+        "questions": [questions.shown(row, answers.get(row["id"]), labels) for row in rows],
     }
 
 
@@ -136,33 +137,8 @@ async def answer(
     # returns the stored answer and records nothing.
     if inserted and not stored["is_correct"]:
         await mistakes.record_failure(conn, account_id, project_id, question_id, stored["id"])
-    labels = await repo.source_labels(conn, account_id, list(row["source_section_ids"]))
-    return _question(row, stored, labels)
-
-
-def _section_ids(rows: Sequence[dict[str, Any]]) -> list[UUID]:
-    return list(dict.fromkeys(section_id for row in rows for section_id in row["source_section_ids"]))
-
-
-def _question(row: dict[str, Any], stored: dict[str, Any] | None, labels: dict[UUID, str]) -> dict[str, Any]:
-    """The Question as the student sees it: the answer key only once answered."""
-    shown: dict[str, Any] = {
-        "id": row["id"],
-        "position": row["position"],
-        "question": row["question"],
-        "options": [{"id": option["id"], "text": option["text"]} for option in row["options"]],
-        "answer": None,
-    }
-    if stored is not None:
-        names = dict.fromkeys(labels[s] for s in row["source_section_ids"] if s in labels)
-        shown["answer"] = {
-            "submitted_option_id": stored["submitted_option_id"],
-            "is_correct": stored["is_correct"],
-            "correct_option_id": row["correct_option_id"],
-            "explanation": row["explanation"],
-            "sources": [{"label": label} for label in names],
-        }
-    return shown
+    labels = await section_repo.source_labels(conn, account_id, list(row["source_section_ids"]))
+    return questions.shown(row, stored, labels)
 
 
 # --- Checking (pure) ---
@@ -181,19 +157,14 @@ def check(draft: QuizDraft, sections: Sequence[_Section], count: int, rng: rando
         cited = [sections[n - 1] for n in numbers]
         if not cited:
             continue
-        normalized = {option.strip().casefold() for option in draft_question.options}
-        if "" in normalized or len(normalized) != len(draft_question.options):
+        if not questions.usable_options(draft_question.options):
             continue
-        order = list(range(len(draft_question.options)))
-        rng.shuffle(order)
+        options, correct_option_id = questions.shuffle(draft_question.options, draft_question.correct_index, rng)
         kept.append(
             {
                 "question": draft_question.question,
-                "options": [
-                    {"id": option_id, "text": draft_question.options[original]}
-                    for option_id, original in zip(OPTION_IDS, order, strict=True)
-                ],
-                "correct_option_id": OPTION_IDS[order.index(draft_question.correct_index)],
+                "options": options,
+                "correct_option_id": correct_option_id,
                 "explanation": draft_question.explanation,
                 "source_section_ids": [section.id for section in cited],
                 "material_ids": list(dict.fromkeys(section.material_id for section in cited)),
@@ -221,14 +192,14 @@ def quiz_kind(pool: AsyncConnectionPool, llm: Gateway) -> jobs.JobKind:
 
         # 1. Reading (the claim already set the step).
         async with pool.connection() as conn:
-            rows = await repo.load_sections(conn, section_ids)
+            rows = await section_repo.load_sections(conn, section_ids)
         sections = [_Section(row["id"], row["material_id"], row["label"], row["text"]) for row in rows]
         material_ids = tuple(dict.fromkeys(section.material_id for section in sections))
         await llm.mock_pause()
         # A removed file's text is blank, and a cancelled job's result is thrown away: no model call. The
         # save step sees the removal or the cancel and ends the job `cancelled`.
         async with pool.connection() as conn:
-            removed = await repo.any_removed(conn, list(material_ids))
+            removed = await section_repo.any_removed(conn, list(material_ids))
         if removed or await jobs.should_stop(pool, job["id"]):
             return jobs.SavePlan(apply=_nothing, material_ids=material_ids)
 

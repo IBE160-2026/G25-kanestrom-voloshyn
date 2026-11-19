@@ -71,7 +71,8 @@
   },
   "mistakes": {
     "card_one": "{{count}} mistake to review",
-    "card_other": "{{count}} mistakes to review"
+    "card_other": "{{count}} mistakes to review",
+    "start": "Start"
   },
   "activity": {
     "back": "← Back to chat"
@@ -117,6 +118,24 @@
       "more": "{{a}} and {{n}} more",
       "dismiss": "Dismiss"
     }
+  },
+  "review": {
+    "steps": {
+      "reading": "Looking at your mistakes",
+      "writing": "Writing practice questions"
+    },
+    "ready": "Your practice questions are ready · <open>Open</open>",
+    "progress": "{{n}} of {{m}} cleared",
+    "earlierAnswer": "Your earlier answer",
+    "fileRemoved": "The file this came from was removed.",
+    "next": "Next mistake",
+    "stop": "Stop for now",
+    "saved": "Your progress is saved.",
+    "roundDone_one": "Round done. {{count}} mistake still to review.",
+    "roundDone_other": "Round done. {{count}} mistakes still to review.",
+    "again": "Review mistakes",
+    "allCleared": "All cleared! Nice work.",
+    "newQuiz": "Make a new quiz"
   },
   "progress": {
     "cancel": "Cancel",

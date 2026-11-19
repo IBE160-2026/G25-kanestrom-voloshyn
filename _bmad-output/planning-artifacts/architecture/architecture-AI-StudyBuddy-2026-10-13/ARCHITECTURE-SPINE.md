@@ -328,7 +328,7 @@ Arrows are the only allowed dependency directions. Adapters never import service
   - **What the job does:**
     - It takes the oldest outstanding Mistakes, up to 20.
     - A Mistake that already has an unanswered Practice Question from an earlier round moves that question into this round instead of getting a new one.
-    - The rest are generated in **one batched** `generate_practice` call. Each target is `{mistake_id, question_text, correct_text, source_section_ids}`, for Mistakes whose cited Materials all still exist.
+    - The rest are generated in **one batched** `generate_practice` call. Each target is `{mistake_id, question_text, correct_text, wrong_text, source_section_ids}`, for Mistakes whose cited Materials all still exist; `wrong_text` is the option the student picked, so the practice targets that misunderstanding (amended 2026-11-19, approved by Cristoffer).
     - For a Mistake whose material was removed, the saved original Question is served as the practice item, re-shuffled, with no LLM call.
     - Mistakes beyond 20 stay outstanding for a later round.
   - **Answering.** Each Practice Question (AD-9 format) stores `mistake_id`. A correct answer calls `mistakes.clear`; a wrong one leaves the Mistake outstanding.
