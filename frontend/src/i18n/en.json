@@ -220,7 +220,8 @@
       "confirm": "Remove",
       "failed": "We couldn't remove the file.",
       "withdrawMistakes": "Also remove its mistakes from my review"
-    }
+    },
+    "uploadPhone": "Upload from phone"
   },
   "account": {
     "welcome": "Welcome, {{firstName}}",
@@ -279,7 +280,8 @@
     "quota_exceeded": "You've used today's {{limit}} images. Try again tomorrow.",
     "scope_too_large": "That's a lot of material. Pick fewer topics or one file.",
     "insufficient_material": "There isn't enough ready material for this yet.",
-    "material_removed": "The file this came from was removed."
+    "material_removed": "The file this came from was removed.",
+    "link_expired": "This link has expired. Scan a new code on your computer."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",
@@ -292,5 +294,32 @@
     "accept": "Got it, upload",
     "link": "How your files are used",
     "close": "Close"
+  },
+  "qr": {
+    "title": "Upload from phone",
+    "waiting": "Waiting for photos…",
+    "expiry": "This code works for 10 minutes and stops when you close this window.",
+    "close": "Close",
+    "sameNetwork": "Your phone needs to be on the same Wi-Fi as this computer."
+  },
+  "phone": {
+    "header": "Uploading to {{project}}",
+    "take": "Take photos",
+    "gallery": "Choose from gallery",
+    "send_one": "Send {{count}} photo",
+    "send_other": "Send {{count}} photos",
+    "sendNone": "Send photos",
+    "countdownMin": "Link expires in {{n}} min",
+    "countdownSec": "Link expires in {{m}}:{{ss}}",
+    "expiredTitle": "This link has expired.",
+    "expiredBody": "Scan a new code on your computer.",
+    "sent": "Your photos are in {{project}}. Your computer shows when they're ready.",
+    "sendMore": "Send more",
+    "overLimitAllowed_one": "You can send {{count}} more photo today.",
+    "overLimitAllowed_other": "You can send {{count}} more photos today.",
+    "overLimitDropped_one": "{{count}} photo won't be sent.",
+    "overLimitDropped_other": "{{count}} photos won't be sent.",
+    "tooLarge": "This photo is over 50 MB and won't be sent.",
+    "projectFull": "This project already has 10 files, so these photos can't be added."
   }
 }

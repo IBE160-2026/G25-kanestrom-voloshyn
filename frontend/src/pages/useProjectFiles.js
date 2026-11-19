@@ -17,15 +17,22 @@
 //   `GET /api/usage` (null until known), fetched when the Project opens and again after each image
 //   upload or image removal, and when a poll sees an image's job end (a unit may come back then);
 //   the server refuses the 26th image (`quota_exceeded`).
+// - `live` (the QR dialog is open, Story 6.2): the jobs and the list are polled every 2 s whatever is
+//   Reading…, so a phone batch shows up without a refresh (AD-20), and the image limit is read again.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
 export const POLL_MS = 2000
 export const MAX_BYTES = 50 * 1024 * 1024
+/** The Limit notice shows at this many images left today, or fewer (EXPERIENCE.md › Daily limits). */
+export const IMAGE_NOTICE_AT = 10
+/** Images per Account per day (FR-7); the server enforces it. */
+export const IMAGE_DAILY_LIMIT = 25
 export const ACCEPT = '.pdf,.docx,.pptx,.txt,.md,.jpg,.jpeg,.png,.heic'
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.heic']
-/** The `file_type`s of photos of notes (FR-7). */
-export const IMAGE_TYPES = new Set(['jpg', 'png', 'heic'])
+/** The `file_type`s of photos of notes (FR-7), and of a phone batch of them (FR-21): their jobs use
+ * (or give back) image units. */
+export const IMAGE_TYPES = new Set(['jpg', 'png', 'heic', 'phone_batch'])
 const EXTENSIONS = ACCEPT.split(',')
 const ACTIVE = new Set(['queued', 'running'])
 const KIND = 'material_processing'
@@ -70,7 +77,7 @@ export function slotCount(materials) {
 
 let nextKey = 0
 
-export function useProjectFiles(projectId) {
+export function useProjectFiles(projectId, { live = false } = {}) {
   const [loaded, setLoaded] = useState({ id: null, materials: null }) // the list of the Project shown
   const [loadError, setLoadError] = useState(null) // { id, error }
   const [pending, setPending] = useState([]) // [{ key, projectId, name }] queued or sending
@@ -133,10 +140,10 @@ export function useProjectFiles(projectId) {
     }
   }, [projectId, withoutRemoved])
 
-  // Poll only while something is Reading… (AD-20).
+  // Poll only while something is Reading…, or while the QR dialog waits for photos (AD-20).
   const processing = Boolean(materials?.some((m) => m.status === 'processing'))
   useEffect(() => {
-    if (!processing) return undefined
+    if (!processing && !live) return undefined
     // `live` sits on the handle, so the cleanup changes an object, not a closed-over variable.
     const handle = { timer: null, live: true }
     const tick = async () => {
@@ -145,9 +152,9 @@ export function useProjectFiles(projectId) {
         if (!handle.live) return
         const ours = (Array.isArray(jobs) ? jobs : []).filter((job) => job.kind === KIND)
         const finished = ours.filter((job) => !ACTIVE.has(job.status))
-        if (finished.length > 0 || !ours.some((job) => ACTIVE.has(job.status))) {
+        if (live || finished.length > 0 || !ours.some((job) => ACTIVE.has(job.status))) {
           await fetchList(projectId)
-          if (finished.some((job) => imageIds.current.has(job.result_ref))) fetchUsage()
+          if (live || finished.some((job) => imageIds.current.has(job.result_ref))) fetchUsage()
           for (const job of finished) {
             apiFetch(`/api/jobs/${job.id}/seen`, { method: 'POST' }).catch(() => {})
           }
@@ -162,7 +169,7 @@ export function useProjectFiles(projectId) {
       handle.live = false
       clearTimeout(handle.timer)
     }
-  }, [processing, projectId, fetchList, fetchUsage])
+  }, [processing, live, projectId, fetchList, fetchUsage])
 
   const send = useCallback(async ({ key, projectId: id, file }) => {
     const form = new FormData()

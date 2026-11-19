@@ -62,6 +62,23 @@ describe('apiFetch', () => {
     expect(fetchMock.mock.calls.filter(([p]) => p === '/api/config')).toHaveLength(1)
   })
 
+  it('hands a successful response to onResponse, so a caller can read its headers', async () => {
+    const seen = []
+    await expect(
+      client.apiFetch('/api/phone/t', { auth: false, onResponse: (response) => seen.push(response.status) }),
+    ).resolves.toEqual({ ok: true })
+    expect(seen).toEqual([200])
+    // A throwing reader never fails the request.
+    await expect(
+      client.apiFetch('/api/phone/t', {
+        auth: false,
+        onResponse: () => {
+          throw new Error('boom')
+        },
+      }),
+    ).resolves.toEqual({ ok: true })
+  })
+
   it('sends a JSON body', async () => {
     await client.apiFetch('/api/auth/after-sign-in', { method: 'POST', body: { first_name: 'Emma' } })
     const [, init] = callTo('/api/auth/after-sign-in')

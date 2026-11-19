@@ -82,9 +82,10 @@ export class ApiError extends Error {
 /**
  * Call the backend. `body` is sent as JSON, except a FormData body (a file upload), which goes as is
  * so the browser sets the multipart Content-Type with its boundary. `auth: false` skips the bearer
- * token (only /api/config). Resolves with the parsed JSON (or null for 204); rejects with an ApiError.
+ * token (only /api/config and the phone page). `onResponse(response)` sees a successful response before
+ * its body is read. Resolves with the parsed JSON (or null for 204); rejects with an ApiError.
  */
-export async function apiFetch(path, { method = 'GET', body, auth = true } = {}) {
+export async function apiFetch(path, { method = 'GET', body, auth = true, onResponse } = {}) {
   const headers = { Accept: 'application/json' }
   const raw = typeof FormData !== 'undefined' && body instanceof FormData
   if (body !== undefined && !raw) headers['Content-Type'] = 'application/json'
@@ -115,6 +116,12 @@ export async function apiFetch(path, { method = 'GET', body, auth = true } = {})
     const error = new ApiError(response.status, envelope?.error ?? {})
     if (auth && SIGNED_OUT_CODES.has(error.code)) await handleSignedOut(token, error.code)
     throw error
+  }
+  // The caller may read the response's headers (the phone page reads `Date` for the server's clock).
+  try {
+    onResponse?.(response)
+  } catch {
+    // a header reader never fails the request
   }
   if (response.status === 204) return null
   try {

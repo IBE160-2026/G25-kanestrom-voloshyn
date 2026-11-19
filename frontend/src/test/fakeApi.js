@@ -1,6 +1,7 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
 // 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), Mistakes (Story
-// 3.3), and Mistake Review rounds (Stories 3.4 + 3.5), installed on the
+// 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
+// (Stories 6.1 + 6.2), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
 import { vi } from 'vitest'
@@ -65,7 +66,13 @@ export const IMAGE_LIMIT = 25
  * `?withdraw_mistakes=true` withdraws the file's. A review-round request adds a running `review_round`
  * job at the `reading` step (one at a time, like the server); `finishReview` saves its round from the
  * oldest outstanding Mistakes. `rounds` lists stored rounds (see `reviewRound`); a practice answer is
- * scored and saved once, and a correct one clears its Mistake (Stories 3.4 + 3.5). Returns the live
+ * scored and saved once, and a correct one clears its Mistake (Stories 3.4 + 3.5). Phone upload
+ * (Stories 6.1 + 6.2): a link (`links`, token `tok-n`) lasts `linkTtlMs`; `/api/phone/{token}` routes
+ * answer `410 link_expired` once it is revoked or expired. A photo uses one of `imagesLeft` and is
+ * refused like the server (`file_too_large`, `quota_exceeded`); finalize adds one `phone_batch` file,
+ * Reading…, named "Handwritten notes, {n} pages", or refuses (`insufficient_material`,
+ * `material_limit_reached`). `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
+ * answers carry a `Date` header that far ahead of the test's clock. Returns the live
  * state.
  */
 export function fakeApi({
@@ -79,6 +86,9 @@ export function fakeApi({
   quizzes = [],
   mistakes = [],
   rounds = [],
+  appPublicUrl = 'http://192.168.1.20:8000',
+  serverOffsetMs = null,
+  linkTtlMs = 10 * 60 * 1000,
 } = {}) {
   const state = {
     me: { ...me },
@@ -101,9 +111,12 @@ export function fakeApi({
     reviewRequests: 0, // POST .../review-rounds calls answered 202
     practiceAnswers: [], // bodies of POST .../items/{id}/answer, with their item id
     removeQueries: [], // query strings of DELETE .../materials/{id} (Story 3.3), '' for none
+    links: [], // phone links: { link_id, token, project_id, expires_at, revoked } (Story 6.1)
+    batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
+    photoRequests: [], // names of photos sent, accepted or refused, in order
   }
 
-  vi.mocked(apiFetch).mockImplementation(async (path, { method = 'GET', body } = {}) => {
+  const handle = async (path, { method = 'GET', body } = {}) => {
     const override = routes[`${method} ${path}`]
     if (override) return override(body, state)
 
@@ -126,6 +139,82 @@ export function fakeApi({
       return state.me
     }
     if (path === '/api/usage' && method === 'GET') return { images_left_today: state.imagesLeft }
+    if (path === '/api/config' && method === 'GET') {
+      return { supabase_url: 'http://127.0.0.1:54321', supabase_publishable_key: 'pk', google_enabled: false, app_public_url: appPublicUrl }
+    }
+    // Phone links (Story 6.1): created for an active Project after the Privacy notice; revoked on close.
+    const linkCall = path.match(/^\/api\/projects\/([^/]+)\/phone-links(?:\/([^/]+))?$/)
+    if (linkCall) {
+      const [, id, linkId] = linkCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (!linkId && method === 'POST') {
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        if (!state.me.privacy_notice_accepted) throw rule('privacy_notice_required')
+        const n = state.links.length + 1
+        const link = { link_id: `link-${n}`, token: `tok-${n}`, project_id: id, expires_at: new Date(Date.now() + linkTtlMs).toISOString(), revoked: false }
+        state.links.push(link)
+        return { link_id: link.link_id, token: link.token, expires_at: link.expires_at }
+      }
+      if (linkId && method === 'DELETE') {
+        const link = state.links.find((l) => l.link_id === linkId && l.project_id === id)
+        if (!link) throw notFound()
+        link.revoked = true
+        return null
+      }
+    }
+    // The phone page (Story 6.2): only the four fields; one photo per request; finalize adds one file.
+    const phoneCall = path.match(/^\/api\/phone\/([^/]+)(\/.*)?$/)
+    if (phoneCall) {
+      const [, token, rest = ''] = phoneCall
+      const link = state.links.find((l) => l.token === token)
+      const finalizing = /\/finalize$/.test(rest)
+      const grace = finalizing ? 10 * 60 * 1000 : 0
+      if (!link || link.revoked || Date.now() >= Date.parse(link.expires_at) + grace) throw rule('link_expired')
+      const owner = state.projects.find((p) => p.id === link.project_id)
+      const files = state.materials[link.project_id] ?? []
+      const slots = files.filter((m) => m.status !== 'rejected').length
+      if (rest === '' && method === 'GET') {
+        return { project_name: owner.name, images_left_today: state.imagesLeft, slot_available: slots < 10, expires_at: link.expires_at }
+      }
+      if (rest === '/revoke' && method === 'POST') {
+        link.revoked = true
+        return null
+      }
+      if (rest === '/batches' && method === 'POST') {
+        const batch = { id: `batch-${state.batches.length + 1}`, token, photos: [], finalized: false }
+        state.batches.push(batch)
+        return { batch_id: batch.id }
+      }
+      const batchCall = rest.match(/^\/batches\/([^/]+)\/(photos|finalize)$/)
+      const batch = batchCall && state.batches.find((b) => b.id === batchCall[1] && b.token === token)
+      if (batchCall && !batch) throw notFound()
+      if (batchCall && batch.finalized) throw rule('conflict')
+      if (batchCall?.[2] === 'photos' && method === 'POST') {
+        const photo = body.get('file')
+        state.photoRequests.push(photo.name)
+        if (photo.size > 50 * 1024 * 1024) throw rule('file_too_large', { max_mb: 50 })
+        if (state.imagesLeft <= 0) throw rule('quota_exceeded', { limit: IMAGE_LIMIT, kind: 'image_extraction' })
+        state.imagesLeft -= 1
+        batch.photos.push(photo.name)
+        return { page: batch.photos.length }
+      }
+      if (batchCall?.[2] === 'finalize' && method === 'POST') {
+        if (batch.photos.length === 0) throw rule('insufficient_material')
+        if (slots >= 10) throw rule('material_limit_reached', { max: 10 })
+        batch.finalized = true
+        state.uploaded += 1
+        const pages = batch.photos.length
+        const created = material(`m-${state.uploaded}`, {
+          file_name: pages === 1 ? 'Handwritten notes, 1 page' : `Handwritten notes, ${pages} pages`,
+          file_type: 'phone_batch',
+          status: 'processing',
+        })
+        state.materials[link.project_id] = [...files, created]
+        state.jobs.push({ id: `j-${state.uploaded}`, project_id: link.project_id, kind: 'material_processing', status: 'running', result_ref: created.id })
+        return { pages }
+      }
+    }
     if (path === '/api/projects' && method === 'GET') return state.projects
     if (path === '/api/projects' && method === 'POST') {
       state.created += 1
@@ -375,6 +464,13 @@ export function fakeApi({
       }
     }
     throw new Error(`unexpected ${method} ${path}`)
+  }
+  vi.mocked(apiFetch).mockImplementation(async (path, options = {}) => {
+    const result = await handle(path, options)
+    // Like a real response: `Date` is the server's clock, `serverOffsetMs` ahead of this one.
+    const date = serverOffsetMs === null ? {} : { date: new Date(Date.now() + serverOffsetMs).toUTCString() }
+    options.onResponse?.({ status: 200, headers: new Headers(date) })
+    return result
   })
   return state
 }

@@ -1,8 +1,10 @@
-"""`user_auth`: the only parser of user bearer tokens (AD-2), with the Google takeover as step 4 (AD-19)."""
+"""The two auth dependencies (AD-2): `user_auth`, the only parser of user bearer tokens, with the Google
+takeover as step 4 (AD-19); and `phone_link_auth`, the only parser of phone-link tokens (AD-24)."""
 
 import base64
 import binascii
 import json
+import re
 import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -17,6 +19,7 @@ from app.api.conn import Conn
 from app.config import Settings
 from app.db import profiles, sessions
 from app.errors import AppError
+from app.services import phone
 
 
 @dataclass(frozen=True)
@@ -167,3 +170,32 @@ async def user_auth(
 
 
 UserAuth = Annotated[CurrentUser, Depends(user_auth)]
+
+
+# --- The phone link (AD-2, AD-24) ---
+
+# A phone token is `secrets.token_urlsafe(32)`: 43 URL-safe characters. Anything far off that shape is
+# refused before the database is asked.
+_PHONE_TOKEN = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+
+
+async def _phone_link(token: str, conn: AsyncConnection, grace_seconds: int) -> phone.PhoneLink:
+    if not _PHONE_TOKEN.fullmatch(token):
+        raise phone.LinkExpired()
+    return await phone.find_link(conn, token, grace_seconds)
+
+
+async def phone_link_auth(token: str, conn: Conn) -> phone.PhoneLink:
+    """The phone link (AD-24), only for routes under `/api/phone/{token}`: hashes the token and accepts
+    only a link that is neither revoked nor expired, whose Project is still active. Anything else is
+    `410 link_expired`. Never logs the token."""
+    return await _phone_link(token, conn, 0)
+
+
+async def phone_link_finalize_auth(token: str, conn: Conn) -> phone.PhoneLink:
+    """`phone_link_auth` for finalize, which is still allowed until 10 minutes after expiry (AD-24)."""
+    return await _phone_link(token, conn, phone.FINALIZE_GRACE_SECONDS)
+
+
+PhoneLinkAuth = Annotated[phone.PhoneLink, Depends(phone_link_auth)]
+PhoneLinkFinalizeAuth = Annotated[phone.PhoneLink, Depends(phone_link_finalize_auth)]

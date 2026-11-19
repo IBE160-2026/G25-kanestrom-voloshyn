@@ -6,6 +6,7 @@ import CreateAccount from './pages/CreateAccount.jsx'
 import EmailVerified from './pages/EmailVerified.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
+import PhoneUpload from './pages/PhoneUpload.jsx'
 import ProjectHome from './pages/ProjectHome.jsx'
 import Projects from './pages/Projects.jsx'
 import QuizPage from './pages/QuizPage.jsx'
@@ -22,6 +23,8 @@ export const routes = [
   { path: '/reset-password', element: <ResetPassword /> },
   // Google sign-in returns here (FR-19); config.toml allows it as a redirect URL.
   { path: '/auth/callback', element: <AuthCallback /> },
+  // The phone upload page (FR-21, AD-24): public, no sign-in; the token in the path is the capability.
+  { path: '/u/:token', element: <PhoneUpload /> },
   // Signed-in pages: without a session they go to Login and come back after it (FR-2). They share
   // the app shell: Sidebar, Top bar, and the page (Story 2.1).
   {

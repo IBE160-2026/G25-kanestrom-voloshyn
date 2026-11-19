@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
 import { SIGNED_OUT_CODES } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
+import { IMAGE_NOTICE_AT } from '../pages/useProjectFiles.js'
 import ErrorLine from './ErrorLine.jsx'
 import FileRow from './FileRow.jsx'
 import InlineError from './InlineError.jsx'
@@ -13,8 +14,9 @@ import { useDropTarget } from './useDropTarget.js'
 // "Files · n of 10", the Upload button, the supported-types hint, upload refusals as Inline errors,
 // and the file rows (or the empty box). Accepts dropped files. Rows update live (polite live region).
 // "Hide files" collapses it to the Files strip: "Show files", a files icon, "{n} of 10", and a
-// warning icon when a file is partly unreadable or rejected (Story 2.2b). "Upload from phone"
-// arrives with Epic 6.
+// warning icon when a file is partly unreadable or rejected (Story 2.2b). "Upload from phone" sits
+// beside Upload (equal width) and calls `onPhone`, which opens the QR dialog (Story 6.2, FR-21); both
+// are disabled while the Project is read-only.
 //
 // Daily image limit (FR-7): at 10 or fewer images left today, the Limit notice "{n} images left
 // today" shows under the Upload button (in the error colour at 0). Nothing shows above 10.
@@ -27,8 +29,6 @@ import { useDropTarget } from './useDropTarget.js'
 // (`mistakesByMaterial`, null while unknown; Story 3.3). Opening it calls `onRemoveOpen`, which reads
 // the counts again, so a summary that failed or hadn't arrived yet is fetched then. A read-only Project removes nothing. ProjectHome keys the panel by Project, so none of this state
 // carries over to another Project.
-// The Limit notice shows at this many images left today, or fewer (EXPERIENCE.md › Daily limits).
-const IMAGE_NOTICE_AT = 10
 
 export default function FilesPanel({
   files,
@@ -40,6 +40,7 @@ export default function FilesPanel({
   onPrivacyInfo,
   mistakesByMaterial = null,
   onRemoveOpen,
+  onPhone,
 }) {
   const { t } = useTranslation()
   const heading = useId()
@@ -173,9 +174,16 @@ export default function FilesPanel({
       </div>
       {!loading && (
         <>
-          <button ref={uploadButton} type="button" className={styles.upload} onClick={onBrowse} disabled={readOnly}>
-            {t('files.upload')}
-          </button>
+          <div className={styles.uploads}>
+            <button ref={uploadButton} type="button" className={styles.upload} onClick={onBrowse} disabled={readOnly}>
+              {t('files.upload')}
+            </button>
+            {onPhone && (
+              <button type="button" className={styles.upload} onClick={onPhone} disabled={readOnly}>
+                {t('files.uploadPhone')}
+              </button>
+            )}
+          </div>
           {!readOnly && imagesLeft !== null && imagesLeft <= IMAGE_NOTICE_AT && (
             <p role="status" className={`${styles.limit} ${imagesLeft === 0 ? styles.limitOut : ''}`}>
               <span className={styles.limitDot} aria-hidden="true" />
