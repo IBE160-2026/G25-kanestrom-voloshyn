@@ -44,3 +44,5 @@
 - [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — Teksten for en mobilbunke der ingen bilder kunne leses (entallsform «image») trenger godkjenning.
 - [ ] 2026-11-19 [epic-6-phone-upload](980-2026-11-19-21-24-20-epic-6-phone-upload.md) — «Send photos» / «Send bilder» på mobilsiden: den norske teksten trenger godkjenning i EXPERIENCE.md.
 - [ ] 2026-11-19 [story-7-1-archive](979-2026-11-19-22-32-26-story-7-1-archive.md) — Hover-stilen på Gjenopprett-knappen i arkiv-banneret er ikke fra DESIGN.md (agentens valg).
+- [ ] 2026-11-19 [story-7-2-delete-project](978-2026-11-19-23-41-45-story-7-2-delete-project.md) — Feilet sletting av lagrede filer etter «Slett for godt» prøves ikke igjen, så filene blir liggende (deferred-work.md).
+- [ ] 2026-11-19 [story-7-2-delete-project](978-2026-11-19-23-41-45-story-7-2-delete-project.md) — Fet skrift og innfelt boks i «Slett for godt»-dialogen er agentens valg; sjekk mot DESIGN.md.
