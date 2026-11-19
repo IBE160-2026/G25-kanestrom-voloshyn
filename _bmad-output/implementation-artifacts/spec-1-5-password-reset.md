@@ -2,7 +2,7 @@
 title: 'Story 1.5: Reset a forgotten password'
 type: 'feature'
 created: '2026-11-16'
-status: 'in-review'
+status: 'done'
 route: 'dispatch'
 review_loop_iteration: 1
 baseline_commit: '2c15f2225417a7ac513ae06db410f4b60834cb58'
