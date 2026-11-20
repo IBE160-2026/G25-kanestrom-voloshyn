@@ -61,3 +61,4 @@
 - [ ] 2026-11-20 [innlogging-en-linje](973-2026-11-20-14-26-32-innlogging-en-linje.md) — Godkjenn «Signs in with Email» og «Signs in with Email and Google» / «Logger inn med e-post og Google», og oppdater EXPERIENCE.md L273.
 - [ ] 2026-11-20 [tema-og-aksentfarger](972-2026-11-20-14-56-27-tema-og-aksentfarger.md) — Godkjenn tekstene i «Utseende», og før temaendringen inn i PRD §7.2, DESIGN.md, spine og EXPERIENCE.md (forslag i spec-theme-options › Implementation Notes).
 - [x] 2026-11-20 [tema-og-aksentfarger](972-2026-11-20-14-56-27-tema-og-aksentfarger.md) — Sjekk lyst tema og hver aksentfarge manuelt i appen: quiz-tilbakemelding, feillinjer, sidepanel og dialoger. (løst 2026-11-20)
+- [ ] 2026-11-20 [rename-klikk-utenfor](971-2026-11-20-15-23-21-rename-klikk-utenfor.md) — Legg til «a click elsewhere cancels» for gi nytt navn i EXPERIENCE.md L327 og L331.
