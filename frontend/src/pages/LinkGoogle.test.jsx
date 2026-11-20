@@ -81,12 +81,12 @@ describe('Settings › Account rows', () => {
   })
 
   it.each([
-    ['linked', LINKED],
-    ['Google-only', GOOGLE_ONLY],
-  ])('a %s Account gets neither the link row nor the resend', async (_, me) => {
+    ['linked', LINKED, en.settings.account.viaBoth],
+    ['Google-only', GOOGLE_ONLY, en.settings.account.viaGoogle],
+  ])('a %s Account gets neither the link row nor the resend', async (_, me, methodLine) => {
     setup(me)
     await openSettings()
-    await waitFor(() => expect(within(account()).getByText(en.settings.account.viaGoogle)).toBeInTheDocument())
+    await waitFor(() => expect(within(account()).getByText(methodLine)).toBeInTheDocument())
     expect(within(account()).queryByRole('button', { name: en.settings.account.linkGoogle })).not.toBeInTheDocument()
     expect(within(account()).queryByRole('button', { name: en.settings.account.resend })).not.toBeInTheDocument()
     expect(within(account()).queryByText(en.settings.account.verifyFirst)).not.toBeInTheDocument()
@@ -195,7 +195,7 @@ describe('/auth/callback after a link', () => {
     expect(router.state.location.pathname).toBe('/projects/bio')
     expect(callsTo('/api/me/google-link', 'POST')).toHaveLength(1)
     expect(callsTo('/api/auth/after-sign-in', 'POST')).toHaveLength(0)
-    expect(await within(dialog).findByText(en.settings.account.viaGoogle)).toBeInTheDocument()
+    expect(await within(dialog).findByText(en.settings.account.viaBoth)).toBeInTheDocument()
     // The name is read-only and now Google's.
     expect(within(dialog).getByText('Emmeline')).toBeInTheDocument()
     expect(within(dialog).queryByRole('textbox', { name: en.settings.account.firstName })).not.toBeInTheDocument()

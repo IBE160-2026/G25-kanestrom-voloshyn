@@ -129,8 +129,10 @@ function AccountSection({ me, setMe, linkError }) {
             </p>
           )}
           {/* One line per sign-in method: an Account with both shows both. */}
-          {methods.includes('email') && <p className={styles.via}>{t('settings.account.viaEmail')}</p>}
-          {google && <p className={styles.via}>{t('settings.account.viaGoogle')}</p>}
+          {/* One line for the sign-in methods: Email, Google, or both (Cristoffer, 2026-11-20). */}
+          <p className={styles.via}>
+            {t(google ? (methods.includes('email') ? 'settings.account.viaBoth' : 'settings.account.viaGoogle') : 'settings.account.viaEmail')}
+          </p>
         </div>
         <button type="button" className={styles.ghost} onClick={logOut}>
           {t('settings.account.logOut')}
