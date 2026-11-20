@@ -19,15 +19,22 @@
       "identityInUse": "This Google account is already linked to another Study Buddy account."
     }
   },
+  "password": {
+    "show": "Show password",
+    "hide": "Hide password",
+    "capsLock": "Caps Lock is on."
+  },
   "signup": {
     "firstName": "First name",
     "email": "Email",
     "password": "Password",
+    "repeatPassword": "Repeat password",
     "submit": "Create account",
     "logIn": "Log in",
     "errors": {
       "duplicate": "An account with this email already exists. <login>Log in</login> instead?",
       "passwordTooShort": "Use at least 8 characters.",
+      "passwordMismatch": "The passwords don't match.",
       "firstNameRequired": "Enter your first name.",
       "emailRequired": "Enter your email.",
       "emailInvalid": "Enter a valid email address."

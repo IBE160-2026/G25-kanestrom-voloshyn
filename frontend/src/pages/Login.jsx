@@ -6,6 +6,7 @@ import { hasSession, signIn } from '../auth/index.js'
 import { takeRememberedRoute } from '../auth/returnTo.js'
 import panel from '../components/AuthForm.module.css'
 import AuthLayout from '../components/AuthLayout.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
 import GoogleButton from '../components/GoogleButton.jsx'
 import { LANGUAGES, setLanguage } from '../i18n/index.js'
@@ -142,12 +143,15 @@ export default function Login() {
 
   // `aside` (the "Forgot password?" link) sits after the input, so Tab goes from the email to the
   // password first; the grid shows it on the label's line, as in the mock.
-  const field = (name, type, autoComplete, value, setValue, aside = null) => (
+  // The password uses PasswordInput: the eye and the Caps Lock hint.
+  const field = (name, type, autoComplete, value, setValue, aside = null) => {
+    const Input = type === 'password' ? PasswordInput : 'input'
+    return (
     <div className={`${panel.field} ${styles.field}`}>
       <label htmlFor={`${id}-${name}`} className={`${panel.label} ${styles.label}`}>
         {t(`login.${name}`)}
       </label>
-      <input
+      <Input
         id={`${id}-${name}`}
         ref={refs[name]}
         className={panel.input}
@@ -160,7 +164,8 @@ export default function Login() {
       />
       {aside}
     </div>
-  )
+    )
+  }
 
   const showNotice = notice && !error
   return (

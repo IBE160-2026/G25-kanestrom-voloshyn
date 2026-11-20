@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { setNewPassword } from '../auth/index.js'
 import ErrorLine from '../components/ErrorLine.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 import { errorText } from '../i18n/errors.js'
 import styles from './Settings.module.css'
 
@@ -112,11 +113,10 @@ export default function ChangePassword() {
             <label htmlFor={`${id}-current`} className={styles.label}>
               {t('settings.password.current')}
             </label>
-            <input
+            <PasswordInput
               id={`${id}-current`}
               ref={currentRef}
               className={styles.input}
-              type="password"
               autoComplete="current-password"
               value={current}
               onChange={(event) => setCurrent(event.target.value)}
@@ -126,11 +126,10 @@ export default function ChangePassword() {
             <label htmlFor={`${id}-new`} className={styles.label}>
               {t('settings.password.new')}
             </label>
-            <input
+            <PasswordInput
               id={`${id}-new`}
               ref={nextRef}
               className={styles.input}
-              type="password"
               autoComplete="new-password"
               value={next}
               onChange={(event) => setNext(event.target.value)}
@@ -140,11 +139,10 @@ export default function ChangePassword() {
             <label htmlFor={`${id}-repeat`} className={styles.label}>
               {t('settings.password.repeat')}
             </label>
-            <input
+            <PasswordInput
               id={`${id}-repeat`}
               ref={repeatRef}
               className={styles.input}
-              type="password"
               autoComplete="new-password"
               value={repeat}
               onChange={(event) => setRepeat(event.target.value)}
