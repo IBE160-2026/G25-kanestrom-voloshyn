@@ -24,7 +24,11 @@ ALLOWLIST = {
     ("POST", "/api/auth/after-password-reset"),
     ("PATCH", "/api/me"),
     ("PATCH", "/api/me/prefs"),
+    # Settings › Change password: checks the current password; changes no Project content (FR-27).
+    ("POST", "/api/me/password/check"),
     ("POST", "/api/me/privacy-notice"),
+    # Delete my account: removes the whole Account, read-only Projects included (FR-28).
+    ("DELETE", "/api/me"),
     ("POST", "/api/me/notices/google-takeover/seen"),
     ("POST", "/api/projects"),
     ("POST", "/api/jobs/{job_id}/seen"),

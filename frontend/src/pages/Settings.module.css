@@ -1,0 +1,366 @@
+/* Settings (DESIGN.md › Settings section; mock key-settings.html): an overlay on the scrim, holding
+   stacked section cards in a column at spacing.chat-width. Below the delete dialogs (50/51), which open
+   on top of it. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  z-index: 40;
+}
+
+.dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(var(--space-chat-width) + 2 * var(--space-5)), calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100vh - 2 * var(--space-4));
+  overflow-y: auto;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text);
+  z-index: 41;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--type-title-size);
+  font-weight: var(--type-title-weight);
+  letter-spacing: var(--type-title-letter-spacing);
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.close svg {
+  width: 12px;
+  height: 12px;
+}
+
+.page {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Settings section: surface card, heading, muted lead line, rows separated by hairlines. */
+.section {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text);
+}
+
+.heading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.lead {
+  margin: 0 0 var(--space-4);
+  font-size: var(--type-ui-size);
+  color: var(--color-text-muted);
+}
+
+/* Account row: avatar-lg, name, muted email and sign-in method, ghost Log out. */
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.whoText {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  overflow-wrap: anywhere;
+}
+
+.email {
+  margin: 0;
+  font-size: var(--type-ui-size);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.via {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+.nameField {
+  max-width: var(--space-auth-panel-width);
+}
+
+.nameField > p {
+  margin: var(--space-2) 0 0;
+}
+
+/* Text input. */
+.input {
+  width: 100%;
+  height: var(--space-input-height);
+  padding: 0 var(--space-3);
+  background: var(--color-background);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.nameInput {
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A row below the Account row, after a hairline (Change password). */
+.row {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.status {
+  margin: 0;
+  font-size: var(--type-ui-size);
+  color: var(--color-text);
+}
+
+.status:not(:empty) {
+  margin-bottom: var(--space-3);
+}
+
+.passwordForm {
+  max-width: var(--space-auth-panel-width);
+}
+
+.field {
+  margin-bottom: var(--space-3);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* Buttons: Button (primary) and Button (ghost). */
+.primary,
+.ghost,
+.ghostSmall {
+  flex: none;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+}
+
+.ghost,
+.ghostSmall {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+}
+
+.ghostSmall {
+  padding: 0 var(--space-3);
+}
+
+.primary:hover:not(:disabled) {
+  background-image: linear-gradient(var(--color-hover), var(--color-hover));
+}
+
+.ghost:hover:not(:disabled),
+.ghostSmall:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.38;
+  cursor: progress;
+}
+
+/* Language switch (DESIGN.md › Language switch): two segments, the selected one primary-subtle. */
+.switch {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--space-touch-target-min) - var(--space-3));
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-xs);
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segment:hover {
+  background: var(--color-hover);
+}
+
+.segment[data-checked='true'] {
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+/* The radio itself is hidden; its segment shows the Focus ring. */
+.radio {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.segment:has(.radio:focus-visible) {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.afterSwitch {
+  margin-top: var(--space-3);
+}
+
+.afterSwitch > p {
+  margin-bottom: 0;
+}
+
+/* Your data › Delete a project: the list of Projects, each with Delete. */
+.rowTitle {
+  margin: 0 0 var(--space-3);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-button-weight);
+}
+
+.rowTitle:focus {
+  outline: none;
+}
+
+/* Your data › Delete my account and all my files: the title with its ghost button beside it. */
+.accountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+}
+
+.accountRow > .rowTitle {
+  margin: 0;
+}
+
+.projectList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.projectRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  font-size: var(--type-ui-size);
+}
+
+.projectRow + .projectRow {
+  border-top: 1px solid var(--color-border);
+}
+
+.projectName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.primary:focus-visible,
+.ghost:focus-visible,
+.ghostSmall:focus-visible,
+.input:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* The Your data heading takes focus only when a deleted row's Delete button is gone. */
+.heading:focus {
+  outline: none;
+}

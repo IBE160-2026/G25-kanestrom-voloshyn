@@ -33,6 +33,7 @@ async function newPasswordForm(catalogue = en) {
   expect(screen.getByRole('heading', { level: 2, name: catalogue.reset.newPassword.title })).toBeInTheDocument()
   return {
     password,
+    repeat: screen.getByLabelText(catalogue.signup.repeatPassword),
     submit: screen.getByRole('button', { name: catalogue.reset.newPassword.submit }),
   }
 }
@@ -54,6 +55,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
@@ -74,6 +76,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'seven77')
+    await user.type(f.repeat, 'seven77')
     await user.click(f.submit)
 
     expect(screen.getByRole('alert')).toHaveTextContent(en.signup.errors.passwordTooShort)
@@ -83,6 +86,20 @@ describe('ResetPassword', () => {
     expect(router.state.location.pathname).toBe('/reset-password')
   })
 
+  it('a repeat that differs shows the mismatch line on the repeat field and changes nothing', async () => {
+    const user = userEvent.setup()
+    renderRoute(LINK)
+    const f = await newPasswordForm()
+
+    await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pas')
+    await user.click(f.submit)
+
+    expect(screen.getByRole('alert')).toHaveTextContent(en.signup.errors.passwordMismatch)
+    expect(f.repeat).toHaveFocus()
+    expect(setNewPassword).not.toHaveBeenCalled()
+  })
+
   it('Supabase refusing the password as too short shows the same line', async () => {
     vi.mocked(setNewPassword).mockResolvedValue({ error: 'password_too_short' })
     const user = userEvent.setup()
@@ -90,6 +107,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'longenough')
+    await user.type(f.repeat, 'longenough')
     await user.click(f.submit)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(en.signup.errors.passwordTooShort)
@@ -103,6 +121,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'longenough')
+    await user.type(f.repeat, 'longenough')
     await user.click(f.submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.generic)
 
@@ -118,6 +137,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'longenough')
+    await user.type(f.repeat, 'longenough')
     await user.click(f.submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.generic)
     expect(f.password).toHaveAttribute('readonly')
@@ -136,6 +156,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'longenough')
+    await user.type(f.repeat, 'longenough')
     await user.click(f.submit)
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
@@ -178,6 +199,8 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.click(f.password)
+    await user.keyboard('brand-new-pass')
+    await user.click(f.repeat)
     await user.keyboard('brand-new-pass{Enter}')
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
@@ -204,6 +227,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
@@ -218,6 +242,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
 
     expect(await screen.findByRole('heading', { level: 2, name: en.reset.expired })).toBeInTheDocument()
@@ -269,6 +294,7 @@ describe('ResetPassword', () => {
     const { router } = renderRoute(LINK)
     const f = await newPasswordForm()
     await user.type(f.password, 'typed-for-the-first')
+    await user.type(f.repeat, 'typed-for-the-first')
 
     vi.mocked(completeRecovery).mockResolvedValue({ error: 'expired' })
     await router.navigate('/reset-password?token_hash=other456')
@@ -294,6 +320,7 @@ describe('ResetPassword', () => {
     expect(completeRecovery).toHaveBeenCalledWith('abc123')
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(setNewPassword).toHaveBeenCalledWith('brand-new-pass')
@@ -311,6 +338,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
     await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1))
     await new Promise((resolve) => setTimeout(resolve, 0))
@@ -332,6 +360,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
     await router.navigate('/forgot-password')
     // the unmount ends the held recovery session
@@ -352,6 +381,7 @@ describe('ResetPassword', () => {
     const f = await newPasswordForm()
 
     await user.type(f.password, 'brand-new-pass')
+    await user.type(f.repeat, 'brand-new-pass')
     await user.click(f.submit)
     await waitFor(() => expect(apiFetch).toHaveBeenCalledTimes(1))
     await router.navigate('/forgot-password')

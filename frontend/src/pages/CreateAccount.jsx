@@ -7,6 +7,7 @@ import { hasSession, signUp } from '../auth/index.js'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
 import GoogleButton from '../components/GoogleButton.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 import { errorText } from '../i18n/errors.js'
 import styles from '../components/AuthForm.module.css'
 
@@ -16,16 +17,18 @@ const MAX_FIRST_NAME = 100 // the API's limit for first_name
 // Create account screen (FR-1, DESIGN.md › Create account screen). Signs up through supabase-js,
 // then tells the backend the first name and language (POST /api/auth/after-sign-in, AD-19).
 // "Sign in with Google" (FR-19) shows above the form when Google is configured; it continues on
-// /auth/callback, as from Login.
+// /auth/callback, as from Login. The password is typed twice, and both must match (Cristoffer,
+// 2026-11-20); both fields have the eye and the Caps Lock hint (PasswordInput).
 export default function CreateAccount() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const id = useId()
-  const refs = { firstName: useRef(null), email: useRef(null), password: useRef(null) }
+  const refs = { firstName: useRef(null), email: useRef(null), password: useRef(null), repeatPassword: useRef(null) }
 
   const [firstName, setFirstName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState(null) // { kind, apiError?, attempt }
   const [busy, setBusy] = useState(false)
   // Guards a double submit before React re-renders with busy=true.
@@ -65,6 +68,7 @@ export default function CreateAccount() {
     if (!address) return fail('emailRequired', 'email')
     if (!isEmail(address)) return fail('emailInvalid', 'email')
     if (password.length < MIN_PASSWORD) return fail('passwordTooShort', 'password')
+    if (repeatPassword !== password) return fail('passwordMismatch', 'repeatPassword')
 
     inFlight.current = true
     setBusy(true)
@@ -102,12 +106,14 @@ export default function CreateAccount() {
     return t(`signup.errors.${error.kind}`)
   }
 
-  const field = (name, type, autoComplete, value, setValue, extra = {}) => (
+  const field = (name, type, autoComplete, value, setValue, extra = {}) => {
+    const Input = type === 'password' ? PasswordInput : 'input'
+    return (
     <div className={styles.field}>
       <label htmlFor={`${id}-${name}`} className={styles.label}>
         {t(`signup.${name}`)}
       </label>
-      <input
+      <Input
         id={`${id}-${name}`}
         ref={refs[name]}
         className={styles.input}
@@ -119,7 +125,8 @@ export default function CreateAccount() {
         {...extra}
       />
     </div>
-  )
+    )
+  }
 
   return (
     <AuthLayout switchTo={{ to: '/', label: t('signup.logIn') }}>
@@ -128,6 +135,7 @@ export default function CreateAccount() {
         {field('firstName', 'text', 'given-name', firstName, setFirstName, { maxLength: MAX_FIRST_NAME })}
         {field('email', 'email', 'email', email, setEmail, { readOnly: signedUp })}
         {field('password', 'password', 'new-password', password, setPassword, { readOnly: signedUp })}
+        {field('repeatPassword', 'password', 'new-password', repeatPassword, setRepeatPassword, { readOnly: signedUp })}
         {error && <ErrorLine key={error.attempt}>{errorMessage()}</ErrorLine>}
         <button type="submit" className={styles.primary} aria-busy={busy} disabled={busy}>
           {t('signup.submit')}

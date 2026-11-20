@@ -6,6 +6,7 @@ import { completeRecovery, setNewPassword, signOut } from '../auth/index.js'
 import styles from '../components/AuthForm.module.css'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 
 const MIN_PASSWORD = 8 // FR-1; Supabase enforces the same minimum (config.toml)
 
@@ -38,6 +39,8 @@ function ResetPasswordLink({ tokenHash }) {
   const navigate = useNavigate()
   const id = useId()
   const passwordRef = useRef(null)
+  const repeatRef = useRef(null)
+  const [repeat, setRepeat] = useState('')
 
   const [step, setStep] = useState('checking') // 'checking' | 'form' | 'expired'
   const [password, setPassword] = useState('')
@@ -61,9 +64,9 @@ function ResetPasswordLink({ tokenHash }) {
     setError({ kind, attempt: attempt.current })
   }
 
-  function fail(kind) {
+  function fail(kind, field = passwordRef) {
     showError(kind)
-    passwordRef.current?.focus()
+    field.current?.focus()
   }
 
   /** Apply a link check. Returns true when the link is verified and this page is still open. */
@@ -112,6 +115,8 @@ function ResetPasswordLink({ tokenHash }) {
     event.preventDefault()
     if (inFlight.current) return
     if (!changed && password.length < MIN_PASSWORD) return fail('passwordTooShort')
+    // Typed twice, so a typo can't lock the student out (Cristoffer, 2026-11-20).
+    if (!changed && repeat !== password) return fail('passwordMismatch', repeatRef)
 
     inFlight.current = true
     setBusy(true)
@@ -147,6 +152,7 @@ function ResetPasswordLink({ tokenHash }) {
 
   const MESSAGES = {
     passwordTooShort: 'signup.errors.passwordTooShort',
+    passwordMismatch: 'signup.errors.passwordMismatch',
     linkFailed: 'login.errors.failed',
     failed: 'errors.generic',
   }
@@ -174,16 +180,30 @@ function ResetPasswordLink({ tokenHash }) {
                   <label htmlFor={`${id}-password`} className={styles.label}>
                     {t('login.password')}
                   </label>
-                  <input
+                  <PasswordInput
                     id={`${id}-password`}
                     ref={passwordRef}
                     className={styles.input}
-                    type="password"
                     name="password"
                     autoComplete="new-password"
                     value={password}
                     readOnly={changed}
                     onChange={(event) => setPassword(event.target.value)}
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor={`${id}-repeat`} className={styles.label}>
+                    {t('signup.repeatPassword')}
+                  </label>
+                  <PasswordInput
+                    id={`${id}-repeat`}
+                    ref={repeatRef}
+                    className={styles.input}
+                    name="repeatPassword"
+                    autoComplete="new-password"
+                    value={repeat}
+                    readOnly={changed}
+                    onChange={(event) => setRepeat(event.target.value)}
                   />
                 </div>
                 {error && <ErrorLine key={error.attempt}>{t(MESSAGES[error.kind])}</ErrorLine>}

@@ -163,3 +163,10 @@ async def expired_ids(conn: AsyncConnection) -> list[tuple[UUID, UUID]]:
             """
         )
         return [(row[0], row[1]) for row in await cur.fetchall()]
+
+
+async def ids_for_account(conn: AsyncConnection, account_id: UUID) -> list[UUID]:
+    """Every Project id of the Account in any state, expired ones included (Account deletion, FR-28)."""
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT id FROM projects WHERE account_id = %s ORDER BY created_at, id", (account_id,))
+        return [row[0] for row in await cur.fetchall()]

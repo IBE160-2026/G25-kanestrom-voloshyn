@@ -228,15 +228,16 @@ export function completeRecovery(tokenHash) {
 
 /**
  * Save a new password for the signed-in (recovery) session (FR-3). Resolves with `{ ok: true }`
- * or `{ error }`: 'password_too_short' when Supabase finds it too weak, otherwise 'failed'.
- * Never throws; the password is never stored or logged.
+ * or `{ error }`: 'password_too_short' when Supabase finds it too weak, 'same_password' when it is
+ * the current password (Settings › Change password), otherwise 'failed'. Never throws; the password is never stored or logged.
  */
 export async function setNewPassword(password) {
   try {
     const supabase = await getSupabase()
     const { error } = await supabase.auth.updateUser({ password })
     if (!error) return { ok: true }
-    return { error: error.code === 'weak_password' ? 'password_too_short' : 'failed' }
+    if (error.code === 'weak_password') return { error: 'password_too_short' }
+    return { error: error.code === 'same_password' ? 'same_password' : 'failed' }
   } catch {
     return { error: 'failed' }
   }

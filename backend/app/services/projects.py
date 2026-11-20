@@ -181,12 +181,12 @@ async def delete(
     deleted = await repo.set_deleted(conn, account_id, project_id)
 
     async def after() -> None:
-        await _run_steps(steps)
+        await run_steps(steps)
 
     return deleted, after, running
 
 
-async def _run_steps(steps: Sequence[Callable[[], Any] | None]) -> None:
+async def run_steps(steps: Sequence[Callable[[], Any] | None]) -> None:
     for step in steps:
         if step is None:
             continue
@@ -249,7 +249,7 @@ async def purge(
                 raise ProjectNotDeleted()
             steps, interrupt = await jobs.cancel_for_project(conn, runner.kinds, account_id, project_id)
             waiting = await jobs.active_ids_for_project(conn, account_id, project_id)
-    await _run_steps(steps)
+    await run_steps(steps)
     for job_id in interrupt:
         runner.interrupt(job_id)
     if wait_seconds is None:

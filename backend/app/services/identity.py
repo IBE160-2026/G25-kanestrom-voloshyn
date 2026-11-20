@@ -1,5 +1,6 @@
 """Identity service: profiles after sign-up and sign-in (AD-19). Takes `conn`, never commits (AD-18)."""
 
+import unicodedata
 from typing import Any
 from uuid import UUID
 
@@ -52,6 +53,44 @@ async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -
 async def set_prefs(conn: AsyncConnection, account_id: UUID, prefs: dict[str, Any]) -> dict[str, Any]:
     """Merge interface preferences (Sidebar collapse; Files panel collapse per Project) into ui_prefs (AD-19)."""
     await profiles.merge_ui_prefs(conn, account_id, prefs)
+    return await get_profile(conn, account_id)
+
+
+# The profile's first_name column allows at most 100 characters.
+FIRST_NAME_MAX_LENGTH = 100
+
+
+class InvalidFirstName(AppError):
+    def __init__(self) -> None:
+        super().__init__(422, "invalid_name", "The first name is blank or has control characters")
+
+
+class NameFromGoogle(AppError):
+    def __init__(self) -> None:
+        super().__init__(409, "name_from_google", "The name of an Account with a Google identity follows Google")
+
+
+def clean_first_name(raw: str) -> str:
+    """Trim, refuse blank, and cut to 100 characters, as `projects.clean_name` does. Control
+    characters (NUL, which Postgres can't store, among them) and lone surrogates are refused."""
+    name = raw.strip()
+    if not name or any(unicodedata.category(char) in ("Cc", "Cs") for char in name):
+        raise InvalidFirstName()
+    return name[:FIRST_NAME_MAX_LENGTH].rstrip()
+
+
+def require_name_editable(providers: frozenset[str]) -> None:
+    """A Google-linked Account's name follows Google and is read-only in Settings (FR-27)."""
+    if "google" in providers:
+        raise NameFromGoogle()
+
+
+async def set_first_name(
+    conn: AsyncConnection, account_id: UUID, providers: frozenset[str], raw: str
+) -> dict[str, Any]:
+    """Save the first name edited in Settings (FR-27); refused for a Google-linked Account."""
+    require_name_editable(providers)
+    await profiles.set_first_name(conn, account_id, clean_first_name(raw))
     return await get_profile(conn, account_id)
 
 

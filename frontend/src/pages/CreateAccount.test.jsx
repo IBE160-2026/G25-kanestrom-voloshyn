@@ -31,15 +31,17 @@ function form(catalogue = en) {
     firstName: within(panel).getByLabelText(catalogue.signup.firstName),
     email: within(panel).getByLabelText(catalogue.signup.email),
     password: within(panel).getByLabelText(catalogue.signup.password),
+    repeat: within(panel).getByLabelText(catalogue.signup.repeatPassword),
     submit: within(panel).getByRole('button', { name: catalogue.signup.submit }),
   }
 }
 
-async function fillAndSubmit(user, { firstName = 'Emma', email = 'emma@example.com', password = 'longenough' } = {}, catalogue = en) {
+async function fillAndSubmit(user, { firstName = 'Emma', email = 'emma@example.com', password = 'longenough', repeat = password } = {}, catalogue = en) {
   const f = form(catalogue)
   if (firstName) await user.type(f.firstName, firstName)
   if (email) await user.type(f.email, email)
   if (password) await user.type(f.password, password)
+  if (repeat) await user.type(f.repeat, repeat)
   await user.click(f.submit)
   return f
 }
@@ -153,6 +155,17 @@ describe('Create account', () => {
     expect(apiFetch).not.toHaveBeenCalled()
   })
 
+  it('a repeated password that differs is refused in the SPA, on the repeat field', async () => {
+    const user = userEvent.setup()
+    renderRoute('/signup')
+
+    const f = await fillAndSubmit(user, { password: 'longenough', repeat: 'longenougj' })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(en.signup.errors.passwordMismatch)
+    expect(signUp).not.toHaveBeenCalled()
+    expect(f.repeat).toHaveFocus()
+  })
+
   it('short password: refused in the SPA before any sign-up', async () => {
     const user = userEvent.setup()
     renderRoute('/signup')
@@ -231,6 +244,11 @@ describe('Create account', () => {
     await user.keyboard('emma@example.com')
     await user.tab()
     expect(f.password).toHaveFocus()
+    await user.keyboard('longenough')
+    await user.tab()
+    expect(screen.getAllByRole('button', { name: en.password.show })[0]).toHaveFocus()
+    await user.tab()
+    expect(f.repeat).toHaveFocus()
     await user.keyboard('longenough{Enter}')
 
     expect(signUp).toHaveBeenCalledTimes(1)

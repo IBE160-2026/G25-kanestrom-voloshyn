@@ -71,6 +71,11 @@ async def set_language(conn: AsyncConnection, account_id: UUID, language: str) -
     await conn.execute("UPDATE profiles SET language = %s WHERE account_id = %s", (language, account_id))
 
 
+async def set_first_name(conn: AsyncConnection, account_id: UUID, first_name: str) -> None:
+    """Save the first name edited in Settings (FR-27), replacing the earlier one."""
+    await conn.execute("UPDATE profiles SET first_name = %s WHERE account_id = %s", (first_name, account_id))
+
+
 async def set_last_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> None:
     """Remember the Project the Account opened last, where the next login lands (FR-8)."""
     await conn.execute("UPDATE profiles SET last_project_id = %s WHERE account_id = %s", (project_id, account_id))

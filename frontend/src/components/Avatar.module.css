@@ -16,6 +16,13 @@
   overflow: hidden;
 }
 
+/* Settings (avatar.size-settings): the large circle; initials in the heading size. */
+.large {
+  width: var(--space-avatar-lg);
+  height: var(--space-avatar-lg);
+  font-size: var(--type-title-size);
+}
+
 /* The Google profile photo fills the circle. */
 .photo {
   width: 100%;

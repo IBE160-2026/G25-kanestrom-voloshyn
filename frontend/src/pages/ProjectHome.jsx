@@ -10,7 +10,8 @@ import PurgeProjectDialog from '../components/PurgeProjectDialog.jsx'
 import QrDialog from '../components/QrDialog.jsx'
 import ReadyNotice from '../components/ReadyNotice.jsx'
 import { daysLeft } from '../components/daysLeft.js'
-import { useBlockWindowFileDrop, useDropTarget } from '../components/useDropTarget.js'
+import DropOverlay from '../components/DropOverlay.jsx'
+import { useBlockWindowFileDrop, useDropTarget, useWindowFileDrop } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
 import { useMistakes } from './useMistakes.js'
@@ -245,6 +246,8 @@ export default function ProjectHome() {
   }, [shownNotices])
 
   const drop = useDropTarget(files.upload, ready && !readOnly)
+  // Files dragged anywhere over the window: the full-screen drop overlay, uploading to this Project.
+  const windowDrop = useWindowFileDrop(files.upload, ready && !readOnly)
   useBlockWindowFileDrop()
 
   const openPicker = () => {
@@ -261,6 +264,7 @@ export default function ProjectHome() {
 
   return (
     <div className={styles.home} aria-busy={!ready && !failed}>
+      {windowDrop.active && <DropOverlay handlers={windowDrop.handlers} />}
       <input
         ref={picker}
         type="file"

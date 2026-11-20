@@ -46,3 +46,11 @@
 - [ ] 2026-11-19 [story-7-1-archive](979-2026-11-19-22-32-26-story-7-1-archive.md) — Hover-stilen på Gjenopprett-knappen i arkiv-banneret er ikke fra DESIGN.md (agentens valg).
 - [ ] 2026-11-19 [story-7-2-delete-project](978-2026-11-19-23-41-45-story-7-2-delete-project.md) — Feilet sletting av lagrede filer etter «Slett for godt» prøves ikke igjen, så filene blir liggende (deferred-work.md).
 - [ ] 2026-11-19 [story-7-2-delete-project](978-2026-11-19-23-41-45-story-7-2-delete-project.md) — Fet skrift og innfelt boks i «Slett for godt»-dialogen er agentens valg; sjekk mot DESIGN.md.
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Velg passordløsning for 7.3a: beholde sjekk-og-updateUser, eller la serveren sette passordet og logge ut andre enheter.
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Godkjenn ny tekst og beslutningene i 7.3a og 7.4 (merket «pending» i specene).
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Story 7.3b: Koble til Google-konto og Send bekreftelseslenken på nytt; fornavnet settes fra Google ved kobling.
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Supabase-innlogginger fra serverens ene IP deler én felles grense for alle (deferred-work.md).
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Sletting av kontoen og ny registrering med samme e-post nullstiller dagens grenser (vurder).
+- [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Oppdater EXPERIENCE.md L75 og DESIGN.md L657: Settings er nå et overlegg, ikke en side (forslaget til tekst står i spec-7-3a › Amendments).
+- [ ] 2026-11-20 [passordfelt](976-2026-11-20-13-01-33-passordfelt.md) — Godkjenn tekstene for vis/skjul passord, Caps Lock og «Gjenta passordet», og før dem inn i EXPERIENCE.md (L42, L405, Strings) sammen med det nye gjenta-feltet.
+- [ ] 2026-11-20 [drop-overlay](975-2026-11-20-13-06-05-drop-overlay.md) — Godkjenn «Drop files here» / «Slipp filene her» og før det fullskjerms slipp-overlegget inn i DESIGN.md og EXPERIENCE.md.

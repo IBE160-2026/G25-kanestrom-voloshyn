@@ -93,3 +93,18 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-2b-delete-a-project-forever.md`
   summary: A Storage delete that fails after a purge (or a material removal) commits is logged and never retried, leaving orphaned objects under `{account_id}/{project_id}/`.
   evidence: `storage.delete_prefix` and `storage.delete` swallow failures by design (AD-16 orders Storage after the DB commit); a periodic orphan-prefix sweep in the hourly task would settle it.
+
+- source_spec: none
+  summary: Story 7.3b — Settings › "Link Google account" (linkIdentity, backend removes an unverified link with email_not_verified, "already linked" error, cancelled consent) and "Verify your email first" + "Resend verification email" (new 24 h link, older ones invalidated, "We've sent a new link. It works for 24 hours.").
+  evidence: Split from Story 7.3 in the unattended run on 2026-11-20 because the full story was far over the spec size limit; 7.3a (the Settings page) ships alone.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md`
+  summary: Every current-password check signs in from the backend's one IP, so all students share Supabase's per-IP sign-in limit (`sign_in_sign_ups = 30`); add a per-Account attempt limit or forward the client IP.
+  evidence: Review of 7.3a (BH, VG, EC); 7.3a only maps the resulting 429 to `too_many_attempts`.
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md`
+  summary: Story 7.3b must set a Google-linked Account's first name from the Google profile on linking, since Settings shows it read-only as "from your Google account".
+  evidence: Review of 7.3a: `fill_unset` only fills an unset name.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-delete-my-account.md`
+  summary: Account deletion goes on to delete the auth user even when `storage.delete_prefix` failed (errors are swallowed), so the student's files can outlive the Account with no retry.
+  evidence: Review of 7.4 (EC, BH); same root as the 7.2b Storage-retry entry — have `delete_prefix` report failure, or sweep orphaned prefixes in the hourly task.
