@@ -1,7 +1,7 @@
 /* Design tokens: every DESIGN.md frontmatter token (colors, typography, rounded, spacing)
    as a CSS custom property. Components use only var(--...) (AD-28). The :root block is DESIGN.md's
-   dark theme with the indigo accent, the default. The light palette and the other accents at the end
-   of this file are not in DESIGN.md yet: they come from
+   dark theme with the indigo accent: the Default theme. The darker Dark palette, the Light palette,
+   and the other accents at the end of this file are not in DESIGN.md yet: they come from
    _bmad-output/implementation-artifacts/spec-theme-options.md (Settings › Appearance; set on <html>
    as data-theme / data-accent by src/theme/), pending a DESIGN.md amendment.
    Source: _bmad-output/planning-artifacts/ux-designs/ux-AI-StudyBuddy-2026-10-13/DESIGN.md */
@@ -17,8 +17,13 @@
   --color-surface: #171A21;
   --color-text: #E6E8EE;
   --color-text-muted: #9AA3B2;
-  --color-primary: #6C7CFF;
-  --color-on-primary: #0F1115;
+  /* The accent: each theme's own (--color-theme-*), unless data-accent picks another (end of file). */
+  --color-theme-primary: #6C7CFF;
+  --color-theme-on-primary: #0F1115;
+  --color-theme-primary-subtle: #6C7CFF1F;
+  --color-theme-primary-wash: #6C7CFF14;
+  --color-primary: var(--color-theme-primary);
+  --color-on-primary: var(--color-theme-on-primary);
   --color-correct: #4ADE80;
   --color-mistake: #F5A524;
   --color-error: #EF5B5B;
@@ -26,8 +31,8 @@
   --color-border: #E6E8EE14;
   --color-border-strong: #E6E8EE24;
   --color-hover: #E6E8EE0D;
-  --color-primary-subtle: #6C7CFF1F;
-  --color-primary-wash: #6C7CFF14;
+  --color-primary-subtle: var(--color-theme-primary-subtle);
+  --color-primary-wash: var(--color-theme-primary-wash);
   --color-mistake-wash: #F5A5240F;
   --color-mistake-edge: #F5A5248C;
   --color-correct-wash: #4ADE800F;
@@ -124,45 +129,71 @@
   --space-avatar-lg: 56px;
 }
 
+/* --- Dark theme (data-theme="dark" on <html>) -----------------------------------------------------
+   A clearly darker, near-black version of the Default theme: the grounds, hairlines, hover, scrim,
+   and control border, with its own default accent tuned for it. Text, the semantic colours, and the
+   Blue / Violet / Cyan accents stay the Default theme's. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-background: #07080A;
+  --color-surface: #0E1014;
+  --color-border-control: #6A6C73;
+  --color-border: #E6E8EE12;
+  --color-border-strong: #E6E8EE21;
+  --color-hover: #E6E8EE0B;
+  --color-scrim: #000000C7;
+
+  /* The Dark theme's own accent. */
+  --color-theme-primary: #7F8CFF;
+  --color-theme-on-primary: #07080A;
+  --color-theme-primary-subtle: #7F8CFF1F;
+  --color-theme-primary-wash: #7F8CFF14;
+}
+
 /* --- Light theme (data-theme="light" on <html>) ---------------------------------------------------
-   Every neutral and semantic colour; the accent tokens come from the accent blocks below. Text on
-   background and surface is at least 4.5:1, the control border at least 3:1 (theme.test.js). */
+   Every neutral and semantic colour; the accent tokens come from the accent blocks below. A visibly
+   grey background under white surfaces with firm hairlines, so the Sidebar and panels stand apart
+   (surface vs. background at least 1.15:1). Text on background and surface is at least 4.5:1, the
+   control border at least 3:1 (theme.test.js). */
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --color-background: #F6F7F9;
+  --color-background: #E8EBF0;
   --color-surface: #FFFFFF;
   --color-text: #1A1D24;
-  --color-text-muted: #5B6372;
-  --color-correct: #15803D;
-  --color-mistake: #B45309;
-  --color-error: #C42B2B;
-  --color-border-control: #80858F;
-  --color-border: #1A1D2414;
-  --color-border-strong: #1A1D2429;
-  --color-hover: #1A1D240D;
-  --color-mistake-wash: #B4530914;
-  --color-mistake-edge: #B453098C;
-  --color-correct-wash: #15803D14;
-  --color-correct-edge: #15803D8C;
-  --color-error-edge: #C42B2B59;
-  --color-scrim: #1A1D2466;
+  --color-text-muted: #525A68;
+  --color-correct: #116B32;
+  --color-mistake: #A14A07;
+  --color-error: #B42525;
+  --color-border-control: #757A84;
+  --color-border: #1A1D2421;
+  --color-border-strong: #1A1D2438;
+  --color-hover: #1A1D240F;
+  --color-mistake-wash: #A14A0714;
+  --color-mistake-edge: #A14A078C;
+  --color-correct-wash: #116B3214;
+  --color-correct-edge: #116B328C;
+  --color-error-edge: #B4252559;
+  --color-scrim: #1A1D2470;
 
-  /* The default (indigo) accent in the light theme. */
-  --color-primary: #4F5BD5;
-  --color-on-primary: #FFFFFF;
-  --color-primary-subtle: #4F5BD51F;
-  --color-primary-wash: #4F5BD514;
+  /* The Light theme's own accent. */
+  --color-theme-primary: #4F5BD5;
+  --color-theme-on-primary: #FFFFFF;
+  --color-theme-primary-subtle: #4F5BD51F;
+  --color-theme-primary-wash: #4F5BD514;
 }
 
 /* --- Accents (data-accent on <html>, or on an element such as a Settings swatch) ------------------
-   Indigo is the default. Each keeps apart from green (correct), amber (mistake), and red (error).
-   on-primary on primary is at least 4.5:1 in both themes (theme.test.js). */
-[data-accent='indigo'] {
-  --color-primary: #6C7CFF;
-  --color-on-primary: #0F1115;
-  --color-primary-subtle: #6C7CFF1F;
-  --color-primary-wash: #6C7CFF14;
+   "default" is the current theme's own accent (--color-theme-*); it overrides nothing on <html>, and
+   on a swatch it undoes an inherited pick. Blue / Violet / Cyan have one value for the Default and
+   Dark themes and one for Light. Each keeps apart from green (correct), amber (mistake), and red
+   (error); on-primary on primary is at least 4.5:1 in every theme (theme.test.js). */
+[data-accent='default'] {
+  --color-primary: var(--color-theme-primary);
+  --color-on-primary: var(--color-theme-on-primary);
+  --color-primary-subtle: var(--color-theme-primary-subtle);
+  --color-primary-wash: var(--color-theme-primary-wash);
 }
 
 [data-accent='blue'] {
@@ -184,14 +215,6 @@
   --color-on-primary: #0F1115;
   --color-primary-subtle: #22D3EE1F;
   --color-primary-wash: #22D3EE14;
-}
-
-:root[data-theme='light'][data-accent='indigo'],
-:root[data-theme='light'] [data-accent='indigo'] {
-  --color-primary: #4F5BD5;
-  --color-on-primary: #FFFFFF;
-  --color-primary-subtle: #4F5BD51F;
-  --color-primary-wash: #4F5BD514;
 }
 
 :root[data-theme='light'][data-accent='blue'],

@@ -1,11 +1,12 @@
 // Theme options: the contrast rules hold for every theme × accent in tokens.css (WCAG AA), and the
-// theme module resolves "system", follows it live, and falls back to dark + indigo.
+// theme module applies, caches, and falls back to the Default theme and accent.
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   ACCENTS,
+  THEMES,
   accountChoice,
   applyAccountTheme,
   applyInitialTheme,
@@ -39,14 +40,21 @@ function block(selector) {
   return found.decls
 }
 
-/** The colour tokens on <html> for a theme and accent, in the cascade order of tokens.css. */
+/**
+ * The colour tokens on <html> for a theme and accent, in the cascade order of tokens.css, with each
+ * var(--…) resolved. The "default" accent is the theme's own (--color-theme-*); Blue / Violet / Cyan
+ * have a Light block and one shared by the Default and Dark themes.
+ */
 function tokens(theme, accent) {
-  const light = theme === 'light'
-  return {
+  const own = accent === 'default' || theme !== 'light'
+  const merged = {
     ...block(':root'),
-    ...(light ? block(":root[data-theme='light']") : {}),
-    ...block(light ? `:root[data-theme='light'][data-accent='${accent}']` : `[data-accent='${accent}']`),
+    ...(theme === 'default' ? {} : block(`:root[data-theme='${theme}']`)),
+    ...block(own ? `[data-accent='${accent}']` : `:root[data-theme='light'][data-accent='${accent}']`),
   }
+  const resolve = (value, depth = 0) =>
+    depth > 5 ? value : value.replace(/var\((--[\w-]+)\)/g, (_, name) => resolve(merged[name] ?? '', depth + 1))
+  return Object.fromEntries(Object.entries(merged).map(([name, value]) => [name, resolve(value)]))
 }
 
 function luminance(hex) {
@@ -62,7 +70,7 @@ function contrast(a, b) {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-const PAIRS = ['dark', 'light'].flatMap((theme) => ACCENTS.map((accent) => [theme, accent]))
+const PAIRS = THEMES.flatMap((theme) => ACCENTS.map((accent) => [theme, accent]))
 
 describe('contrast (WCAG AA) for every theme × accent', () => {
   it.each(PAIRS)('%s × %s', (theme, accent) => {
@@ -82,73 +90,52 @@ describe('contrast (WCAG AA) for every theme × accent', () => {
     expect(contrast(t['--color-on-primary'], t['--color-error']), 'on-primary on error').toBeGreaterThanOrEqual(4.5)
   })
 
-  it('the light theme sets color-scheme: light, and the dark default color-scheme: dark', () => {
+  it('in Light, the Sidebar and panels (surface) stand apart from the background: at least 1.15:1', () => {
+    const t = tokens('light', 'default')
+    expect(contrast(t['--color-surface'], t['--color-background'])).toBeGreaterThanOrEqual(1.15)
+  })
+
+  it('each theme has its own default accent', () => {
+    const own = THEMES.map((theme) => tokens(theme, 'default')['--color-primary'])
+    expect(new Set(own).size).toBe(THEMES.length)
+    expect(own[0]).toBe('#6C7CFF') // the Default theme keeps today's accent
+  })
+
+  it('Dark is darker than Default: a darker background and surface', () => {
+    const base = tokens('default', 'default')
+    const dark = tokens('dark', 'default')
+    expect(luminance(dark['--color-background'])).toBeLessThan(luminance(base['--color-background']))
+    expect(luminance(dark['--color-surface'])).toBeLessThan(luminance(base['--color-surface']))
+  })
+
+  it('Light sets color-scheme: light; Default and Dark color-scheme: dark', () => {
     expect(tokensCss).toMatch(/:root\s*\{\s*color-scheme:\s*dark;/)
+    expect(tokensCss).toMatch(/:root\[data-theme='dark'\]\s*\{\s*color-scheme:\s*dark;/)
     expect(tokensCss).toMatch(/:root\[data-theme='light'\]\s*\{\s*color-scheme:\s*light;/)
   })
 })
 
-/** A stand-in for matchMedia('(prefers-color-scheme: light)') whose answer the test changes. */
-function stubSystem(light) {
-  const listeners = new Set()
-  const state = { light }
-  const query = {
-    get matches() {
-      return state.light
-    },
-    addEventListener: (_, listener) => listeners.add(listener),
-    removeEventListener: (_, listener) => listeners.delete(listener),
-  }
-  window.matchMedia = vi.fn(() => query)
-  return {
-    set(next) {
-      state.light = next
-      listeners.forEach((listener) => listener({ matches: next }))
-    },
-  }
-}
-
 const html = () => document.documentElement
 
 describe('the theme module', () => {
-  const original = window.matchMedia
+  beforeEach(() => applyTheme({}))
 
-  beforeEach(() => applyTheme({ theme: 'dark' })) // detach any system listener of an earlier test
-  afterEach(() => {
-    window.matchMedia = original
-  })
-
-  it('an Account with nothing saved is dark and indigo', () => {
-    expect(accountChoice({})).toEqual({ theme: 'dark', accent: 'indigo' })
-    expect(accountChoice(undefined)).toEqual({ theme: 'dark', accent: 'indigo' })
-    expect(accountChoice({ theme: 'pink', accent: 'green' })).toEqual({ theme: 'dark', accent: 'indigo' })
+  it('an Account with nothing saved, or an unknown value such as an old "system" or "indigo", gets both defaults', () => {
+    expect(accountChoice({})).toEqual({ theme: 'default', accent: 'default' })
+    expect(accountChoice(undefined)).toEqual({ theme: 'default', accent: 'default' })
+    expect(accountChoice({ theme: 'system', accent: 'indigo' })).toEqual({ theme: 'default', accent: 'default' })
+    expect(accountChoice({ theme: 'system', accent: 'green' })).toEqual({ theme: 'default', accent: 'default' })
     expect(accountChoice({ theme: 'light', accent: 'violet' })).toEqual({ theme: 'light', accent: 'violet' })
   })
 
-  it('"system" resolves through prefers-color-scheme and follows it live', () => {
-    const system = stubSystem(true)
-    applyTheme({ theme: 'system', accent: 'cyan' })
-    expect(html().dataset.theme).toBe('light')
-    expect(html().dataset.accent).toBe('cyan')
-
-    system.set(false)
-    expect(html().dataset.theme).toBe('dark')
-
-    // A fixed choice stops following.
-    applyTheme({ theme: 'light', accent: 'cyan' })
-    system.set(false)
-    expect(html().dataset.theme).toBe('light')
-  })
-
-  it('without matchMedia, "system" is dark', () => {
-    window.matchMedia = undefined
+  it('applies the theme and accent on <html>', () => {
+    applyTheme({ theme: 'dark', accent: 'cyan' })
+    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'cyan' })
     applyTheme({ theme: 'system' })
-    expect(html().dataset.theme).toBe('dark')
-    expect(html().dataset.accent).toBe('indigo')
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
   })
 
-  it('a signed-in page paints the cached choice; signed-out pages follow the system with indigo', () => {
-    stubSystem(true)
+  it('a signed-in page paints the cached choice; signed-out pages use both defaults', () => {
     applyAccountTheme({ theme: 'dark', accent: 'violet' })
     expect(cachedTheme()).toEqual({ theme: 'dark', accent: 'violet' })
 
@@ -157,22 +144,20 @@ describe('the theme module', () => {
 
     for (const path of ['/', '/signup', '/reset-password', '/u/tok-1']) {
       applyInitialTheme(path)
-      expect(html().dataset).toMatchObject({ theme: 'light', accent: 'indigo' })
+      expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
     }
   })
 
-  it('with nothing cached, a signed-in page starts dark and indigo', () => {
-    stubSystem(true)
+  it('with nothing cached, a signed-in page starts on both defaults', () => {
     applyInitialTheme('/projects')
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
   })
 
   it('signing out forgets the cached choice', () => {
-    stubSystem(false)
     applyAccountTheme({ theme: 'light', accent: 'blue' })
     applySignedOutTheme({ forget: true })
     expect(cachedTheme()).toBeNull()
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
   })
 
   it('a corrupt cache is ignored', () => {

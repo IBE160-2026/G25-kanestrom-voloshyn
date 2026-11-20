@@ -1,6 +1,6 @@
-// Settings › Appearance (theme options, Cristoffer 2026-11-20): the theme (Match system / Light / Dark)
-// and accent colour, applied on <html> at once, saved to ui_prefs, applied after sign-in on any
-// browser, and dropped for the system theme on sign-out. api/client.js and auth/ are mocked (spine ›
+// Settings › Appearance (theme options, Cristoffer 2026-11-20): the theme (Default / Light / Dark) and
+// accent colour, applied on <html> at once, saved to ui_prefs, applied after sign-in on any browser,
+// and dropped for the Default theme and accent on sign-out. api/client.js and auth/ are mocked (spine ›
 // Tests); test/fakeApi.js plays the backend.
 import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -18,39 +18,16 @@ vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clien
 
 const BIOLOGY = project('bio', { name: 'Biology', name_source: 'student' })
 const html = () => document.documentElement
-const original = window.matchMedia
-
-/** matchMedia('(prefers-color-scheme: light)') answering `light`; `set` changes it live. */
-function stubSystem(light) {
-  const listeners = new Set()
-  const state = { light }
-  const query = {
-    get matches() {
-      return state.light
-    },
-    addEventListener: (_, listener) => listeners.add(listener),
-    removeEventListener: (_, listener) => listeners.delete(listener),
-  }
-  window.matchMedia = vi.fn(() => query)
-  return {
-    set(next) {
-      state.light = next
-      listeners.forEach((listener) => listener({ matches: next }))
-    },
-  }
-}
-
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset()
   vi.mocked(hasSession).mockReset().mockResolvedValue(true)
   vi.mocked(signOut).mockReset().mockResolvedValue({ ended: Promise.resolve() })
-  applyTheme({ theme: 'dark' }) // detach any system listener of an earlier test
+  applyTheme({})
   delete html().dataset.theme
   delete html().dataset.accent
 })
 
 afterEach(async () => {
-  window.matchMedia = original
   await i18n.changeLanguage('en')
 })
 
@@ -77,19 +54,17 @@ async function openSettings(lang = en, path = '/projects/bio') {
 }
 
 describe('Settings › Appearance', () => {
-  it('an existing Account with no theme saved stays dark and indigo', async () => {
-    stubSystem(true)
+  it('an existing Account with no theme saved gets the Default theme and the Default accent', async () => {
     setup()
     await openSettings()
 
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' })
-    expect(themeRadio(en.settings.appearance.themeName.dark)).toBeChecked()
-    expect(accentRadio(en.settings.appearance.accentName.indigo)).toBeChecked()
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
+    expect(themeRadio(en.settings.appearance.themeName.default)).toBeChecked()
+    expect(accentRadio(en.settings.appearance.accentName.default)).toBeChecked()
     expect(appearance()).toHaveTextContent(en.settings.appearance.lead)
   })
 
   it('Light applies at once, is saved, and a reload stays light', async () => {
-    stubSystem(false)
     const state = setup()
     const { user } = await openSettings()
 
@@ -98,11 +73,11 @@ describe('Settings › Appearance', () => {
     expect(html().dataset.theme).toBe('light')
     expect(themeRadio(en.settings.appearance.themeName.light)).toBeChecked()
     await waitFor(() => expect(state.me.ui_prefs.theme).toBe('light'))
-    expect(callsTo('/api/me/prefs', 'PATCH').at(-1)[1].body).toEqual({ theme: 'light', accent: 'indigo' })
+    expect(callsTo('/api/me/prefs', 'PATCH').at(-1)[1].body).toEqual({ theme: 'light', accent: 'default' })
 
     // A reload (which runs no unmount): main.jsx paints the cached choice before the profile arrives.
     const cached = window.localStorage.getItem('studybuddy.theme')
-    expect(JSON.parse(cached)).toEqual({ theme: 'light', accent: 'indigo' })
+    expect(JSON.parse(cached)).toEqual({ theme: 'light', accent: 'default' })
     cleanup()
     window.localStorage.setItem('studybuddy.theme', cached)
     delete html().dataset.theme
@@ -111,7 +86,6 @@ describe('Settings › Appearance', () => {
   })
 
   it('a failed save keeps the choice and shows an error line', async () => {
-    stubSystem(false)
     setup(PROFILE, {
       routes: {
         'PATCH /api/me/prefs': () => {
@@ -133,7 +107,6 @@ describe('Settings › Appearance', () => {
   })
 
   it('a choice made during a save is sent after it, in full: an earlier failure is overtaken by the latest success', async () => {
-    stubSystem(false)
     const sent = []
     let rejectFirst
     const state = setup(PROFILE, {
@@ -150,7 +123,7 @@ describe('Settings › Appearance', () => {
 
     await user.click(themeRadio(en.settings.appearance.themeName.light))
     await user.click(accentRadio(en.settings.appearance.accentName.violet))
-    expect(sent).toEqual([{ theme: 'light', accent: 'indigo' }]) // one save at a time
+    expect(sent).toEqual([{ theme: 'light', accent: 'default' }]) // one save at a time
 
     rejectFirst({ code: 'internal_error', params: {} })
 
@@ -162,7 +135,6 @@ describe('Settings › Appearance', () => {
   })
 
   it('when the latest choice fails to save after an earlier one succeeded, the error line shows', async () => {
-    stubSystem(false)
     const sent = []
     let resolveFirst
     setup(PROFILE, {
@@ -185,28 +157,35 @@ describe('Settings › Appearance', () => {
     expect(accentRadio(en.settings.appearance.accentName.blue)).toBeChecked()
   })
 
-  it('Match system follows the system setting live', async () => {
-    const system = stubSystem(true)
+  it('Dark applies the darker palette at once and is saved; Default goes back', async () => {
     const state = setup()
     const { user } = await openSettings()
 
-    await user.click(themeRadio(en.settings.appearance.themeName.system))
-
-    expect(html().dataset.theme).toBe('light')
-    await waitFor(() => expect(state.me.ui_prefs.theme).toBe('system'))
-    system.set(false)
+    await user.click(themeRadio(en.settings.appearance.themeName.dark))
     expect(html().dataset.theme).toBe('dark')
-    system.set(true)
-    expect(html().dataset.theme).toBe('light')
+    await waitFor(() => expect(state.me.ui_prefs.theme).toBe('dark'))
+
+    await user.click(themeRadio(en.settings.appearance.themeName.default))
+    expect(html().dataset.theme).toBe('default')
+    await waitFor(() => expect(state.me.ui_prefs.theme).toBe('default'))
+  })
+
+  it('there is no "Match system" option, and an old saved "system" reads as Default', async () => {
+    setup({ ...PROFILE, ui_prefs: { theme: 'system' } })
+    await openSettings()
+
+    const group = within(appearance()).getByRole('radiogroup', { name: en.settings.appearance.theme })
+    expect(within(group).getAllByRole('radio').map((radio) => radio.value)).toEqual(['default', 'light', 'dark'])
+    expect(themeRadio(en.settings.appearance.themeName.default)).toBeChecked()
+    expect(html().dataset.theme).toBe('default')
   })
 
   it('Violet turns the accent violet in either theme, and is saved', async () => {
-    stubSystem(false)
     const state = setup()
     const { user } = await openSettings()
 
     await user.click(accentRadio(en.settings.appearance.accentName.violet))
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'violet' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'violet' })
     await waitFor(() => expect(state.me.ui_prefs.accent).toBe('violet'))
 
     await user.click(themeRadio(en.settings.appearance.themeName.light))
@@ -220,21 +199,35 @@ describe('Settings › Appearance', () => {
     const group = within(appearance()).getByRole('radiogroup', { name: en.settings.appearance.accent })
     const radios = within(group).getAllByRole('radio')
     expect(radios.map((radio) => radio.closest('label').textContent)).toEqual(
-      ['indigo', 'blue', 'violet', 'cyan'].map((accent) => en.settings.appearance.accentName[accent]),
+      ['default', 'blue', 'violet', 'cyan'].map((accent) => en.settings.appearance.accentName[accent]),
     )
     expect(radios.map((radio) => radio.closest('label').querySelector('[data-accent]').dataset.accent)).toEqual([
-      'indigo',
+      'default',
       'blue',
       'violet',
       'cyan',
     ])
   })
 
-  it('Light and Violet chosen elsewhere apply after sign-in on a new browser; Login before it followed the system', async () => {
-    stubSystem(false)
-    // Login on a browser with nothing cached: the system theme (dark here) and indigo.
+  it('the Default swatch shows the current theme’s own accent, and an old saved "indigo" reads as Default', async () => {
+    setup({ ...PROFILE, ui_prefs: { accent: 'indigo' } })
+    const { user } = await openSettings()
+
+    expect(accentRadio(en.settings.appearance.accentName.default)).toBeChecked()
+    expect(html().dataset.accent).toBe('default')
+    // The swatch resets to the theme's own accent (tokens.css [data-accent='default']), whatever <html> has.
+    const swatch = accentRadio(en.settings.appearance.accentName.default).closest('label').querySelector('[data-accent]')
+    expect(swatch.dataset.accent).toBe('default')
+
+    await user.click(accentRadio(en.settings.appearance.accentName.cyan))
+    expect(swatch.dataset.accent).toBe('default')
+    expect(html().dataset.accent).toBe('cyan')
+  })
+
+  it('Light and Violet chosen elsewhere apply after sign-in on a new browser; Login before it was Default', async () => {
+    // Login on a browser with nothing cached: the Default theme and accent.
     applyInitialTheme('/')
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
 
     setup({ ...PROFILE, ui_prefs: { theme: 'light', accent: 'violet' } })
     renderRoute('/projects/bio')
@@ -243,16 +236,14 @@ describe('Settings › Appearance', () => {
     expect(cachedTheme()).toEqual({ theme: 'light', accent: 'violet' })
   })
 
-  it('signed-out pages (Login, the phone page) use the system theme and indigo', () => {
-    stubSystem(true)
+  it('signed-out pages (Login, the phone page) use the Default theme and accent', () => {
     applyInitialTheme('/')
-    expect(html().dataset).toMatchObject({ theme: 'light', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
     applyInitialTheme('/u/tok-1')
-    expect(html().dataset).toMatchObject({ theme: 'light', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
   })
 
-  it('Log out from a light, cyan choice: Login follows the system and nothing stays cached', async () => {
-    stubSystem(false)
+  it('Log out from a light, cyan choice: Login is Default with the Default accent and nothing stays cached', async () => {
     setup({ ...PROFILE, ui_prefs: { theme: 'light', accent: 'cyan' } })
     const { router, user } = await openSettings()
     await waitFor(() => expect(html().dataset).toMatchObject({ theme: 'light', accent: 'cyan' }))
@@ -261,12 +252,11 @@ describe('Settings › Appearance', () => {
     await user.click(within(section(en.settings.account.heading)).getByRole('button', { name: en.settings.account.logOut }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
-    expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' })
+    expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' })
     expect(cachedTheme()).toBeNull()
   })
 
-  it('a session that ends without Log out: Login follows the system with indigo and nothing stays cached', async () => {
-    stubSystem(false)
+  it('a session that ends without Log out: Login is Default with the Default accent and nothing stays cached', async () => {
     let signedOut
     vi.mocked(onSignedOut).mockImplementation((listener) => {
       signedOut = listener
@@ -283,7 +273,7 @@ describe('Settings › Appearance', () => {
     signedOut('session_expired')
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
-    await waitFor(() => expect(html().dataset).toMatchObject({ theme: 'dark', accent: 'indigo' }))
+    await waitFor(() => expect(html().dataset).toMatchObject({ theme: 'default', accent: 'default' }))
     expect(cachedTheme()).toBeNull()
   })
 

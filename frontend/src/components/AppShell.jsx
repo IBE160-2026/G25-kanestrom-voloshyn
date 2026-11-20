@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
-import { ACCOUNT_DEFAULT, accountChoice, applyAccountTheme, applySignedOutTheme, applyTheme, cachedTheme } from '../theme/index.js'
+import { DEFAULT_CHOICE, accountChoice, applyAccountTheme, applySignedOutTheme, applyTheme, cachedTheme } from '../theme/index.js'
 import Settings from '../pages/Settings.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import ProjectName from './ProjectName.jsx'
@@ -122,14 +122,14 @@ export default function AppShell() {
 
   // The Account's theme and accent (Settings › Appearance) on every signed-in page; until the profile
   // arrives, the cached choice. Leaving the signed-in pages (sign-out, an ended session) returns to
-  // the system theme with the default accent and forgets the cache, so the next Account on this
+  // the Default theme and accent and forgets the cache, so the next Account on this
   // browser doesn't inherit it.
   const theme = me ? accountChoice(me.ui_prefs) : null
   const chosenTheme = theme?.theme
   const chosenAccent = theme?.accent
   useEffect(() => {
     if (chosenTheme) applyAccountTheme({ theme: chosenTheme, accent: chosenAccent })
-    else applyTheme(cachedTheme() ?? ACCOUNT_DEFAULT)
+    else applyTheme(cachedTheme() ?? DEFAULT_CHOICE)
   }, [chosenTheme, chosenAccent])
   useEffect(() => () => applySignedOutTheme({ forget: true }), [])
 

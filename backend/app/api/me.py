@@ -64,9 +64,11 @@ class PrefsUpdate(BaseModel):
     sidebar_collapsed: StrictBool | None = None
     # {project_id: collapsed} for the Files panel (EXPERIENCE.md › Files strip); a few at a time.
     files_collapsed: Annotated[dict[UUID, StrictBool], Field(min_length=1, max_length=20)] | None = None
-    # Settings › Appearance: the theme and accent colour. An Account that never chose is dark and indigo.
-    theme: Literal["system", "light", "dark"] | None = None
-    accent: Literal["indigo", "blue", "violet", "cyan"] | None = None
+    # Settings › Appearance: the theme and accent colour ("default" is the theme's own accent). An
+    # Account that never chose has both defaults; an unknown saved value (an old "system" or
+    # "indigo") reads as "default" in the SPA.
+    theme: Literal["default", "light", "dark"] | None = None
+    accent: Literal["default", "blue", "violet", "cyan"] | None = None
 
     @model_validator(mode="after")
     def _not_empty(self) -> "PrefsUpdate":

@@ -41,7 +41,7 @@ export function useLogOut() {
     detachSignedOutListener()
     forgetRoute()
     await signOut()
-    // Login follows the system theme; the next reload doesn't paint this Account's choice.
+    // Login shows the Default theme; the next reload doesn't paint this Account's choice.
     applySignedOutTheme({ forget: true })
     navigate('/', { replace: true })
   }

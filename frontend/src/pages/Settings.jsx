@@ -404,12 +404,12 @@ function LanguageSection() {
   )
 }
 
-// Appearance (Cristoffer, 2026-11-20): the theme (Match system / Light / Dark) and the accent colour
+// Appearance (Cristoffer, 2026-11-20): the theme (Default / Light / Dark) and the accent colour
 // (four round swatches), saved to the Account in ui_prefs (PATCH /api/me/prefs). A choice applies at
 // once; a failed save keeps it and shows an error line, as Language does. Each save sends the full
 // `{ theme, accent }`, one at a time: a choice made during a save is sent after it (the latest wins),
-// and the error line reflects whether the latest choice saved. An Account that never chose shows Dark
-// and Indigo.
+// and the error line reflects whether the latest choice saved. An Account that never chose shows the
+// Default theme and the Default accent (the theme's own, so it changes with the theme).
 function AppearanceSection({ me, setMe }) {
   const { t } = useTranslation()
   const [saveError, setSaveError] = useState(null) // { apiError, attempt }
@@ -482,7 +482,8 @@ function AppearanceSection({ me, setMe }) {
                 checked={choice.accent === accent}
                 onChange={() => choose({ accent })}
               />
-              {/* The swatch takes this accent's primary colour in the current theme (tokens.css). */}
+              {/* The swatch takes this accent's primary colour in the current theme (tokens.css); the
+                  Default swatch shows the theme's own accent. */}
               <span className={styles.swatch} data-accent={accent} aria-hidden="true" />
               {t(`settings.appearance.accentName.${accent}`)}
             </label>

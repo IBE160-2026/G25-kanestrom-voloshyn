@@ -6,7 +6,7 @@ import App from './App.jsx'
 import { applyInitialTheme } from './theme/index.js'
 
 // The theme and accent before the first paint: the cached Account choice on a signed-in page, the
-// system theme elsewhere (Settings › Appearance).
+// Default theme elsewhere (Settings › Appearance).
 applyInitialTheme()
 
 createRoot(document.getElementById('root')).render(

@@ -1,78 +1,47 @@
-// The theme and accent (Settings › Appearance): set on <html> as `data-theme` ("light" | "dark") and
-// `data-accent`, which tokens.css turns into the colour tokens. "system" follows the operating
-// system's setting live. Signed-out pages use the system theme and the default accent; signed-in pages
-// use the Account's choice (`me.ui_prefs.theme` / `.accent`), cached in localStorage so a reload of a
-// signed-in page paints it before the profile arrives (a per-viewer convenience only).
+// The theme and accent (Settings › Appearance): set on <html> as `data-theme` ("default" | "light" |
+// "dark") and `data-accent`, which tokens.css turns into the colour tokens. Signed-out pages use the
+// Default theme with the default accent; signed-in pages use the Account's choice
+// (`me.ui_prefs.theme` / `.accent`), cached in localStorage so a reload of a signed-in page paints it
+// before the profile arrives (a per-viewer convenience only).
 
-export const THEMES = ['system', 'light', 'dark']
-export const ACCENTS = ['indigo', 'blue', 'violet', 'cyan']
-export const DEFAULT_ACCENT = 'indigo'
-// An Account that never chose keeps the dark theme, as before the choice existed.
-export const ACCOUNT_DEFAULT = { theme: 'dark', accent: DEFAULT_ACCENT }
-export const SIGNED_OUT = { theme: 'system', accent: DEFAULT_ACCENT }
+export const THEMES = ['default', 'light', 'dark']
+// "default" is the current theme's own accent (tokens.css), so it changes with the theme.
+export const ACCENTS = ['default', 'blue', 'violet', 'cyan']
+// An Account that never chose, and every signed-out page: the Default theme with its own accent.
+export const DEFAULT_CHOICE = { theme: 'default', accent: 'default' }
 
 const CACHE_KEY = 'studybuddy.theme'
-const LIGHT_QUERY = '(prefers-color-scheme: light)'
 
-let current = SIGNED_OUT
-let media = null // the MediaQueryList "system" listens to, while it does
-
-function lightQuery() {
-  try {
-    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(LIGHT_QUERY) : null
-  } catch {
-    return null
-  }
-}
-
-function paint() {
-  const root = document.documentElement
-  const resolved = current.theme === 'system' ? (lightQuery()?.matches ? 'light' : 'dark') : current.theme
-  root.dataset.theme = resolved
-  root.dataset.accent = current.accent
-}
-
-function onSystemChange() {
-  if (current.theme === 'system') paint()
-}
-
-function listen(on) {
-  if (on && !media) {
-    media = lightQuery()
-    media?.addEventListener?.('change', onSystemChange)
-  } else if (!on && media) {
-    media.removeEventListener?.('change', onSystemChange)
-    media = null
-  }
-}
-
-/** A valid `{ theme, accent }`: unknown or missing values fall back to `fallback`'s. */
-export function normalize(choice, fallback = ACCOUNT_DEFAULT) {
+/** A valid `{ theme, accent }`: unknown or missing values (such as an old "system" or
+ * "indigo") read as the default. */
+export function normalize(choice) {
   return {
-    theme: THEMES.includes(choice?.theme) ? choice.theme : fallback.theme,
-    accent: ACCENTS.includes(choice?.accent) ? choice.accent : fallback.accent,
+    theme: THEMES.includes(choice?.theme) ? choice.theme : DEFAULT_CHOICE.theme,
+    accent: ACCENTS.includes(choice?.accent) ? choice.accent : DEFAULT_CHOICE.accent,
   }
 }
 
-/** The Account's choice from its `ui_prefs`; no saved theme means dark, no saved accent indigo. */
+/** The Account's choice from its `ui_prefs`. */
 export function accountChoice(uiPrefs) {
-  return normalize(uiPrefs ?? {}, ACCOUNT_DEFAULT)
+  return normalize(uiPrefs ?? {})
 }
 
-/** Apply `{ theme, accent }` to <html> now; "system" also follows later changes of the system setting. */
+/** Apply `{ theme, accent }` to <html> now. */
 export function applyTheme(choice) {
-  current = normalize(choice, SIGNED_OUT)
-  listen(current.theme === 'system')
-  paint()
+  const { theme, accent } = normalize(choice)
+  const root = document.documentElement
+  root.dataset.theme = theme
+  root.dataset.accent = accent
 }
 
 /** Apply a signed-in Account's choice and remember it for the next reload. */
 export function applyAccountTheme(choice) {
-  applyTheme(choice)
+  const valid = normalize(choice)
+  applyTheme(valid)
   try {
-    window.localStorage.setItem(CACHE_KEY, JSON.stringify(current))
+    window.localStorage.setItem(CACHE_KEY, JSON.stringify(valid))
   } catch {
-    // storage blocked: only the next reload may briefly show the system theme
+    // storage blocked: only the next reload may briefly show the Default theme
   }
 }
 
@@ -80,13 +49,13 @@ export function applyAccountTheme(choice) {
 export function cachedTheme() {
   try {
     const raw = window.localStorage.getItem(CACHE_KEY)
-    return raw ? normalize(JSON.parse(raw), ACCOUNT_DEFAULT) : null
+    return raw ? normalize(JSON.parse(raw)) : null
   } catch {
     return null
   }
 }
 
-/** Signed out: forget the cached choice and follow the system theme with the default accent. */
+/** Signed out: the Default theme and accent; `forget` also drops the cached choice. */
 export function applySignedOutTheme({ forget = false } = {}) {
   if (forget) {
     try {
@@ -95,14 +64,14 @@ export function applySignedOutTheme({ forget = false } = {}) {
       // storage blocked: nothing was cached
     }
   }
-  applyTheme(SIGNED_OUT)
+  applyTheme(DEFAULT_CHOICE)
 }
 
 /**
- * Before the first render (main.jsx): a signed-in page (under /projects) paints the cached choice, or
- * the Account default until the profile arrives; every other page is signed out and follows the system.
+ * Before the first render (main.jsx): a signed-in page (under /projects) paints the cached choice;
+ * every other page, and a signed-in page with nothing cached, starts on the Default theme and accent.
  */
 export function applyInitialTheme(pathname = window.location.pathname) {
-  if (pathname === '/projects' || pathname.startsWith('/projects/')) applyTheme(cachedTheme() ?? ACCOUNT_DEFAULT)
-  else applyTheme(SIGNED_OUT)
+  const signedIn = pathname === '/projects' || pathname.startsWith('/projects/')
+  applyTheme((signedIn && cachedTheme()) || DEFAULT_CHOICE)
 }

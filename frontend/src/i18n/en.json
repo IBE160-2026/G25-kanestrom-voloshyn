@@ -306,12 +306,12 @@
       "theme": "Theme",
       "accent": "Accent colour",
       "themeName": {
-        "system": "Match system",
+        "default": "Default",
         "light": "Light",
         "dark": "Dark"
       },
       "accentName": {
-        "indigo": "Indigo",
+        "default": "Default",
         "blue": "Blue",
         "violet": "Violet",
         "cyan": "Cyan"

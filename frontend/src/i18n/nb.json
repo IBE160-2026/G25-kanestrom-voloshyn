@@ -307,12 +307,12 @@
       "theme": "Tema",
       "accent": "Aksentfarge",
       "themeName": {
-        "system": "Følg systemet",
+        "default": "Standard",
         "light": "Lyst",
         "dark": "Mørkt"
       },
       "accentName": {
-        "indigo": "Indigo",
+        "default": "Standard",
         "blue": "Blå",
         "violet": "Fiolett",
         "cyan": "Cyan"
