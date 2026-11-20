@@ -300,6 +300,23 @@
       "heading": "Language",
       "lead": "The language of buttons and messages. Your study material stays in the language of your files."
     },
+    "appearance": {
+      "heading": "Appearance",
+      "lead": "How Study Buddy looks on this and your other devices.",
+      "theme": "Theme",
+      "accent": "Accent colour",
+      "themeName": {
+        "system": "Match system",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "accentName": {
+        "indigo": "Indigo",
+        "blue": "Blue",
+        "violet": "Violet",
+        "cyan": "Cyan"
+      }
+    },
     "data": {
       "heading": "Your data",
       "lead": "A deleted project can be restored for 30 days.",

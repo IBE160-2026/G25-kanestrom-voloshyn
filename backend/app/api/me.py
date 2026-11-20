@@ -58,17 +58,20 @@ class PasswordCheck(BaseModel):
 
 
 class PrefsUpdate(BaseModel):
-    # Merged into ui_prefs. Either key may be sent alone; files_collapsed is merged per Project.
+    # Merged into ui_prefs. Any key may be sent alone; files_collapsed is merged per Project.
     model_config = ConfigDict(extra="forbid")
 
     sidebar_collapsed: StrictBool | None = None
     # {project_id: collapsed} for the Files panel (EXPERIENCE.md › Files strip); a few at a time.
     files_collapsed: Annotated[dict[UUID, StrictBool], Field(min_length=1, max_length=20)] | None = None
+    # Settings › Appearance: the theme and accent colour. An Account that never chose is dark and indigo.
+    theme: Literal["system", "light", "dark"] | None = None
+    accent: Literal["indigo", "blue", "violet", "cyan"] | None = None
 
     @model_validator(mode="after")
     def _not_empty(self) -> "PrefsUpdate":
-        if self.sidebar_collapsed is None and self.files_collapsed is None:
-            raise ValueError("send sidebar_collapsed or files_collapsed")
+        if all(value is None for value in (self.sidebar_collapsed, self.files_collapsed, self.theme, self.accent)):
+            raise ValueError("send sidebar_collapsed, files_collapsed, theme, or accent")
         return self
 
 

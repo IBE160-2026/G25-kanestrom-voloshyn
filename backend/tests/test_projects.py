@@ -307,6 +307,11 @@ def test_prefs_files_collapsed_merge_per_project(client, student, db):
         {},
         {"sidebar_collapsed": None},
         {"sidebar_collapsed": True, "theme": "x"},
+        {"theme": "pink"},
+        {"theme": None, "accent": None},
+        {"accent": "green"},
+        {"accent": 1},
+        {"theme": "Light"},
         {"files_collapsed": {}},
         {"files_collapsed": {"not-a-uuid": True}},
         {"files_collapsed": {"11111111-1111-1111-1111-111111111111": "yes"}},
@@ -317,6 +322,19 @@ def test_prefs_files_collapsed_merge_per_project(client, student, db):
 def test_prefs_refuse_a_malformed_body(client, student, payload):
     response = client.patch("/api/me/prefs", headers=bearer(student["token"]), json=payload)
     assert_error(response, 422, "invalid_request")
+
+
+def test_prefs_save_the_theme_and_accent(client, student):
+    headers = bearer(student["token"])
+    client.patch("/api/me/prefs", headers=headers, json={"sidebar_collapsed": True})
+
+    response = client.patch("/api/me/prefs", headers=headers, json={"theme": "light", "accent": "violet"})
+    assert response.status_code == 200, response.text
+    assert response.json()["ui_prefs"] == {"sidebar_collapsed": True, "theme": "light", "accent": "violet"}
+
+    response = client.patch("/api/me/prefs", headers=headers, json={"theme": "system"})
+    assert response.json()["ui_prefs"] == {"sidebar_collapsed": True, "theme": "system", "accent": "violet"}
+    assert client.get("/api/me", headers=headers).json()["ui_prefs"]["theme"] == "system"
 
 
 def test_prefs_without_token_is_unauthorized(client):

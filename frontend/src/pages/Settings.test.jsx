@@ -77,7 +77,7 @@ async function fillPassword(user, form, { current = CURRENT_PASSWORD, next = NEW
 }
 
 describe('Opening Settings', () => {
-  it('the Account menu opens Settings as an overlay over the current page, with the title and the three sections', async () => {
+  it('the Account menu opens Settings as an overlay over the current page, with the title and the four sections', async () => {
     setup()
     const user = userEvent.setup()
     const { router } = renderRoute('/projects/bio')
@@ -95,6 +95,7 @@ describe('Opening Settings', () => {
     expect(screen.getAllByRole('region').map((r) => within(r).getByRole('heading', { level: 2 }).textContent)).toEqual([
       en.settings.account.heading,
       en.settings.language.heading,
+      en.settings.appearance.heading,
       en.settings.data.heading,
     ])
   })

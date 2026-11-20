@@ -11,6 +11,7 @@ import DeleteAccountDialog from '../components/DeleteAccountDialog.jsx'
 import { useChooseLanguage, useDeleteAccount, useLogOut } from '../components/accountActions.js'
 import { errorText } from '../i18n/errors.js'
 import { LANGUAGES } from '../i18n/index.js'
+import { ACCENTS, THEMES, accountChoice, applyAccountTheme } from '../theme/index.js'
 import ChangePassword from './ChangePassword.jsx'
 import styles from './Settings.module.css'
 
@@ -25,10 +26,11 @@ function cleanName(raw) {
 // overlay over the page the student is on, opened from the Account menu (changed from a page at
 // /settings at Cristoffer's request on 2026-11-20). A click outside, Esc, or Close shuts it, and the
 // page behind is just as it was; focus goes back to the Account menu trigger (`returnFocus`). Esc in
-// an edited name field reverts the edit and leaves Settings open. It holds three stacked section
-// cards: Account (with Change password), Language, and Your data. The profile and the Projects come
-// from the shell; a failed profile load (`loadError`) shows an error line here, since the page behind
-// is hidden, and the Account card waits for the profile. The delete dialogs open on top of it.
+// an edited name field reverts the edit and leaves Settings open. It holds four stacked section
+// cards: Account (with Change password), Language, Appearance (once the profile has loaded), and
+// Your data. The profile and the Projects come from the shell; a failed profile load (`loadError`)
+// shows an error line here, since the page behind is hidden, and the Account card waits for the
+// profile. The delete dialogs open on top of it.
 // `linkError` is the error a return from Link Google account brought (Story 7.3b), shown in the Account card.
 export default function Settings({
   open,
@@ -79,6 +81,7 @@ export default function Settings({
             {!me && loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}
             {me && <AccountSection me={me} setMe={setMe} linkError={linkError} />}
             <LanguageSection />
+            {me && <AppearanceSection me={me} setMe={setMe} />}
             <DataSection projects={projects} deleteProject={deleteProject} />
           </div>
         </Dialog.Content>
@@ -391,6 +394,100 @@ function LanguageSection() {
             {t(`language.name.${lng}`)}
           </label>
         ))}
+      </div>
+      {saveError && (
+        <div className={styles.afterSwitch}>
+          <ErrorLine key={saveError.attempt}>{errorText(t, saveError.apiError)}</ErrorLine>
+        </div>
+      )}
+    </Section>
+  )
+}
+
+// Appearance (Cristoffer, 2026-11-20): the theme (Match system / Light / Dark) and the accent colour
+// (four round swatches), saved to the Account in ui_prefs (PATCH /api/me/prefs). A choice applies at
+// once; a failed save keeps it and shows an error line, as Language does. Each save sends the full
+// `{ theme, accent }`, one at a time: a choice made during a save is sent after it (the latest wins),
+// and the error line reflects whether the latest choice saved. An Account that never chose shows Dark
+// and Indigo.
+function AppearanceSection({ me, setMe }) {
+  const { t } = useTranslation()
+  const [saveError, setSaveError] = useState(null) // { apiError, attempt }
+  const attempt = useRef(0)
+  const saving = useRef(false)
+  const unsaved = useRef(null) // the latest full choice waiting to be sent
+  const themeName = useId()
+  const accentName = useId()
+  const choice = accountChoice(me.ui_prefs)
+
+  async function choose(change) {
+    const next = { ...choice, ...change }
+    if (next.theme === choice.theme && next.accent === choice.accent) return
+    setSaveError(null)
+    applyAccountTheme(next)
+    setMe((current) => (current ? { ...current, ui_prefs: { ...current.ui_prefs, ...next } } : current))
+    unsaved.current = next
+    if (saving.current) return
+    saving.current = true
+    let failure = null
+    while (unsaved.current) {
+      const body = unsaved.current
+      unsaved.current = null
+      try {
+        await apiFetch('/api/me/prefs', { method: 'PATCH', body })
+        failure = null
+      } catch (err) {
+        failure = err
+      }
+    }
+    saving.current = false
+    if (failure && !SIGNED_OUT_CODES.has(failure?.code)) {
+      attempt.current += 1
+      setSaveError({ apiError: failure, attempt: attempt.current })
+    }
+  }
+
+  return (
+    <Section heading={t('settings.appearance.heading')} lead={t('settings.appearance.lead')}>
+      <h3 id={themeName} className={styles.rowTitle}>
+        {t('settings.appearance.theme')}
+      </h3>
+      <div role="radiogroup" aria-labelledby={themeName} className={styles.switch}>
+        {THEMES.map((theme) => (
+          <label key={theme} className={styles.segment} data-checked={choice.theme === theme}>
+            <input
+              type="radio"
+              className={styles.radio}
+              name={themeName}
+              value={theme}
+              checked={choice.theme === theme}
+              onChange={() => choose({ theme })}
+            />
+            {t(`settings.appearance.themeName.${theme}`)}
+          </label>
+        ))}
+      </div>
+      <div className={styles.row}>
+        <h3 id={accentName} className={styles.rowTitle}>
+          {t('settings.appearance.accent')}
+        </h3>
+        <div role="radiogroup" aria-labelledby={accentName} className={styles.swatches}>
+          {ACCENTS.map((accent) => (
+            <label key={accent} className={styles.swatchOption} data-checked={choice.accent === accent}>
+              <input
+                type="radio"
+                className={styles.radio}
+                name={accentName}
+                value={accent}
+                checked={choice.accent === accent}
+                onChange={() => choose({ accent })}
+              />
+              {/* The swatch takes this accent's primary colour in the current theme (tokens.css). */}
+              <span className={styles.swatch} data-accent={accent} aria-hidden="true" />
+              {t(`settings.appearance.accentName.${accent}`)}
+            </label>
+          ))}
+        </div>
       </div>
       {saveError && (
         <div className={styles.afterSwitch}>

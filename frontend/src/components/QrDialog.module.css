@@ -46,6 +46,14 @@
   border-radius: var(--radius-lg);
 }
 
+/* In the light theme the tile would invert (light code on dark), which many phone cameras can't read:
+   keep dark code on a light tile there too. */
+:global(:root[data-theme='light']) .tile {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+
 .code,
 .placeholder {
   display: block;
