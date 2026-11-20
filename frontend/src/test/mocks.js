@@ -14,6 +14,7 @@ export function authMock() {
     setNewPassword: vi.fn(async () => ({ ok: true })),
     isGoogleEnabled: vi.fn(async () => false),
     signInWithGoogle: vi.fn(async () => ({ ok: true })),
+    linkGoogle: vi.fn(async () => ({ ok: true })),
     completeGoogleSignIn: vi.fn(async () => ({ ok: true })),
     GOOGLE_CALLBACK_PATH: '/auth/callback',
   }
@@ -24,6 +25,6 @@ export function clientMock() {
     apiFetch: vi.fn(),
     onSignedOut: vi.fn(() => () => {}),
     detachSignedOutListener: vi.fn(),
-    SIGNED_OUT_CODES: new Set(['unauthorized', 'session_expired']),
+    SIGNED_OUT_CODES: new Set(['unauthorized', 'session_expired', 'google_takeover']),
   }
 }

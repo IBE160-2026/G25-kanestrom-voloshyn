@@ -4,14 +4,14 @@ signed-in Account's profile (AD-19), Settings (FR-27), and Account deletion (FR-
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, model_validator
 
 from app import supabase_auth
 from app.api.conn import Conn
 from app.auth import CurrentUser, ReleasedUserAuth, UserAuth
 from app.errors import AppError
-from app.services import account, identity
+from app.services import account, identity, verification
 
 router = APIRouter()
 
@@ -142,6 +142,43 @@ async def check_password(body: PasswordCheck, user: ReleasedUserAuth, request: R
     if not await supabase_auth.check_password(state.http, state.settings, user.email, body.current_password):
         raise AppError(400, "wrong_password", "That isn't the current password")
     return Response(status_code=204)
+
+
+@router.post("/me/verification", status_code=204)
+async def resend_verification(user: UserAuth, conn: Conn, request: Request, background: BackgroundTasks) -> Response:
+    """Settings › Resend verification email (FR-1, FR-27): a new 24 h link that invalidates older ones,
+    emailed after the commit (AD-18). `409 already_verified` once verified, `409 no_password` without an
+    email identity. Not rate-limited. Account bookkeeping, on the AD-22 route-guard allowlist.
+    """
+    token, replaced = await verification.resend(
+        conn, user.account_id, "email" in user.providers and bool(user.email)
+    )
+    profile = await identity.get_profile(conn, user.account_id)
+    # Background tasks run after the response, so after `conn` has committed (AD-18).
+    background.add_task(
+        verification.send_verification_email,
+        request.app.state.settings,
+        request.app.state.pool,
+        user.email,
+        profile["first_name"],
+        profile["language"] or "en",
+        token,
+        replaced,
+    )
+    return Response(status_code=204)
+
+
+@router.post("/me/google-link", response_model=Me)
+async def google_linked(user: UserAuth, conn: Conn) -> Me:
+    """The SPA calls it after Settings › Link Google account returns (FR-19, FR-27): the first name now
+    follows Google. `409 link_failed` when the Account has no Google identity. `user_auth` has already
+    run the manual-link guard (AD-19). Account bookkeeping, on
+    the AD-22 route-guard allowlist.
+    """
+    if "google" not in user.providers:
+        # The link didn't happen (or was removed): don't let it look successful.
+        raise AppError(409, "link_failed", "The Account has no Google identity")
+    return to_me(await identity.link_google(conn, user.account_id, user.google_first_name), user)
 
 
 @router.delete("/me", status_code=204)

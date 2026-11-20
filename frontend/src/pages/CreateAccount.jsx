@@ -6,7 +6,6 @@ import { isEmail } from '../auth/email.js'
 import { hasSession, signUp } from '../auth/index.js'
 import AuthLayout from '../components/AuthLayout.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
-import GoogleButton from '../components/GoogleButton.jsx'
 import PasswordInput from '../components/PasswordInput.jsx'
 import { errorText } from '../i18n/errors.js'
 import styles from '../components/AuthForm.module.css'
@@ -16,8 +15,8 @@ const MAX_FIRST_NAME = 100 // the API's limit for first_name
 
 // Create account screen (FR-1, DESIGN.md › Create account screen). Signs up through supabase-js,
 // then tells the backend the first name and language (POST /api/auth/after-sign-in, AD-19).
-// "Sign in with Google" (FR-19) shows above the form when Google is configured; it continues on
-// /auth/callback, as from Login. The password is typed twice, and both must match (Cristoffer,
+// "Sign in with Google" (FR-19) is on Login only, not here: this screen is for creating an email Account
+// (Cristoffer, 2026-11-20). The password is typed twice, and both must match (Cristoffer,
 // 2026-11-20); both fields have the eye and the Caps Lock hint (PasswordInput).
 export default function CreateAccount() {
   const { t, i18n } = useTranslation()
@@ -102,7 +101,6 @@ export default function CreateAccount() {
       return <Trans i18nKey="signup.errors.duplicate" components={{ login: <Link to="/" /> }} />
     }
     if (error.kind === 'api') return errorText(t, error.apiError)
-    if (error.kind === 'googleFailed') return t('login.errors.failed')
     return t(`signup.errors.${error.kind}`)
   }
 
@@ -131,7 +129,6 @@ export default function CreateAccount() {
   return (
     <AuthLayout switchTo={{ to: '/', label: t('signup.logIn') }}>
       <form className={styles.panel} aria-label={t('signup.submit')} onSubmit={onSubmit} noValidate>
-        <GoogleButton onFail={() => fail('googleFailed')} />
         {field('firstName', 'text', 'given-name', firstName, setFirstName, { maxLength: MAX_FIRST_NAME })}
         {field('email', 'email', 'email', email, setEmail, { readOnly: signedUp })}
         {field('password', 'password', 'new-password', password, setPassword, { readOnly: signedUp })}

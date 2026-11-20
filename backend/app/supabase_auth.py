@@ -272,3 +272,54 @@ def google_profile(user: dict[str, Any]) -> GoogleProfile | None:
             picture_url=picture if picture and picture.startswith("https://") else None,
         )
     return None
+
+
+@dataclass(frozen=True)
+class GoogleIdentity:
+    """A Supabase user's Google identity: its `identity_id` (what unlinking takes) and its email."""
+
+    identity_id: str | None
+    email: str | None
+
+
+def google_identities(user: dict[str, Any]) -> tuple[GoogleIdentity, ...]:
+    """Every Google identity's id and email (the manual-link guard, AD-19); empty without one.
+
+    The email is the identity's `email`, else `identity_data.email`.
+    """
+    identities = user.get("identities")
+    if not isinstance(identities, list):
+        return ()
+    found = []
+    for identity in identities:
+        if not isinstance(identity, dict) or identity.get("provider") != "google":
+            continue
+        data = identity.get("identity_data")
+        data = data if isinstance(data, dict) else {}
+        found.append(
+            GoogleIdentity(
+                identity_id=_text(identity.get("identity_id")),
+                email=_text(identity.get("email")) or _text(data.get("email")),
+            )
+        )
+    return tuple(found)
+
+
+async def unlink_identity(client: httpx2.AsyncClient, settings: Settings, token: str, identity_id: str) -> None:
+    """Remove one of the user's own identities with `DELETE /auth/v1/user/identities/{id}` and the
+    user's token (the manual-link guard, AD-19). A 404 means already gone and is fine. A timeout,
+    connection error, or any other answer but 200/204 raises `auth_unavailable` (503). Neither the
+    token nor a response body is ever logged."""
+    try:
+        response = await client.delete(
+            f"/auth/v1/user/identities/{identity_id}",
+            headers={"apikey": settings.supabase_publishable_key, "Authorization": f"Bearer {token}"},
+        )
+    except httpx2.HTTPError as exc:
+        logger.warning("Supabase Auth unlink identity failed: %s", type(exc).__name__)
+        raise _unavailable(type(exc).__name__) from None
+    if response.status_code == 404:
+        return
+    if response.status_code not in (200, 204):
+        logger.warning("Supabase Auth answered %s to unlink identity", response.status_code)
+        raise _unavailable(f"HTTP {response.status_code}")

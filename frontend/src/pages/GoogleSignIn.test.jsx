@@ -43,8 +43,8 @@ afterEach(() => {
 const googleButton = (catalogue = en) => screen.findByRole('button', { name: catalogue.login.google })
 
 describe('Google button', () => {
-  it.each(['/', '/signup'])('shows on %s with the "or" divider above the email form', async (path) => {
-    renderRoute(path)
+  it('shows on Login with the "or" divider above the email form', async () => {
+    renderRoute('/')
     const button = await googleButton()
     expect(screen.getByText(en.login.or)).toBeInTheDocument()
     // It comes first in the panel, before the email field.
@@ -52,9 +52,17 @@ describe('Google button', () => {
     expect(button.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
-  it.each(['/', '/signup'])('is hidden on %s when Google is not configured', async (path) => {
+  it('is not on Create account, which is for an email Account (Cristoffer, 2026-11-20)', async () => {
+    renderRoute('/signup')
+    expect(await screen.findByLabelText(en.signup.firstName)).toBeInTheDocument()
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('button', { name: en.login.google })).not.toBeInTheDocument()
+    expect(screen.queryByText(en.login.or)).not.toBeInTheDocument()
+  })
+
+  it('is hidden on Login when Google is not configured', async () => {
     vi.mocked(isGoogleEnabled).mockResolvedValue(false)
-    renderRoute(path)
+    renderRoute('/')
     await waitFor(() => expect(isGoogleEnabled).toHaveBeenCalled())
     expect(screen.queryByRole('button', { name: en.login.google })).not.toBeInTheDocument()
     expect(screen.queryByText(en.login.or)).not.toBeInTheDocument()
@@ -69,13 +77,11 @@ describe('Google button', () => {
     expect(screen.getByRole('button', { name: en.login.google })).toBeDisabled()
   })
 
-  it.each([
-    ['/', en.login.errors.failed],
-    ['/signup', en.login.errors.failed],
-  ])('on %s, a sign-in that cannot start shows the Error line', async (path, message) => {
+  it('a sign-in that cannot start shows the Error line', async () => {
+    const message = en.login.errors.failed
     vi.mocked(signInWithGoogle).mockResolvedValue({ error: 'failed' })
     const user = userEvent.setup()
-    renderRoute(path)
+    renderRoute('/')
     await user.click(await googleButton())
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(screen.getByRole('button', { name: en.login.google })).toBeEnabled()

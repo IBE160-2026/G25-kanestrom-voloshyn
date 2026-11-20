@@ -1,7 +1,9 @@
 import { Dialog } from 'radix-ui'
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
+import { isGoogleEnabled, linkGoogle } from '../auth/index.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteProjectDialog from '../components/DeleteProjectDialog.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
@@ -27,7 +29,18 @@ function cleanName(raw) {
 // cards: Account (with Change password), Language, and Your data. The profile and the Projects come
 // from the shell; a failed profile load (`loadError`) shows an error line here, since the page behind
 // is hidden, and the Account card waits for the profile. The delete dialogs open on top of it.
-export default function Settings({ open, onClose, me, setMe, projects, deleteProject, loadError = null, returnFocus = null }) {
+// `linkError` is the error a return from Link Google account brought (Story 7.3b), shown in the Account card.
+export default function Settings({
+  open,
+  onClose,
+  me,
+  setMe,
+  projects,
+  deleteProject,
+  loadError = null,
+  linkError = null,
+  returnFocus = null,
+}) {
   const { t } = useTranslation()
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
@@ -64,7 +77,7 @@ export default function Settings({ open, onClose, me, setMe, projects, deletePro
           </div>
           <div className={styles.page}>
             {!me && loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}
-            {me && <AccountSection me={me} setMe={setMe} />}
+            {me && <AccountSection me={me} setMe={setMe} linkError={linkError} />}
             <LanguageSection />
             <DataSection projects={projects} deleteProject={deleteProject} />
           </div>
@@ -91,8 +104,9 @@ function Section({ heading, lead, headingRef = null, children }) {
 // Account: the large Avatar, the name, the email, the sign-in method, and Log out. An Account with a
 // Google identity shows its name read-only (it follows Google; the server refuses a change with
 // name_from_google); an email Account edits it in place. Change password is offered to every Account
-// with an email identity.
-function AccountSection({ me, setMe }) {
+// with an email identity. An email Account without Google (Story 7.3b) also gets "Link Google account"
+// once verified, or, until then, the muted "Verify your email first" with "Resend verification email".
+function AccountSection({ me, setMe, linkError }) {
   const { t } = useTranslation()
   const logOut = useLogOut()
   const methods = Array.isArray(me.sign_in_methods) ? me.sign_in_methods : ['email']
@@ -104,6 +118,16 @@ function AccountSection({ me, setMe }) {
         <div className={styles.whoText}>
           {google ? <p className={styles.name}>{me.first_name}</p> : <NameField me={me} setMe={setMe} />}
           {me.email && <p className={styles.email}>{me.email}</p>}
+          {/* An email Account whose address is confirmed says so (Cristoffer, 2026-11-20); until then the
+              "Verify your email first" row below stands instead. */}
+          {me.email && methods.includes('email') && me.email_verified && (
+            <p className={styles.verified}>
+              <svg className={styles.verifiedIcon} viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                <path d="M2.5 6.5l2.5 2.5 4.5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('settings.account.verified')}
+            </p>
+          )}
           {/* One line per sign-in method: an Account with both shows both. */}
           {methods.includes('email') && <p className={styles.via}>{t('settings.account.viaEmail')}</p>}
           {google && <p className={styles.via}>{t('settings.account.viaGoogle')}</p>}
@@ -113,7 +137,136 @@ function AccountSection({ me, setMe }) {
         </button>
       </div>
       {methods.includes('email') && <ChangePassword />}
+      {methods.includes('email') && !google && (me.email_verified ? <LinkGoogle /> : <ResendVerification setMe={setMe} />)}
+      {linkError && (
+        <div className={styles.row}>
+          <ErrorLine>{errorText(t, linkError)}</ErrorLine>
+        </div>
+      )}
     </Section>
+  )
+}
+
+// Link Google account (FR-19, FR-27): supabase-js `linkIdentity` sends the browser to Google and back to
+// /auth/callback, which lands on this same page with Settings open. Shown only when Google sign-in is
+// configured, as on Login. A link that can't start shows an error line.
+function LinkGoogle() {
+  const { t } = useTranslation()
+  const { pathname, search, hash } = useLocation()
+  const [enabled, setEnabled] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null) // { attempt }
+  const attempt = useRef(0)
+
+  useEffect(() => {
+    let live = true
+    isGoogleEnabled().then((on) => live && setEnabled(on === true))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  // Back from Google's consent page restores this page from the bfcache: usable again.
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) setBusy(false)
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
+
+  if (!enabled) return null
+
+  async function onClick() {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    const result = await linkGoogle(`${pathname}${search}${hash}`)
+    // On success the browser is leaving for Google: stay busy.
+    if (result?.error) {
+      setBusy(false)
+      attempt.current += 1
+      setError({ attempt: attempt.current })
+    }
+  }
+
+  return (
+    <div className={styles.row}>
+      <button type="button" className={styles.ghost} disabled={busy} aria-busy={busy} onClick={onClick}>
+        {t('settings.account.linkGoogle')}
+      </button>
+      {error && (
+        <div className={styles.afterSwitch}>
+          <ErrorLine key={error.attempt}>{t('errors.generic')}</ErrorLine>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Until the email is verified (FR-1, EXPERIENCE.md › State Patterns › Account): "Verify your email first"
+// (muted, not an error) in place of the link, and "Resend verification email" (POST /api/me/verification),
+// which sends a new 24-hour link and invalidates older ones. Not rate-limited; one request at a time.
+function ResendVerification({ setMe }) {
+  const { t } = useTranslation()
+  const id = useId()
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState(null) // { apiError, attempt }
+  const attempt = useRef(0)
+  const inFlight = useRef(false)
+
+  async function onClick() {
+    if (inFlight.current) return
+    inFlight.current = true
+    setBusy(true)
+    setSent(false)
+    setError(null)
+    try {
+      await apiFetch('/api/me/verification', { method: 'POST' })
+      setSent(true)
+    } catch (err) {
+      if (SIGNED_OUT_CODES.has(err?.code)) return
+      // Verified meanwhile (another tab, the emailed link): the row becomes Link Google account.
+      if (err?.code === 'already_verified') {
+        setMe((current) => (current ? { ...current, email_verified: true } : current))
+        return
+      }
+      attempt.current += 1
+      setError({ apiError: err, attempt: attempt.current })
+    } finally {
+      inFlight.current = false
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={styles.row}>
+      {/* Mounted empty, so the confirmation is announced when it arrives. */}
+      <p role="status" className={styles.status}>
+        {sent && t('settings.account.resent')}
+      </p>
+      <div className={styles.accountRow}>
+        <p id={`${id}-verify`} className={styles.muted}>
+          {t('settings.account.verifyFirst')}
+        </p>
+        <button
+          type="button"
+          className={styles.ghostSmall}
+          aria-describedby={`${id}-verify`}
+          disabled={busy}
+          aria-busy={busy}
+          onClick={onClick}
+        >
+          {t('settings.account.resend')}
+        </button>
+      </div>
+      {error && (
+        <div className={styles.afterSwitch}>
+          <ErrorLine key={error.attempt}>{errorText(t, error.apiError)}</ErrorLine>
+        </div>
+      )}
+    </div>
   )
 }
 

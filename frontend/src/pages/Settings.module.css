@@ -121,6 +121,23 @@
   overflow-wrap: anywhere;
 }
 
+/* "Email verified": muted text with an indigo check, as the file Ready dot (DESIGN.md Color-role rule 5:
+   green is for correct answers only). */
+.verified {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
+
+.verifiedIcon {
+  width: 12px;
+  height: 12px;
+  color: var(--color-primary);
+}
+
 .via {
   margin: var(--space-1) 0 0;
   font-size: var(--type-caption-size);
@@ -242,7 +259,8 @@
 }
 
 .primary:disabled,
-.ghost:disabled {
+.ghost:disabled,
+.ghostSmall:disabled {
   opacity: 0.38;
   cursor: progress;
 }
@@ -297,6 +315,13 @@
 
 .afterSwitch > p {
   margin-bottom: 0;
+}
+
+/* Account › "Verify your email first": muted, not an error (EXPERIENCE.md › State Patterns › Account). */
+.muted {
+  margin: 0;
+  font-size: var(--type-ui-size);
+  color: var(--color-text-muted);
 }
 
 /* Your data › Delete a project: the list of Projects, each with Delete. */

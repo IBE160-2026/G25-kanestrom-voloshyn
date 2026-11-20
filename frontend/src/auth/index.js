@@ -2,6 +2,7 @@
 // at runtime from GET /api/config, never from build-time values (AD-17).
 import { createClient } from '@supabase/supabase-js'
 import { apiFetch } from '../api/client.js'
+import { forgetLinkRoute, rememberLinkRoute } from './returnTo.js'
 
 // Where supabase-js keeps the session (localStorage). Named here, so signOut can always clear it.
 export const SESSION_STORAGE_KEY = 'studybuddy.auth'
@@ -57,6 +58,8 @@ export const GOOGLE_CALLBACK_PATH = '/auth/callback'
  * `{ error: 'failed' }` when it can't start. Never throws.
  */
 export async function signInWithGoogle() {
+  // A sign-in, not a link: an abandoned link's marker must not turn this return into one.
+  forgetLinkRoute()
   try {
     const supabase = await getSupabase()
     const { error } = await supabase.auth.signInWithOAuth({
@@ -67,6 +70,29 @@ export async function signInWithGoogle() {
   } catch {
     return { error: 'failed' }
   }
+}
+
+/**
+ * Start Settings › Link Google account (FR-19, FR-27, Story 7.3b) for the signed-in email Account:
+ * supabase-js `linkIdentity` sends the browser to Google's consent screen, which returns to
+ * /auth/callback. `route` (the page Settings is open over) is remembered first, so the callback treats
+ * the return as a link and lands there with Settings open. Resolves with `{ ok: true }` while the
+ * browser leaves, or `{ error: 'failed' }` (the marker is then dropped). Never throws.
+ */
+export async function linkGoogle(route) {
+  rememberLinkRoute(route)
+  try {
+    const supabase = await getSupabase()
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}${GOOGLE_CALLBACK_PATH}` },
+    })
+    if (!error) return { ok: true }
+  } catch {
+    // reported below
+  }
+  forgetLinkRoute()
+  return { error: 'failed' }
 }
 
 // Supabase's codes for a Google identity that already belongs to another Account.
