@@ -20,15 +20,6 @@
   flex-direction: column;
 }
 
-/* A page title in the Top bar (Settings), in the Project name's type (DESIGN.md › Typography, title). */
-.pageTitle {
-  margin: 0;
-  font-size: var(--type-title-size);
-  font-weight: var(--type-title-weight);
-  letter-spacing: var(--type-title-letter-spacing);
-  color: var(--color-text);
-}
-
 .alerts {
   padding: var(--space-3) var(--space-5) 0;
 }

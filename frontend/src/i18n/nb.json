@@ -261,6 +261,7 @@
   },
   "settings": {
     "title": "Innstillinger",
+    "close": "Lukk",
     "account": {
       "heading": "Konto",
       "leadEmail": "Navnet ditt og hvordan du logger inn.",

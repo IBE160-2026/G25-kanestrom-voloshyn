@@ -260,6 +260,7 @@
   },
   "settings": {
     "title": "Settings",
+    "close": "Close",
     "account": {
       "heading": "Account",
       "leadEmail": "Your name and how you sign in.",

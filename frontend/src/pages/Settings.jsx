@@ -1,6 +1,6 @@
+import { Dialog } from 'radix-ui'
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useOutletContext } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteProjectDialog from '../components/DeleteProjectDialog.jsx'
@@ -19,18 +19,58 @@ function cleanName(raw) {
   return Array.from(raw.trim()).slice(0, NAME_MAX_LENGTH).join('').trim()
 }
 
-// Settings (FR-27, FR-29, Story 7.3a; DESIGN.md › Settings section; EXPERIENCE.md › IA › Settings): one
-// page inside the app shell, reached from the Account menu, with three stacked section cards: Account
-// (with Change password), Language, and Your data. The profile and the Projects come from the shell;
-// a failed profile load shows the shell's error line, and the Account card waits for the profile.
-export default function Settings() {
-  const { me, setMe, projects, deleteProject } = useOutletContext()
+// Settings (FR-27, FR-29, Story 7.3a; DESIGN.md › Settings section; EXPERIENCE.md › IA › Settings): an
+// overlay over the page the student is on, opened from the Account menu (changed from a page at
+// /settings at Cristoffer's request on 2026-11-20). A click outside, Esc, or Close shuts it, and the
+// page behind is just as it was; focus goes back to the Account menu trigger (`returnFocus`). Esc in
+// an edited name field reverts the edit and leaves Settings open. It holds three stacked section
+// cards: Account (with Change password), Language, and Your data. The profile and the Projects come
+// from the shell; a failed profile load (`loadError`) shows an error line here, since the page behind
+// is hidden, and the Account card waits for the profile. The delete dialogs open on top of it.
+export default function Settings({ open, onClose, me, setMe, projects, deleteProject, loadError = null, returnFocus = null }) {
+  const { t } = useTranslation()
   return (
-    <div className={styles.page}>
-      {me && <AccountSection me={me} setMe={setMe} />}
-      <LanguageSection />
-      <DataSection projects={projects} deleteProject={deleteProject} />
-    </div>
+    <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={styles.scrim} />
+        <Dialog.Content
+          className={styles.dialog}
+          aria-describedby={undefined}
+          onEscapeKeyDown={(event) => {
+            const field = event.target
+            if (field instanceof HTMLInputElement && field.dataset.saved !== undefined && field.value !== field.dataset.saved) {
+              event.preventDefault()
+            }
+          }}
+          onCloseAutoFocus={(event) => {
+            const target = returnFocus?.current
+            if (target instanceof HTMLElement && target.isConnected) {
+              event.preventDefault()
+              target.focus()
+            }
+          }}
+        >
+          <div className={styles.header}>
+            <Dialog.Title asChild>
+              <h1 className={styles.title}>{t('settings.title')}</h1>
+            </Dialog.Title>
+            <Dialog.Close asChild>
+              <button type="button" className={styles.close} aria-label={t('settings.close')}>
+                <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                  <path d="M2 2l8 8M10 2l-8 8" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className={styles.page}>
+            {!me && loadError && <ErrorLine>{errorText(t, loadError)}</ErrorLine>}
+            {me && <AccountSection me={me} setMe={setMe} />}
+            <LanguageSection />
+            <DataSection projects={projects} deleteProject={deleteProject} />
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }
 
@@ -145,6 +185,8 @@ function NameField({ me, setMe }) {
         className={`${styles.input} ${styles.nameInput}`}
         type="text"
         autoComplete="given-name"
+        // Esc reverts an edit here instead of closing Settings (see the overlay's onEscapeKeyDown).
+        data-saved={me.first_name ?? ''}
         value={value}
         onChange={(event) => update(event.target.value)}
         onBlur={save}

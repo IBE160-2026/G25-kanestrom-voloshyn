@@ -9,7 +9,7 @@ import styles from './TopBar.module.css'
 // its inline rename, Story 2.1), the Account menu right, hairline below. The menu shows once the profile request has settled,
 // even if it failed (then without a name), so Language and Log out are always reachable.
 // A failed language save shows here, outside the menu, so it survives the menu closing.
-export default function TopBar({ me, ready, title = null }) {
+export default function TopBar({ me, ready, title = null, onOpenSettings, accountTriggerRef }) {
   const { t } = useTranslation()
   const [saveError, setSaveError] = useState(null) // { apiError, attempt }
   const attempt = useRef(0)
@@ -28,7 +28,7 @@ export default function TopBar({ me, ready, title = null }) {
           <ErrorLine key={saveError.attempt}>{errorText(t, saveError.apiError)}</ErrorLine>
         </div>
       )}
-      {ready && <AccountMenu me={me} onSaveError={onSaveError} />}
+      {ready && <AccountMenu me={me} onSaveError={onSaveError} onOpenSettings={onOpenSettings} triggerRef={accountTriggerRef} />}
     </header>
   )
 }

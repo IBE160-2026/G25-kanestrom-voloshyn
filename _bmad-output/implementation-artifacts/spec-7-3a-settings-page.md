@@ -24,7 +24,7 @@ context:
   - **(c) Section lead lines** taken from `mockups/key-settings.html`.
 
 **Approach:**
-- **Route:** `/settings` (signed-in, inside the AppShell); the Top bar title is "Settings" / "Innstillinger". The Account menu gets "Settings" / "Innstillinger" first, before Language (EXPERIENCE.md L71).
+- **Overlay** (changed by Cristoffer on 2026-11-20, see Amendments; first built as the route `/settings`): Settings opens over the current page, titled "Settings" / "Innstillinger", and a click outside, Esc, or Close returns to that page unchanged. The Account menu gets "Settings" / "Innstillinger" first, before Language (EXPERIENCE.md L71).
 - **One page, three stacked section cards** (DESIGN.md › Settings section):
   1. **Account** / **Konto**:
      - The large Avatar; the name; the email; a muted sign-in method, "Signs in with Google" / "Logger inn med Google" when the Account has a Google identity, otherwise "Signs in with email" / "Logger inn med e-post"; and a ghost "Log out".
@@ -73,6 +73,11 @@ context:
 | Norwegian | nb | every Settings string in Norwegian | N/A |
 
 </frozen-after-approval>
+
+## Amendments
+
+- **2026-11-20, Cristoffer (browser test):** Settings is an overlay instead of a page. It is a Radix modal dialog over the page the student is on, with no `/settings` route. A click outside, Esc, or Close (×) shuts it, the page behind stays as it was, and focus returns to the Account menu trigger. Esc in an edited name field reverts the edit and leaves Settings open. A failed profile load shows its error line inside the overlay. The delete dialogs open on top of it (z-index 50/51, above the overlay's 40/41).
+  - *Conflict with a final doc, pending approval:* EXPERIENCE.md L75 says "Settings: one page, three sections", and DESIGN.md L657 puts "Settings" in the Top bar title. The proposed wording, for Cristoffer or Ihor to move into EXPERIENCE.md: "Settings: an overlay over the current page, three sections; a click outside, Esc, or Close returns to that page."
 
 ## Code Map
 

@@ -48,10 +48,18 @@ function setup(options = {}) {
 
 const section = (name) => screen.getByRole('region', { name })
 
-async function openSettings(lang = en) {
-  const result = renderRoute('/settings')
+/** Opens Settings the way a student does: Account menu › Settings, over the page at `path`. */
+async function openSettings(lang = en, path = '/projects') {
+  const result = renderRoute(path)
+  await openFromMenu(lang)
   await screen.findByRole('region', { name: lang.settings.account.heading })
   return result
+}
+
+async function openFromMenu(lang = en, menu = new RegExp(`^${lang.account.welcome.split('{{')[0]}`)) {
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: menu }))
+  await user.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: lang.account.settings }))
 }
 
 const nameInput = () => within(section(en.settings.account.heading)).getByRole('textbox', { name: en.settings.account.firstName })
@@ -69,23 +77,47 @@ async function fillPassword(user, form, { current = CURRENT_PASSWORD, next = NEW
 }
 
 describe('Opening Settings', () => {
-  it('the Account menu opens /settings, with the title and the three sections', async () => {
+  it('the Account menu opens Settings as an overlay over the current page, with the title and the three sections', async () => {
     setup()
     const user = userEvent.setup()
-    const { router } = renderRoute('/projects')
+    const { router } = renderRoute('/projects/bio')
+    await screen.findByRole('button', { name: 'Welcome, Emma' })
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/bio'))
 
-    await user.click(await screen.findByRole('button', { name: 'Welcome, Emma' }))
+    await user.click(screen.getByRole('button', { name: 'Welcome, Emma' }))
     const menu = screen.getByRole('menu')
     expect(menu.querySelector('[role^="menuitem"]')).toHaveTextContent(en.account.settings)
     await user.click(within(menu).getByRole('menuitem', { name: en.account.settings }))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/settings'))
-    expect(await screen.findByRole('heading', { level: 1, name: en.settings.title })).toBeInTheDocument()
+    const dialog = await screen.findByRole('dialog', { name: en.settings.title })
+    expect(within(dialog).getByRole('heading', { level: 1, name: en.settings.title })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/projects/bio')
     expect(screen.getAllByRole('region').map((r) => within(r).getByRole('heading', { level: 2 }).textContent)).toEqual([
       en.settings.account.heading,
       en.settings.language.heading,
       en.settings.data.heading,
     ])
+  })
+
+  it.each([
+    ['a click outside', async (user) => user.click(document.body)],
+    ['Esc', async (user) => user.keyboard('{Escape}')],
+    ['Close', async (user) => user.click(screen.getByRole('button', { name: en.settings.close }))],
+  ])('%s closes Settings: the page behind is unchanged and focus is back on the Account menu', async (_, close) => {
+    setup()
+    // The scrim blocks pointer events, as in the browser; the click lands outside the panel.
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const { router } = renderRoute('/projects/bio')
+    await screen.findByRole('button', { name: 'Welcome, Emma' })
+    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/bio'))
+    await openFromMenu()
+    await screen.findByRole('dialog', { name: en.settings.title })
+
+    await close(user)
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(router.state.location.pathname).toBe('/projects/bio')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Welcome, Emma' })).toHaveFocus())
   })
 
   it('a failed profile load shows an error line', async () => {
@@ -96,7 +128,8 @@ describe('Opening Settings', () => {
         },
       },
     })
-    renderRoute('/settings')
+    renderRoute('/projects')
+    await openFromMenu(en, en.account.menu)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(en.errors.internal_error)
     expect(screen.queryByRole('region', { name: en.settings.account.heading })).not.toBeInTheDocument()
@@ -127,7 +160,7 @@ describe('Account (email)', () => {
     await user.clear(nameInput())
     await user.type(nameInput(), '  Ana {Enter}')
 
-    expect(await screen.findByRole('button', { name: 'Welcome, Ana' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Welcome, Ana', hidden: true })).toBeInTheDocument()
     expect(callsTo('/api/me', 'PATCH').map(([, options]) => options.body)).toEqual([{ first_name: 'Ana' }])
     expect(state.me.first_name).toBe('Ana')
     expect(nameInput()).toHaveValue('Ana')
@@ -146,7 +179,7 @@ describe('Account (email)', () => {
     await user.type(nameInput(), 'Ana')
     await user.tab()
 
-    expect(await screen.findByRole('button', { name: 'Welcome, Ana' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Welcome, Ana', hidden: true })).toBeInTheDocument()
   })
 
   it('a blank name reverts, with no request', async () => {
@@ -196,7 +229,7 @@ describe('Account (email)', () => {
     expect(nameInput()).toHaveValue('Bo')
     replies[1]()
 
-    expect(await screen.findByRole('button', { name: 'Welcome, Bo' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Welcome, Bo', hidden: true })).toBeInTheDocument()
     expect(callsTo('/api/me', 'PATCH').map(([, options]) => options.body)).toEqual([{ first_name: 'Ana' }, { first_name: 'Bo' }])
     expect(state.me.first_name).toBe('Bo')
     expect(nameInput()).toHaveValue('Bo')
@@ -225,7 +258,7 @@ describe('Account (email)', () => {
 
     await waitFor(() => expect(state.me.first_name).toBe('Emma'))
     expect(callsTo('/api/me', 'PATCH').map(([, options]) => options.body)).toEqual([{ first_name: 'Ana' }, { first_name: 'Emma' }])
-    expect(await screen.findByRole('button', { name: 'Welcome, Emma' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Welcome, Emma', hidden: true })).toBeInTheDocument()
   })
 
   it('Esc reverts an unsaved edit', async () => {
@@ -255,7 +288,7 @@ describe('Account (email)', () => {
 
     expect(await within(section(en.settings.account.heading)).findByRole('alert')).toHaveTextContent(en.errors.internal_error)
     expect(nameInput()).toHaveValue('Ana')
-    expect(screen.getByRole('button', { name: 'Welcome, Emma' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Welcome, Emma', hidden: true })).toBeInTheDocument()
   })
 
   it('Log out ends the session and goes to Login', async () => {
@@ -514,7 +547,7 @@ describe('Your data', () => {
   it('Delete opens the delete-project dialog; confirm moves it to Deleted projects', async () => {
     const state = setup()
     const user = userEvent.setup()
-    const { router } = await openSettings()
+    await openSettings()
 
     const row = dataRows().find((r) => r.textContent.includes('Biology'))
     await user.click(within(row).getByRole('button', { name: en.settings.data.delete }))
@@ -524,9 +557,9 @@ describe('Your data', () => {
     await waitFor(() => expect(dataRows().map((r) => r.textContent)).not.toContain(expect.stringContaining('Biology')))
     expect(dataRows()).toHaveLength(1)
     expect(state.stateChanges).toEqual(['delete bio'])
-    expect(router.state.location.pathname).toBe('/settings')
+    expect(screen.getByRole('dialog', { name: en.settings.title })).toBeInTheDocument()
     // The Sidebar's Deleted projects group now has two.
-    expect(screen.getByRole('button', { name: /^Deleted projects \(2\)$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Deleted projects \(2\)$/, hidden: true })).toBeInTheDocument()
   })
 
   it.each([
@@ -588,8 +621,8 @@ describe('Norwegian', () => {
     await user.click(within(form).getByRole('button', { name: nb.settings.password.save }))
     expect(within(form).getByRole('alert')).toHaveTextContent(nb.settings.password.mismatch)
 
-    await user.click(screen.getByRole('button', { name: 'Velkommen, Emma' }))
-    expect(screen.getByRole('menuitem', { name: nb.account.settings })).toBeInTheDocument()
+    // The overlay's own Close reads in Norwegian (the menu item was found by its Norwegian name above).
+    expect(screen.getByRole('button', { name: nb.settings.close })).toBeInTheDocument()
   })
 
   it('the Google variant reads in Norwegian too', async () => {

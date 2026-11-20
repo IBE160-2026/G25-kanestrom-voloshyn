@@ -39,8 +39,12 @@ afterEach(async () => {
 
 const dialogText = (lang) => lang.settings.deleteAccountDialog
 
+/** Opens Settings the way a student does: Account menu › Settings, over the Projects page. */
 async function openSettings(lang = en) {
-  const result = renderRoute('/settings')
+  const result = renderRoute('/projects')
+  const user = userEvent.setup()
+  await user.click(await screen.findByRole('button', { name: new RegExp(`^${lang.account.welcome.split('{{')[0]}`) }))
+  await user.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: lang.account.settings }))
   await screen.findByRole('region', { name: lang.settings.data.heading })
   return result
 }
@@ -127,7 +131,9 @@ describe('Confirm dialog (delete account)', () => {
 
     await close(user, dialog)
 
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    // Only the confirm dialog closes; Settings stays open under it.
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: dialogText(en).title })).not.toBeInTheDocument())
+    expect(screen.getByRole('dialog', { name: en.settings.title })).toBeInTheDocument()
     await waitFor(() => expect(entry()).toHaveFocus())
     expect(state.accountDeleted).toBe(false)
     expect(callsTo('/api/me', 'DELETE')).toHaveLength(0)
@@ -149,11 +155,8 @@ describe('Confirm dialog (delete account)', () => {
       return { ended: Promise.resolve() }
     })
     const user = userEvent.setup()
-    // Reach Settings from the app, so there is an app page to go Back to.
-    const { router } = renderRoute('/projects')
-    await screen.findByRole('navigation')
-    await router.navigate('/settings')
-    await screen.findByRole('region', { name: en.settings.data.heading })
+    // Settings opens over an app page, so there is an app page to go Back to.
+    const { router } = await openSettings()
     // A route remembered earlier is forgotten with the Account.
     window.sessionStorage.setItem(RETURN_TO_KEY, '/projects/bio')
     const dialog = await openDialog(user)
@@ -244,7 +247,8 @@ describe('Confirm dialog (delete account)', () => {
     expect(confirmButton(dialog)).toBeEnabled()
     expect(state.accountDeleted).toBe(false)
     expect(signOut).not.toHaveBeenCalled()
-    expect(router.state.location.pathname).toBe('/settings')
+    expect(router.state.location.pathname).not.toBe('/')
+    expect(screen.getByRole('region', { name: en.settings.data.heading, hidden: true })).toBeInTheDocument()
   })
 })
 

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useMatch, useNavigate, useParams } from 'react-router'
+import { Outlet, useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
+import Settings from '../pages/Settings.jsx'
 import ErrorLine from './ErrorLine.jsx'
 import ProjectName from './ProjectName.jsx'
 import Sidebar from './Sidebar.jsx'
@@ -22,14 +23,17 @@ function isActive(project) {
 }
 
 // The shell of the signed-in pages (DESIGN.md › Layout & Spacing): the Sidebar (or its strip), the
-// Top bar with the open Project's name (or "Settings" on /settings), and the page. It loads the profile and the Projects once
+// Top bar with the open Project's name, the page, and the Settings overlay (Story 7.3a). It loads the profile and the Projects once
 // and shares them with the pages through the outlet context. When the session has ended,
 // api/client.js and RequireSession take the student to Login, so no error is shown for that.
 export default function AppShell() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { projectId } = useParams()
-  const onSettings = useMatch('/settings') !== null
+  // Settings is an overlay over the current page, opened from the Account menu; focus returns to the menu.
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const accountTrigger = useRef(null)
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const [me, setMe] = useState(null)
   const [projects, setProjects] = useState(null) // null until loaded
   const [loadError, setLoadError] = useState(null)
@@ -253,7 +257,6 @@ export default function AppShell() {
   const deletedProjects = projects ? projects.filter((p) => p.deleted_at) : []
   const current = projectId ? projects?.find((p) => p.id === projectId) : null
   let title = current ? <ProjectName key={current.id} project={current} onRenamed={upsertProject} /> : null
-  if (onSettings) title = <h1 className={styles.pageTitle}>{t('settings.title')}</h1>
 
   return (
     <div className={styles.shell}>
@@ -275,7 +278,23 @@ export default function AppShell() {
         onRenamed={upsertProject}
       />
       <div className={styles.column}>
-        <TopBar me={me} ready={Boolean(me || loadError)} title={title} />
+        <TopBar
+          me={me}
+          ready={Boolean(me || loadError)}
+          title={title}
+          onOpenSettings={() => setSettingsOpen(true)}
+          accountTriggerRef={accountTrigger}
+        />
+        <Settings
+          open={settingsOpen}
+          onClose={closeSettings}
+          me={me}
+          setMe={setMe}
+          projects={projects}
+          deleteProject={deleteProject}
+          loadError={loadError}
+          returnFocus={accountTrigger}
+        />
         <main className={styles.main} aria-busy={!loadError && (!me || !projects)}>
           {(loadError || actionError) && (
             <div className={styles.alerts}>
@@ -286,7 +305,6 @@ export default function AppShell() {
           <Outlet
             context={{
               me,
-              // Settings saves the first name: the Top bar greeting follows at once (Story 7.3a).
               setMe,
               projects,
               activeProjects,
