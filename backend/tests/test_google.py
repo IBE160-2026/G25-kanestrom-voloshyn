@@ -47,8 +47,12 @@ def login(gotrue, email: str) -> dict:
 
 
 def seed_google(db, account_id: str, data: dict | None = None) -> None:
-    """Link a Google identity to the Account, as Supabase's automatic linking would."""
+    """Link a Google identity to the Account, as Supabase's automatic linking would: with the Account's
+    own email, unless `data` names another (a manual link, Story 7.3b)."""
     data = data if data is not None else {"name": "Emma Stone", "picture": PICTURE}
+    if "email" not in data:
+        email = db.execute("SELECT email FROM auth.users WHERE id = %s", (account_id,)).fetchone()[0]
+        data = {**data, "email": email}
     db.execute(
         """
         INSERT INTO auth.identities (provider_id, user_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
@@ -133,7 +137,12 @@ def test_after_sign_in_also_enforces_the_takeover_and_replaces_the_name(client, 
 
 
 def stubbed_user(account_id: str, email: str) -> dict:
-    return {"id": account_id, "email": email, "identities": [{"provider": "email"}, {"provider": "google"}]}
+    # The Google identity carries the Account's own email, as Supabase's automatic linking gives it.
+    return {
+        "id": account_id,
+        "email": email,
+        "identities": [{"provider": "email"}, {"provider": "google", "email": email}],
+    }
 
 
 def test_admin_failure_releases_the_claim_and_a_retry_takes_over(client, gotrue, db, created, stub_auth):

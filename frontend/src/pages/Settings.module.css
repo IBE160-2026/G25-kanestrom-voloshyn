@@ -242,7 +242,8 @@
 }
 
 .primary:disabled,
-.ghost:disabled {
+.ghost:disabled,
+.ghostSmall:disabled {
   opacity: 0.38;
   cursor: progress;
 }
@@ -297,6 +298,13 @@
 
 .afterSwitch > p {
   margin-bottom: 0;
+}
+
+/* Account › "Verify your email first": muted, not an error (EXPERIENCE.md › State Patterns › Account). */
+.muted {
+  margin: 0;
+  font-size: var(--type-ui-size);
+  color: var(--color-text-muted);
 }
 
 /* Your data › Delete a project: the list of Projects, each with Delete. */

@@ -276,7 +276,11 @@
       "firstName": "First name",
       "viaGoogle": "Signs in with Google",
       "viaEmail": "Signs in with email",
-      "logOut": "Log out"
+      "logOut": "Log out",
+      "linkGoogle": "Link Google account",
+      "verifyFirst": "Verify your email first",
+      "resend": "Resend verification email",
+      "resent": "We've sent a new link. It works for 24 hours."
     },
     "password": {
       "open": "Change password",
@@ -368,7 +372,10 @@
     "wrong_password": "That's not your current password.",
     "name_from_google": "Your name comes from your Google account.",
     "no_password": "This account signs in with Google and has no password.",
-    "too_many_attempts": "Too many tries. Wait a few minutes and try again."
+    "too_many_attempts": "Too many tries. Wait a few minutes and try again.",
+    "email_not_verified": "Verify your email before linking Google.",
+    "already_verified": "Your email is verified.",
+    "google_identity_in_use": "This Google account is already linked to another Study Buddy account."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

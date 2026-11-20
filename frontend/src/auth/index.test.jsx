@@ -10,9 +10,11 @@ const {
   verifyOtpMock,
   updateUserMock,
   oauthMock,
+  linkIdentityMock,
   exchangeMock,
 } = vi.hoisted(() => ({
     oauthMock: vi.fn(),
+    linkIdentityMock: vi.fn(),
     exchangeMock: vi.fn(),
     verifyOtpMock: vi.fn(),
     updateUserMock: vi.fn(),
@@ -31,6 +33,7 @@ vi.mock('@supabase/supabase-js', () => ({
       verifyOtp: verifyOtpMock,
       updateUser: updateUserMock,
       signInWithOAuth: oauthMock,
+      linkIdentity: linkIdentityMock,
       exchangeCodeForSession: exchangeMock,
       signOut: clientSignOutMock, // supabase-js drops its own copy of the session
       admin: { signOut: signOutMock }, // POST /logout with the session's own token
@@ -48,6 +51,7 @@ beforeEach(async () => {
   verifyOtpMock.mockReset()
   updateUserMock.mockReset()
   oauthMock.mockReset().mockResolvedValue({ data: {}, error: null })
+  linkIdentityMock.mockReset().mockResolvedValue({ data: {}, error: null })
   exchangeMock.mockReset()
   signOutMock.mockReset().mockResolvedValue({ error: null })
   clientSignOutMock.mockReset().mockResolvedValue({ error: null })
@@ -366,6 +370,43 @@ describe('Google sign-in', () => {
   ])('signInWithGoogle reports failed when it cannot start', async (impl) => {
     oauthMock.mockImplementation(impl)
     await expect(auth.signInWithGoogle()).resolves.toEqual({ error: 'failed' })
+  })
+
+  it('linkGoogle remembers the route, then starts linkIdentity back to /auth/callback (Story 7.3b)', async () => {
+    const { peekLinkRoute } = await import('./returnTo.js')
+    await expect(auth.linkGoogle('/projects/p1')).resolves.toEqual({ ok: true })
+    expect(linkIdentityMock).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+    expect(peekLinkRoute()).toBe('/projects/p1')
+    // A later plain Google sign-in drops the marker, so its return isn't taken for a link.
+    await auth.signInWithGoogle()
+    expect(peekLinkRoute()).toBeNull()
+  })
+
+  it.each([
+    [async () => ({ data: {}, error: { status: 500 } })],
+    [
+      async () => {
+        throw new TypeError('offline')
+      },
+    ],
+  ])('linkGoogle reports failed and drops the marker when it cannot start', async (impl) => {
+    const { peekLinkRoute } = await import('./returnTo.js')
+    linkIdentityMock.mockImplementation(impl)
+    await expect(auth.linkGoogle('/projects/p1')).resolves.toEqual({ error: 'failed' })
+    expect(peekLinkRoute()).toBeNull()
+  })
+
+  it.each([
+    ['/projects/p1', '/projects/p1'],
+    ['//evil.example', '/projects'],
+    [undefined, '/projects'],
+  ])('linkGoogle(%s) keeps only a safe app path: %s', async (route, kept) => {
+    const { peekLinkRoute } = await import('./returnTo.js')
+    await auth.linkGoogle(route)
+    expect(peekLinkRoute()).toBe(kept)
   })
 
   it('completeGoogleSignIn exchanges the code once, even when asked twice at once', async () => {

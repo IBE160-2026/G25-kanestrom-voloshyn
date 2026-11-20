@@ -342,7 +342,8 @@ describe('Change password', () => {
     expect(within(form).getByLabelText(en.settings.password.current)).toHaveFocus()
     await fillPassword(user, form)
 
-    expect(await screen.findByRole('status')).toHaveTextContent(en.settings.password.changed)
+    // The unverified Account's resend row has a status line of its own (Story 7.3b).
+    expect(await screen.findByText(en.settings.password.changed)).toHaveAttribute('role', 'status')
     expect(callsTo('/api/me/password/check', 'POST').map(([, options]) => options.body)).toEqual([
       { current_password: CURRENT_PASSWORD },
     ])

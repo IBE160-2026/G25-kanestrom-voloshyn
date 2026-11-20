@@ -277,7 +277,11 @@
       "firstName": "Fornavn",
       "viaGoogle": "Logger inn med Google",
       "viaEmail": "Logger inn med e-post",
-      "logOut": "Logg ut"
+      "logOut": "Logg ut",
+      "linkGoogle": "Koble til Google-konto",
+      "verifyFirst": "Bekreft e-postadressen din først",
+      "resend": "Send bekreftelseslenken på nytt",
+      "resent": "Vi har sendt en ny lenke. Den gjelder i 24 timer."
     },
     "password": {
       "open": "Endre passord",
@@ -369,7 +373,10 @@
     "wrong_password": "Det er ikke det nåværende passordet ditt.",
     "name_from_google": "Navnet ditt kommer fra Google-kontoen din.",
     "no_password": "Denne kontoen logger inn med Google og har ikke passord.",
-    "too_many_attempts": "For mange forsøk. Vent noen minutter og prøv igjen."
+    "too_many_attempts": "For mange forsøk. Vent noen minutter og prøv igjen.",
+    "email_not_verified": "Bekreft e-postadressen din før du kobler til Google.",
+    "already_verified": "E-postadressen din er bekreftet.",
+    "google_identity_in_use": "Denne Google-kontoen er allerede koblet til en annen Study Buddy-konto."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

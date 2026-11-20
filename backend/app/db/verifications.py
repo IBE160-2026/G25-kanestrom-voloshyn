@@ -50,15 +50,34 @@ async def used_and_verified(conn: AsyncConnection, token_hash: str) -> bool:
     return await cur.fetchone() is not None
 
 
-async def invalidate_unused(conn: AsyncConnection, account_id: UUID) -> None:
-    """Retire every link of the Account that was neither used nor already replaced."""
-    await conn.execute(
+async def invalidate_unused(conn: AsyncConnection, account_id: UUID) -> list[UUID]:
+    """Retire every link of the Account that was neither used nor already replaced; return their ids."""
+    cur = await conn.execute(
         """
         UPDATE email_verifications
         SET invalidated_at = now()
         WHERE account_id = %s AND used_at IS NULL AND invalidated_at IS NULL
+        RETURNING id
         """,
         (account_id,),
+    )
+    return [row[0] for row in await cur.fetchall()]
+
+
+async def restore_replaced(conn: AsyncConnection, ids: list[UUID]) -> None:
+    """Make the links a failed resend replaced live again, while still unused and unexpired, unless the
+    Account has a live link meanwhile (at most one live link per Account)."""
+    await conn.execute(
+        """
+        UPDATE email_verifications v
+        SET invalidated_at = NULL
+        WHERE v.id = ANY(%s) AND v.used_at IS NULL AND v.expires_at > now()
+          AND NOT EXISTS (
+            SELECT 1 FROM email_verifications live
+            WHERE live.account_id = v.account_id AND live.used_at IS NULL AND live.invalidated_at IS NULL
+          )
+        """,
+        (ids,),
     )
 
 

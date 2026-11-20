@@ -6,7 +6,7 @@ import binascii
 import json
 import re
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
@@ -63,6 +63,9 @@ class _ValidToken:
     email: str | None
     providers: frozenset[str]
     google: supabase_auth.GoogleProfile | None
+    google_identities: tuple[supabase_auth.GoogleIdentity, ...] = ()
+    # The bearer token itself, for the one call made as the student (the manual-link guard). Never logged.
+    token: str = field(default="", repr=False)
 
 
 async def _validated_token(request: Request) -> _ValidToken:
@@ -79,6 +82,8 @@ async def _validated_token(request: Request) -> _ValidToken:
         email=user.get("email"),
         providers=supabase_auth.providers(user),
         google=supabase_auth.google_profile(user),
+        google_identities=supabase_auth.google_identities(user),
+        token=token,
     )
 
 
@@ -100,6 +105,39 @@ def _needs_takeover(valid: _ValidToken, found: bool, verified_at: Any, takeover_
     """Step 4's gate: an email and a Google identity, and a profile that is missing or neither
     verified nor taken over. Settled Accounts pay only the one read that decides this."""
     return {"email", "google"} <= valid.providers and (not found or (verified_at is None and takeover_at is None))
+
+
+def _mismatching(valid: _ValidToken) -> list[supabase_auth.GoogleIdentity]:
+    """The Google identities whose email differs from the Account's (case-insensitive), or that have
+    none. Supabase links a Google sign-in automatically only when the emails match, so such an identity
+    was linked by hand. Called only behind `_needs_takeover`, so the Account is unverified."""
+    account_email = valid.email.casefold() if valid.email else None
+    return [
+        identity
+        for identity in valid.google_identities
+        if not identity.email or account_email is None or identity.email.casefold() != account_email
+    ]
+
+
+async def _remove_manual_links(
+    request: Request, valid: _ValidToken, manual: list[supabase_auth.GoogleIdentity]
+) -> None:
+    """The manual-link guard (AD-19), before any takeover: an unverified Account may not link Google by
+    hand. Each such identity is removed with the student's own token, so the password and the Account
+    stay as they were, and the answer is 409 email_not_verified. An identity without a usable id, or a
+    failed removal, is 503 auth_unavailable; nothing is removed when any id is unusable."""
+    ids = []
+    for identity in manual:
+        try:
+            ids.append(str(UUID(identity.identity_id)) if identity.identity_id else None)
+        except ValueError:
+            ids.append(None)
+    if None in ids:
+        raise AppError(503, "auth_unavailable", "Supabase Auth is unavailable (no identity id)")
+    state = request.app.state
+    for identity_id in ids:
+        await supabase_auth.unlink_identity(state.http, state.settings, valid.token, identity_id)
+    raise AppError(409, "email_not_verified", "Verify the email before linking Google")
 
 
 async def _google_takeover(request: Request, valid: _ValidToken) -> None:
@@ -168,6 +206,11 @@ async def _authenticate(request: Request, valid: _ValidToken, conn: AsyncConnect
     if {"email", "google"} <= valid.providers:
         found, verified_at, takeover_at = await profiles.takeover_state(conn, valid.account_id)
         if _needs_takeover(valid, found, verified_at, takeover_at):
+            # A Google identity with another email was linked by hand, not by a Google sign-in: it is
+            # removed, and nothing is taken over (AD-19). A same-email one proves the address.
+            manual = _mismatching(valid)
+            if manual:
+                await _remove_manual_links(request, valid, manual)
             await _google_takeover(request, valid)
 
     # 3. Every signed-in Account has a profile.

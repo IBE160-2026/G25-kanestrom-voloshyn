@@ -97,6 +97,7 @@
 - source_spec: none
   summary: Story 7.3b — Settings › "Link Google account" (linkIdentity, backend removes an unverified link with email_not_verified, "already linked" error, cancelled consent) and "Verify your email first" + "Resend verification email" (new 24 h link, older ones invalidated, "We've sent a new link. It works for 24 hours.").
   evidence: Split from Story 7.3 in the unattended run on 2026-11-20 because the full story was far over the spec size limit; 7.3a (the Settings page) ships alone.
+  resolved: 2026-11-20. Built in Story 7.3b (spec-7-3b-link-google-and-resend-verification.md).
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md`
   summary: Every current-password check signs in from the backend's one IP, so all students share Supabase's per-IP sign-in limit (`sign_in_sign_ups = 30`); add a per-Account attempt limit or forward the client IP.
@@ -104,6 +105,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md`
   summary: Story 7.3b must set a Google-linked Account's first name from the Google profile on linking, since Settings shows it read-only as "from your Google account".
   evidence: Review of 7.3a: `fill_unset` only fills an unset name.
+  resolved: 2026-11-20. Built in Story 7.3b (spec-7-3b-link-google-and-resend-verification.md).
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-4-delete-my-account.md`
   summary: Account deletion goes on to delete the auth user even when `storage.delete_prefix` failed (errors are swallowed), so the student's files can outlive the Account with no retry.

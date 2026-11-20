@@ -27,6 +27,9 @@ ALLOWLIST = {
     # Settings › Change password: checks the current password; changes no Project content (FR-27).
     ("POST", "/api/me/password/check"),
     ("POST", "/api/me/privacy-notice"),
+    # Settings › Resend verification email and the return from Link Google account (FR-27).
+    ("POST", "/api/me/verification"),
+    ("POST", "/api/me/google-link"),
     # Delete my account: removes the whole Account, read-only Projects included (FR-28).
     ("DELETE", "/api/me"),
     ("POST", "/api/me/notices/google-takeover/seen"),

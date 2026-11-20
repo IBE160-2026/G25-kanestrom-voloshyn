@@ -16,6 +16,7 @@ from psycopg_pool import AsyncConnectionPool
 from app import mailer
 from app.config import Settings
 from app.db import profiles, verifications
+from app.errors import AppError
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,36 @@ async def issue_first(conn: AsyncConnection, account_id: UUID, has_email_identit
     return await issue(conn, account_id)
 
 
+class AlreadyVerified(AppError):
+    def __init__(self) -> None:
+        super().__init__(409, "already_verified", "The email is already verified")
+
+
+class NoPassword(AppError):
+    def __init__(self) -> None:
+        super().__init__(409, "no_password", "The Account has no email identity")
+
+
+async def resend(conn: AsyncConnection, account_id: UUID, has_email_identity: bool) -> tuple[str, list[UUID]]:
+    """Issue a new link for Settings › Resend verification email (FR-1, FR-27): a fresh 24 h token that
+    invalidates every older one. Not rate-limited (decided 2026-11-16). `no_password` without an email
+    identity; `already_verified` once the email is verified (a Google takeover counts). The profile row
+    is locked, so concurrent resends leave one valid link.
+
+    Returns the token and the ids of the links it replaced: pass them to `send_verification_email`
+    as `restore`, so a failed send makes the older link live again instead of leaving none.
+    """
+    if not has_email_identity:
+        raise NoPassword()
+    found, verified_at = await profiles.lock_email_verified_at(conn, account_id)
+    if not found or verified_at is not None:
+        raise AlreadyVerified()
+    replaced = await verifications.invalidate_unused(conn, account_id)
+    token = secrets.token_urlsafe(TOKEN_BYTES)
+    await verifications.insert(conn, account_id, hash_token(token), VALID_FOR)
+    return token, replaced
+
+
 async def verify(conn: AsyncConnection, token: str | None) -> bool:
     """Use a link token: mark it used and set `email_verified_at` in the caller's transaction.
 
@@ -93,11 +124,13 @@ async def send_verification_email(
     first_name: str | None,
     language: str | None,
     token: str,
+    restore: list[UUID] | None = None,
 ) -> None:
     """Email the verification link. Runs after the commit (AD-18); a failure is logged, never raised.
 
     After a failed send the link is deleted in its own short transaction, so it doesn't count as
-    sent and the next `after-sign-in` issues and sends a fresh one.
+    sent and the next `after-sign-in` issues and sends a fresh one. For a resend, `restore` names the
+    links it replaced; they become live again, so the student keeps a working link.
     """
     subject, body = mailer.verification_email(language, first_name, verify_link(settings, token))
     try:
@@ -110,6 +143,8 @@ async def send_verification_email(
         async with pool.connection() as conn:
             async with conn.transaction():
                 await verifications.delete_unsent(conn, hash_token(token))
+                if restore:
+                    await verifications.restore_replaced(conn, restore)
     except Exception as exc:  # noqa: BLE001
         # The link then counts as sent; the next reminder comes after REMINDER_GAP.
         logger.warning("Unsent verification link could not be removed: %s", type(exc).__name__)

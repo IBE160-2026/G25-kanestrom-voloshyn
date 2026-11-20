@@ -125,6 +125,8 @@ export function fakeApi({
     batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
     photoRequests: [], // names of photos sent, accepted or refused, in order
     passwordChecks: 0, // POST /api/me/password/check calls (Story 7.3a)
+    verificationsSent: 0, // POST /api/me/verification calls answered 204 (Story 7.3b)
+    googleFirstName: null, // the Google first name POST /api/me/google-link takes (Story 7.3b)
     accountDeleted: false, // DELETE /api/me answered (Story 7.4)
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
@@ -156,6 +158,23 @@ export function fakeApi({
       if (!state.me.sign_in_methods?.includes('email')) throw rule('no_password')
       if (body.current_password !== CURRENT_PASSWORD) throw rule('wrong_password')
       return null
+    }
+    if (path === '/api/me/verification' && method === 'POST') {
+      // Resend verification email (Story 7.3b): like the server, 409 without an email identity or once verified.
+      if (!state.me.sign_in_methods?.includes('email')) throw rule('no_password')
+      if (state.me.email_verified) throw rule('already_verified')
+      state.verificationsSent += 1
+      return null
+    }
+    if (path === '/api/me/google-link' && method === 'POST') {
+      // After Link Google account (Story 7.3b): both sign-in methods, and the name follows Google
+      // (`googleFirstName` in the state, when a test sets it).
+      state.me = {
+        ...state.me,
+        first_name: state.googleFirstName ?? state.me.first_name,
+        sign_in_methods: ['email', 'google'],
+      }
+      return state.me
     }
     if (path === '/api/me/prefs' && method === 'PATCH') {
       // As the server: files_collapsed merges per Project (Story 2.2b).

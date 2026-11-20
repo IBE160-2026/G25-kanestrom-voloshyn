@@ -94,6 +94,14 @@ async def set_first_name(
     return await get_profile(conn, account_id)
 
 
+async def link_google(conn: AsyncConnection, account_id: UUID, google_first_name: str | None) -> dict[str, Any]:
+    """After Settings › Link Google account (FR-19, FR-27): a linked Account's name follows Google, so
+    the first name is replaced from Google (kept when Google gives none)."""
+    if google_first_name:
+        await profiles.set_first_name(conn, account_id, google_first_name)
+    return await get_profile(conn, account_id)
+
+
 class PrivacyNoticeRequired(AppError):
     def __init__(self) -> None:
         super().__init__(403, "privacy_notice_required", "Accept the privacy notice before the first upload")

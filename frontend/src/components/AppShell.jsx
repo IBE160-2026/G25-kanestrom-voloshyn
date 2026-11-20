@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useNavigate, useParams } from 'react-router'
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
 import Settings from '../pages/Settings.jsx'
@@ -33,7 +33,27 @@ export default function AppShell() {
   // Settings is an overlay over the current page, opened from the Account menu; focus returns to the menu.
   const [settingsOpen, setSettingsOpen] = useState(false)
   const accountTrigger = useRef(null)
-  const closeSettings = useCallback(() => setSettingsOpen(false), [])
+  // The error a return from Link Google account brought (Story 7.3b): `{ code, params }` or null.
+  const [linkError, setLinkError] = useState(null)
+  const closeSettings = useCallback(() => {
+    setSettingsOpen(false)
+    setLinkError(null)
+  }, [])
+  // /auth/callback lands here with `state.settings` after Link Google account: Settings opens with the
+  // link's error, if any; then the state is cleared (replace), so a reload or Back doesn't reopen it.
+  const location = useLocation()
+  const settingsRequest = location.state?.settings ?? null
+  const [settingsRequestKey, setSettingsRequestKey] = useState(null)
+  if (settingsRequest && settingsRequestKey !== location.key) {
+    setSettingsRequestKey(location.key)
+    setSettingsOpen(true)
+    setLinkError(settingsRequest.linkError ?? null)
+  }
+  useEffect(() => {
+    if (settingsRequest) {
+      navigate(`${location.pathname}${location.search}${location.hash}`, { replace: true, state: null })
+    }
+  }, [settingsRequest, navigate, location.pathname, location.search, location.hash])
   const [me, setMe] = useState(null)
   const [projects, setProjects] = useState(null) // null until loaded
   const [loadError, setLoadError] = useState(null)
@@ -293,6 +313,7 @@ export default function AppShell() {
           projects={projects}
           deleteProject={deleteProject}
           loadError={loadError}
+          linkError={linkError}
           returnFocus={accountTrigger}
         />
         <main className={styles.main} aria-busy={!loadError && (!me || !projects)}>
