@@ -54,3 +54,5 @@
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Oppdater EXPERIENCE.md L75 og DESIGN.md L657: Settings er nå et overlegg, ikke en side (forslaget til tekst står i spec-7-3a › Amendments).
 - [ ] 2026-11-20 [passordfelt](976-2026-11-20-13-01-33-passordfelt.md) — Godkjenn tekstene for vis/skjul passord, Caps Lock og «Gjenta passordet», og før dem inn i EXPERIENCE.md (L42, L405, Strings) sammen med det nye gjenta-feltet.
 - [ ] 2026-11-20 [drop-overlay](975-2026-11-20-13-06-05-drop-overlay.md) — Godkjenn «Drop files here» / «Slipp filene her» og før det fullskjerms slipp-overlegget inn i DESIGN.md og EXPERIENCE.md.
+- [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Godkjenn teksten for email_not_verified, og endre AD-19 i spine (fjerning med studentens token, ikke admin-API; en kobling med samme e-post gir takeover).
+- [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Vurder en enkel grense for «Send bekreftelseslenken på nytt», slik at knappen ikke kan brukes til å sende mange e-poster til en annen persons innboks.
