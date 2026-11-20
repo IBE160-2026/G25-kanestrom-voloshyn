@@ -21,3 +21,26 @@ Mens Ihor bygger Epic 4 og 5, og 7.5 venter til de er ferdige, ville Cristoffer 
 - Alle nye tekster i «Utseende» må godkjennes.
 - Endringer i de endelige dokumentene må godkjennes og føres inn av Cristoffer eller Ihor: PRD §7.2, DESIGN.md L592, spine L630 og EXPERIENCE.md L21, L75 og L831. Forslaget står i specens Implementation Notes.
 - Lyst tema er ikke sjekket manuelt i appen ennå (quiz-tilbakemelding, feillinjer, sidepanel, dialoger).
+
+## 2026-11-20 kl. 15:15 — crikan01
+
+### Oppgave
+Cristoffer testet i nettleseren og ba om endringer:
+- Lyst tema hadde for lite kontrast; sidepanelet og hovedflaten var nesten like hvite.
+- Mørkt skal være mørkere enn standardfargene.
+- «Følg systemet» skal bort, og det skal finnes et tema som heter Standard.
+- Aksentfargen «Standard» skal være temaets egen aksentfarge.
+
+### Plan
+- Endringene ble ført inn som en Amendment i specens Intent og sendt til samme implementeringsagent.
+
+### Resultat
+- `b76a1bb` på `feature/theme-options`:
+  - Temaene er nå Standard (dagens farger), Lyst og Mørkt (ny, nesten svart).
+  - Lyst har grå bakgrunn med hvite paneler og tydeligere linjer (overflate mot bakgrunn 1,20:1).
+  - Aksentfargen Standard er temaets egen. Blå, Fiolett og Cyan er faste valg.
+  - Lagrede verdier er `default`; gamle `system` og `indigo` leses som Standard.
+- Tester: backend 846 og frontend 855, alle grønne. Lint er ren. Docker er bygget på nytt.
+
+### Åpne punkter
+- Ingen nye. Tekstene, dokumentendringene og den manuelle sjekken av fargene står allerede i issues.md.
