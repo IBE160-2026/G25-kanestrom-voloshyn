@@ -14,3 +14,17 @@ Cristoffer: når man gir et prosjekt nytt navn (tittelen i toppfeltet eller «Gi
 
 ### Åpne punkter
 - EXPERIENCE.md L327 og L331 (final) sier bare «Enter saves, Esc cancels». Teksten «a click elsewhere cancels» bør legges til av Cristoffer eller Ihor.
+
+## 2026-11-20 kl. 15:25 — crikan01
+
+### Oppgave
+Cristoffer: alt fungerer, push og merge.
+
+### Plan
+- Pushe `fix/rename-click-away`, merge den inn i main med `--no-ff` og pushe main.
+
+### Resultat
+- Grenen er pushet og merget til main med «fix: cancel a project rename when the student clicks elsewhere». Main er pushet.
+
+### Åpne punkter
+- Ingen nye. Teksten i EXPERIENCE.md står i issues.md.
