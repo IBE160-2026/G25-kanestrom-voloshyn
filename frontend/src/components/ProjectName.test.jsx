@@ -221,6 +221,68 @@ describe('Top bar rename: keyboard and edge cases', () => {
   })
 })
 
+describe('Rename: a click elsewhere cancels (Cristoffer, 2026-11-20)', () => {
+  it('in the Top bar, a click elsewhere restores the old name, sends nothing, and leaves focus where it went', async () => {
+    fakeApi({ projects: [project('a', { name: 'Biology', name_source: 'student' })] })
+    const user = userEvent.setup()
+    renderRoute('/projects/a')
+
+    await user.click(await screen.findByRole('button', { name: 'Biology', description: en.projects.rename }))
+    const field = screen.getByRole('textbox', { name: en.projects.rename })
+    await user.type(field, ' changed')
+    await user.click(document.body)
+
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Biology' })).toBeInTheDocument()
+    expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
+    expect(screen.getByRole('button', { name: 'Biology', description: en.projects.rename })).not.toHaveFocus()
+  })
+
+  it('in the Sidebar row, a click elsewhere restores the link, sends nothing, and does not focus "···"', async () => {
+    fakeApi({ projects: [project('a', { name: 'Biology', name_source: 'student' })] })
+    const user = userEvent.setup()
+    renderRoute('/projects/a')
+    await screen.findByRole('heading', { level: 1, name: 'Biology' })
+
+    await user.click(screen.getByRole('button', { name: 'More options for Biology' }))
+    await user.click(await screen.findByRole('menuitem', { name: en.projects.rename }))
+    const field = await screen.findByRole('textbox', { name: en.projects.rename })
+    await waitFor(() => expect(field).toHaveFocus())
+    await user.type(field, ' changed')
+    await user.click(document.body)
+
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
+    expect(sidebarLinks()[0]).toHaveTextContent('Biology')
+    expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
+    expect(screen.getByRole('button', { name: 'More options for Biology' })).not.toHaveFocus()
+  })
+
+  it('a click elsewhere while a save is pending does not cancel it; the rename applies', async () => {
+    let release
+    fakeApi({
+      projects: [project('a', { name: 'Biology', name_source: 'student' })],
+      routes: {
+        'PATCH /api/projects/a': (body, state) =>
+          new Promise((resolve) => {
+            release = () => resolve({ ...state.projects[0], name: body.name.trim(), name_source: 'student' })
+          }),
+      },
+    })
+    const user = userEvent.setup()
+    renderRoute('/projects/a')
+
+    await user.click(await screen.findByRole('button', { name: 'Biology', description: en.projects.rename }))
+    await user.type(screen.getByRole('textbox', { name: en.projects.rename }), ' 101{Enter}')
+    await waitFor(() => expect(release).toBeTypeOf('function'))
+    await user.click(document.body)
+    expect(screen.getByRole('textbox', { name: en.projects.rename })).toBeInTheDocument()
+
+    release()
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Biology 101' })).toBeInTheDocument()
+  })
+})
+
 describe('Sidebar rename', () => {
   it('"···" › Rename opens the field in the row; Enter saves it in the row and the Top bar', async () => {
     fakeApi({

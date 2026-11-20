@@ -7,12 +7,14 @@ import styles from './ProjectName.module.css'
 
 // The Project name with inline rename (FR-5, EXPERIENCE.md › Top bar, Sidebar), shared by the Top
 // bar and the Sidebar row. Enter saves through PATCH /api/projects/{id}; Esc restores the old name
-// and sends nothing. The server trims, refuses a blank name (invalid_name), and cuts at 100
+// and sends nothing. A click elsewhere (the field loses focus) cancels like Esc, but leaves focus
+// where the student clicked (Cristoffer, 2026-11-20). The server trims, refuses a blank name (invalid_name), and cuts at 100
 // characters; a refusal shows under the field and keeps the old name.
 //
 // `variant="title"`: shows the name as the page title; clicking it starts a rename (not while the
 // Project is archived or deleted). `variant="sidebar"`: only the field, opened by the row's menu.
-// `editing`/`onEditingChange` make the editing state controlled (the Sidebar's menu opens it).
+// `editing`/`onEditingChange` make the editing state controlled (the Sidebar's menu opens it);
+// `onEditingChange(false, { clickedAway: true })` tells the caller not to move focus.
 export default function ProjectName({ project, onRenamed, variant = 'title', editing, onEditingChange }) {
   const { t } = useTranslation()
   const id = useId()
@@ -42,9 +44,10 @@ export default function ProjectName({ project, onRenamed, variant = 'title', edi
     setEditing(true)
   }
 
-  function close() {
-    refocus.current = true
-    setEditing(false)
+  // `clickedAway`: the field lost focus to a click elsewhere, so focus stays where it went.
+  function close({ clickedAway = false } = {}) {
+    refocus.current = !clickedAway
+    setEditing(false, { clickedAway })
   }
 
   async function save(event) {
@@ -95,6 +98,11 @@ export default function ProjectName({ project, onRenamed, variant = 'title', edi
           aria-busy={busy}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={onKeyDown}
+          // A click elsewhere cancels the rename (not while a save decides it, and not when the field
+          // is being removed after Enter or Esc closed it).
+          onBlur={(event) => {
+            if (!busy && event.currentTarget.isConnected) close({ clickedAway: true })
+          }}
         />
         {error && (
           <div id={`${id}-error`} className={styles.error}>

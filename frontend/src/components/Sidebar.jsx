@@ -188,9 +188,11 @@ export default function Sidebar({
                     project={project}
                     variant="sidebar"
                     editing
-                    onEditingChange={(next) => {
+                    onEditingChange={(next, { clickedAway = false } = {}) => {
                       if (next) return
-                      refocusId.current = project.id
+                      // After Enter or Esc, focus returns to the row's "···"; after a click
+                      // elsewhere it stays where the student clicked.
+                      if (!clickedAway) refocusId.current = project.id
                       setRenamingId(null)
                     }}
                     onRenamed={onRenamed}
