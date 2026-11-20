@@ -52,3 +52,4 @@
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Supabase-innlogginger fra serverens ene IP deler én felles grense for alle (deferred-work.md).
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Sletting av kontoen og ny registrering med samme e-post nullstiller dagens grenser (vurder).
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Oppdater EXPERIENCE.md L75 og DESIGN.md L657: Settings er nå et overlegg, ikke en side (forslaget til tekst står i spec-7-3a › Amendments).
+- [ ] 2026-11-20 [passordfelt](976-2026-11-20-13-01-33-passordfelt.md) — Godkjenn tekstene for vis/skjul passord, Caps Lock og «Gjenta passordet», og før dem inn i EXPERIENCE.md (L42, L405, Strings) sammen med det nye gjenta-feltet.
