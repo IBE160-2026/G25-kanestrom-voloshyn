@@ -47,3 +47,23 @@ Cristoffer bestemte på forhånd:
 - Story 7.3b, Koble til Google-konto og Send bekreftelseslenken på nytt, er ikke bygget. Ved kobling må fornavnet også settes fra Google.
 - Alle Supabase-innlogginger sendes fra serverens ene IP-adresse, så alle studentene deler samme grense. Ført i deferred-work.md.
 - Hvis slettingen av de lagrede filene feiler under kontosletting, blir filene liggende. Det har samme årsak som punktet fra 7.2b.
+
+## 2026-11-20 kl. 12:21 — crikan01
+
+### Oppgave
+Cristoffer testet i nettleseren: «Innstillinger» skulle ikke ta ham til en egen side, men åpne som et overlegg, og et klikk utenfor skulle ta ham tilbake dit han var.
+
+### Plan
+- Gjøre Settings om til en Radix-dialog over siden man står på, og fjerne ruten `/settings`.
+- Oppdatere testene og føre endringen inn som en Amendment i [spec-7-3a](../../_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md).
+
+### Resultat
+- `9b93cb3` på `feature/7-4-delete-account`:
+  - Settings åpnes fra kontomenyen som et overlegg. Klikk utenfor, Esc eller × lukker det, siden bak er uendret, og fokus går tilbake til kontomenyen.
+  - Esc i et endret navnefelt angrer endringen i stedet for å lukke.
+  - Når profilen ikke lastes, vises feilen inne i overlegget.
+  - Slettedialogene legger seg over overlegget.
+- Nye tester for de tre måtene å lukke på. Frontend: 777 tester grønne, lint ren. Docker er bygget på nytt.
+
+### Åpne punkter
+- EXPERIENCE.md L75 («Settings: one page») og DESIGN.md L657 (tittelen «Settings» i toppfeltet) er final og sier fortsatt at det er en side. Forslaget til ny tekst står i spec-7-3a under Amendments; Cristoffer eller Ihor fører det inn.
