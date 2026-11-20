@@ -67,3 +67,20 @@ Cristoffer testet i nettleseren: «Innstillinger» skulle ikke ta ham til en ege
 
 ### Åpne punkter
 - EXPERIENCE.md L75 («Settings: one page») og DESIGN.md L657 (tittelen «Settings» i toppfeltet) er final og sier fortsatt at det er en side. Forslaget til ny tekst står i spec-7-3a under Amendments; Cristoffer eller Ihor fører det inn.
+
+## 2026-11-20 kl. 13:12 — crikan01
+
+### Oppgave
+Cristoffer testet alt og ba om push og merge, med tittelen «bug fix and some features add finish 7.4».
+
+### Plan
+- Merke 7.4 som ferdig i sprint-status. 7.3 står som in-progress til 7.3b er bygget.
+- Pushe de fire feature-grenene, merge `feature/drop-overlay` (som inneholder alle) inn i main med `--no-ff`, og pushe main.
+
+### Resultat
+- `2cc7aab`: sprint-status, 7-4 er done og 7-3 er in-progress.
+- Pushet: `feature/7-3-settings`, `feature/7-4-delete-account`, `feature/password-fields` og `feature/drop-overlay`.
+- `7c2c4ec`: merge til main, «feat: finish Story 7.4, with bug fixes and added features». Main er pushet.
+
+### Åpne punkter
+- Ingen nye. Tekstene og oppdateringene av de endelige UX-dokumentene står allerede i issues.md.
