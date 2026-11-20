@@ -204,6 +204,7 @@
     "attention": "En fil trenger oppmerksomheten din",
     "upload": "Last opp",
     "types": "PDF, Word, PowerPoint, tekst, Markdown eller bilder (JPG, PNG, HEIC) · opptil 50 MB hver",
+    "dropOverlay": "Slipp filene her",
     "empty": "Ingen filer ennå. Notatene dine dukker opp her.",
     "limit": {
       "images_one": "{{count}} bilde igjen i dag",

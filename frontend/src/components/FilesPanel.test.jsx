@@ -220,6 +220,65 @@ describe('Uploading', () => {
     await waitFor(() => expect(state.materials.a).toHaveLength(2))
   })
 
+  describe('the full-screen drop overlay', () => {
+    const dragged = (files = [file('notes.txt')]) => ({ files, types: ['Files'], dropEffect: 'none' })
+
+    it('appears when files are dragged into the window, and a drop anywhere on it uploads them', async () => {
+      const { state } = await openProject({ materials: { a: [material('ok')] } })
+      expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument()
+
+      fireEvent.dragEnter(document.body, { dataTransfer: dragged() })
+      const overlay = await screen.findByTestId('drop-overlay')
+      expect(overlay).toHaveTextContent(en.files.dropOverlay)
+      expect(overlay).toHaveTextContent(en.files.types)
+
+      const dataTransfer = dragged()
+      expect(fireEvent.dragOver(overlay, { dataTransfer })).toBe(false) // a drop is allowed
+      fireEvent.drop(overlay, { dataTransfer })
+
+      await waitFor(() => expect(state.materials.a).toHaveLength(2))
+      expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument()
+    })
+
+    it('leaving the window or ending the drag hides it, and nothing is uploaded', async () => {
+      await openProject()
+      fireEvent.dragEnter(document.body, { dataTransfer: dragged() })
+      fireEvent.dragLeave(await screen.findByTestId('drop-overlay'), { relatedTarget: null })
+      await waitFor(() => expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument())
+
+      fireEvent.dragEnter(document.body, { dataTransfer: dragged() })
+      await screen.findByTestId('drop-overlay')
+      fireEvent.dragEnd(window)
+      await waitFor(() => expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument())
+      expect(uploads()).toHaveLength(0)
+    })
+
+    it('a drag that is not files (text, a link) shows no overlay', async () => {
+      await openProject()
+      fireEvent.dragEnter(document.body, { dataTransfer: { types: ['text/plain'] } })
+      expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument()
+    })
+
+    it('a read-only Project shows no overlay', async () => {
+      fakeApi({ projects: [project('a', { archived_at: '2026-11-17T00:00:00Z' })] })
+      renderRoute('/projects/a')
+      await screen.findAllByRole('button', { name: en.projects.restore })
+      fireEvent.dragEnter(document.body, { dataTransfer: dragged() })
+      expect(screen.queryByTestId('drop-overlay')).not.toBeInTheDocument()
+    })
+
+    it('reads in Norwegian', async () => {
+      await i18n.changeLanguage('nb')
+      try {
+        await openProject({ me: { ...PROFILE, language: 'nb' } })
+        fireEvent.dragEnter(document.body, { dataTransfer: dragged() })
+        expect(await screen.findByTestId('drop-overlay')).toHaveTextContent(nb.files.dropOverlay)
+      } finally {
+        await i18n.changeLanguage('en')
+      }
+    })
+  })
+
   it.each([
     ['unsupported-type.rtf', undefined, en.errors.unsupported_file_type],
     ['notes-photo.gif', undefined, en.errors.unsupported_file_type],

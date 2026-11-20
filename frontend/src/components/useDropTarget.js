@@ -47,3 +47,46 @@ export function useDropTarget(onFiles, enabled) {
     },
   }
 }
+
+/**
+ * A drop anywhere in the window (Cristoffer, 2026-11-20): once a file drag enters the window, `active`
+ * is true and the caller shows a full-screen overlay with `handlers`. Leaving the window, ending the
+ * drag, or dropping hides it; a drop on the overlay gives the files to `onFiles`.
+ */
+export function useWindowFileDrop(onFiles, enabled) {
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    if (!enabled) return undefined
+    const show = (event) => {
+      if (isFileDrag(event)) setActive(true)
+    }
+    const hide = () => setActive(false)
+    window.addEventListener('dragenter', show)
+    window.addEventListener('dragend', hide)
+    window.addEventListener('drop', hide)
+    return () => {
+      window.removeEventListener('dragenter', show)
+      window.removeEventListener('dragend', hide)
+      window.removeEventListener('drop', hide)
+      setActive(false)
+    }
+  }, [enabled])
+  return {
+    active: enabled && active,
+    handlers: {
+      onDragOver(event) {
+        event.preventDefault()
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy'
+      },
+      // Its children take no pointer events, so this fires only when the drag leaves the window.
+      onDragLeave(event) {
+        if (!event.currentTarget.contains(event.relatedTarget)) setActive(false)
+      },
+      onDrop(event) {
+        event.preventDefault()
+        setActive(false)
+        onFiles(event.dataTransfer?.files)
+      },
+    },
+  }
+}

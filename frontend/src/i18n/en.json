@@ -203,6 +203,7 @@
     "attention": "A file needs your attention",
     "upload": "Upload",
     "types": "PDF, Word, PowerPoint, text, Markdown, or photos (JPG, PNG, HEIC) · up to 50 MB each",
+    "dropOverlay": "Drop files here",
     "empty": "No files yet. Your notes will show up here.",
     "limit": {
       "images_one": "{{count}} image left today",

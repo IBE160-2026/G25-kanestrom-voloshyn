@@ -1,0 +1,50 @@
+/* Full-screen drop overlay: the scrim with a blur over the whole app, a primary-coloured frame inset
+   from the window edge, and the centred icon and text. Only the overlay itself takes pointer events,
+   so a drag over its text never counts as leaving it. Below the dialogs (50/51). */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: var(--color-scrim);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay > * {
+  pointer-events: none;
+}
+
+.frame {
+  position: absolute;
+  inset: var(--space-3);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-xl);
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+  text-align: center;
+}
+
+.icon {
+  width: 48px;
+  height: 48px;
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+.types {
+  margin: 0;
+  font-size: var(--type-caption-size);
+  color: var(--color-text-muted);
+}
