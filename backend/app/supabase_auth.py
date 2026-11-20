@@ -150,6 +150,69 @@ async def set_password(client: httpx2.AsyncClient, settings: Settings, account_i
         raise _unavailable(f"HTTP {response.status_code}")
 
 
+async def check_password(client: httpx2.AsyncClient, settings: Settings, email: str, password: str) -> bool:
+    """Whether `password` is the Account's current password (Settings › Change password, FR-27).
+
+    Signs in with `POST /auth/v1/token?grant_type=password` and the publishable key. On 200 the
+    session this created is ended at once (`POST /auth/v1/logout?scope=local`) and True is returned;
+    a 400 `invalid_credentials` returns False; a 429 (Supabase's sign-in rate limit) raises
+    `too_many_attempts` (429). A timeout, connection error, or any other answer raises
+    `auth_unavailable` (503). A failed logout is logged, not raised: the password was right, and the
+    extra session ends with its token's expiry. Neither the password nor a response body is ever logged.
+    """
+    headers = {"apikey": settings.supabase_publishable_key}
+    try:
+        response = await client.post(
+            "/auth/v1/token",
+            params={"grant_type": "password"},
+            headers=headers,
+            json={"email": email, "password": password},
+        )
+    except httpx2.HTTPError as exc:
+        logger.warning("Supabase Auth password check failed: %s", type(exc).__name__)
+        raise _unavailable(type(exc).__name__) from None
+
+    if response.status_code == 400:
+        try:
+            code = response.json().get("error_code")
+        except (ValueError, AttributeError):
+            code = None
+        if code == "invalid_credentials":
+            return False
+        logger.warning("Supabase Auth answered 400 (%s) to the password check", code)
+        raise _unavailable("HTTP 400")
+    if response.status_code == 429:
+        logger.warning("Supabase Auth rate-limited the password check")
+        raise AppError(429, "too_many_attempts", "Too many password checks; wait and try again")
+    if response.status_code != 200:
+        logger.warning("Supabase Auth answered %s to the password check", response.status_code)
+        raise _unavailable(f"HTTP {response.status_code}")
+    try:
+        token = response.json()["access_token"]
+    except (ValueError, KeyError, TypeError):
+        raise _unavailable("no access token") from None
+    if not isinstance(token, str) or not token:
+        raise _unavailable("no access token")
+    await _end_session(client, settings, token)
+    return True
+
+
+async def _end_session(client: httpx2.AsyncClient, settings: Settings, token: str) -> None:
+    """End only the session `token` belongs to, as supabase-js `signOut({scope: 'local'})` does.
+    A failure is logged (never the token) and swallowed."""
+    try:
+        response = await client.post(
+            "/auth/v1/logout",
+            params={"scope": "local"},
+            headers={"apikey": settings.supabase_publishable_key, "Authorization": f"Bearer {token}"},
+        )
+    except httpx2.HTTPError as exc:
+        logger.warning("Supabase Auth logout after the password check failed: %s", type(exc).__name__)
+        return
+    if response.status_code not in (200, 204):
+        logger.warning("Supabase Auth answered %s to the logout after the password check", response.status_code)
+
+
 # The profile's first_name column allows at most 100 characters.
 _MAX_FIRST_NAME = 100
 

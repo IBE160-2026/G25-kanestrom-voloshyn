@@ -42,7 +42,13 @@ def test_patch_me_saves_language_and_returns_profile(client, gotrue, db, created
     response = client.patch("/api/me", headers=bearer(token), json={"language": "nb"})
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"first_name": "Emma", "language": "nb", "email_verified": False, **NO_PREFS}
+    assert response.json() == {
+        "first_name": "Emma",
+        "language": "nb",
+        "email_verified": False,
+        "email": body["user"]["email"],
+        **NO_PREFS,
+    }
     row = db.execute("SELECT language FROM profiles WHERE account_id = %s", (body["user"]["id"],)).fetchone()
     assert row == ("nb",)
     assert client.get("/api/me", headers=bearer(token)).json()["language"] == "nb"
@@ -68,11 +74,13 @@ def test_after_sign_in_elsewhere_returns_the_saved_language(client, gotrue, crea
         {"language": "de"},
         {"language": None},
         {},
-        {"language": "nb", "first_name": "Other"},
+        {"language": None, "first_name": None},
         {"language": "nb", "last_project_id": None},
+        {"first_name": 5},
+        {"email": "other@example.com"},
     ],
 )
-def test_patch_me_refuses_anything_but_a_language(client, gotrue, db, created, payload):
+def test_patch_me_refuses_anything_but_a_language_or_name(client, gotrue, db, created, payload):
     body = signed_up_with_profile(client, gotrue, created, "en")
 
     response = client.patch("/api/me", headers=bearer(body["access_token"]), json=payload)

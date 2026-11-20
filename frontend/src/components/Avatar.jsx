@@ -10,12 +10,12 @@ function initials(firstName) {
 // Avatar (DESIGN.md › Avatar): the Google profile photo for an Account with Google linked
 // (`pictureUrl` from /api/me, linked and never stored, FR-27), otherwise the initials. A photo that
 // fails to load falls back to the initials. Decorative: the name next to it, or the trigger's
-// label, says who it is.
-export default function Avatar({ firstName, pictureUrl = null }) {
+// label, says who it is. `size`: 'sm' in the Account menu, 'lg' in Settings (avatar.size-settings).
+export default function Avatar({ firstName, pictureUrl = null, size = 'sm' }) {
   const [failedUrl, setFailedUrl] = useState(null)
   const photo = typeof pictureUrl === 'string' && pictureUrl && pictureUrl !== failedUrl ? pictureUrl : null
   return (
-    <span className={styles.avatar} aria-hidden="true">
+    <span className={size === 'lg' ? `${styles.avatar} ${styles.large}` : styles.avatar} aria-hidden="true">
       {photo ? (
         <img
           className={styles.photo}

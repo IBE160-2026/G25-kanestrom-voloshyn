@@ -16,7 +16,12 @@ export const PROFILE = {
   ui_prefs: {},
   last_project_id: null,
   privacy_notice_accepted: true,
+  email: 'emma@example.com',
+  sign_in_methods: ['email'],
 }
+
+// The current password the fake's POST /api/me/password/check accepts (Story 7.3a).
+export const CURRENT_PASSWORD = 'correct-horse-1'
 
 export function project(id, overrides = {}) {
   return {
@@ -118,6 +123,7 @@ export function fakeApi({
     links: [], // phone links: { link_id, token, project_id, expires_at, revoked } (Story 6.1)
     batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
     photoRequests: [], // names of photos sent, accepted or refused, in order
+    passwordChecks: 0, // POST /api/me/password/check calls (Story 7.3a)
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
@@ -131,7 +137,18 @@ export function fakeApi({
       const active = last && !last.archived_at && !last.deleted_at
       return { ...state.me, last_project_id: active ? last.id : null }
     }
-    if (path === '/api/me' && method === 'PATCH') return Object.assign(state.me, body)
+    if (path === '/api/me' && method === 'PATCH') {
+      // Settings (Story 7.3a): a Google-linked Account's name follows Google; the name is trimmed.
+      if (body.first_name !== undefined && state.me.sign_in_methods?.includes('google')) throw rule('name_from_google')
+      const changes = body.first_name !== undefined ? { ...body, first_name: Array.from(body.first_name.trim()).slice(0, 100).join('') } : body
+      return Object.assign(state.me, changes)
+    }
+    if (path === '/api/me/password/check' && method === 'POST') {
+      state.passwordChecks += 1
+      if (!state.me.sign_in_methods?.includes('email')) throw rule('no_password')
+      if (body.current_password !== CURRENT_PASSWORD) throw rule('wrong_password')
+      return null
+    }
     if (path === '/api/me/prefs' && method === 'PATCH') {
       // As the server: files_collapsed merges per Project (Story 2.2b).
       const prefs = { ...state.me.ui_prefs, ...body }

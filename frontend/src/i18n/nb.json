@@ -253,9 +253,44 @@
   "account": {
     "welcome": "Velkommen, {{firstName}}",
     "menu": "Kontomeny",
+    "settings": "Innstillinger",
     "language": "Språk",
     "logOut": "Logg ut",
     "googleTakeover": "Kontoen din logger nå inn med Google."
+  },
+  "settings": {
+    "title": "Innstillinger",
+    "account": {
+      "heading": "Konto",
+      "leadEmail": "Navnet ditt og hvordan du logger inn.",
+      "leadGoogle": "Navnet, e-postadressen og bildet ditt kommer fra Google-kontoen din.",
+      "firstName": "Fornavn",
+      "viaGoogle": "Logger inn med Google",
+      "viaEmail": "Logger inn med e-post",
+      "logOut": "Logg ut"
+    },
+    "password": {
+      "open": "Endre passord",
+      "current": "Nåværende passord",
+      "new": "Nytt passord",
+      "repeat": "Gjenta nytt passord",
+      "save": "Lagre passordet",
+      "cancel": "Avbryt",
+      "mismatch": "Passordene er ikke like.",
+      "changed": "Passordet er endret.",
+      "currentRequired": "Skriv inn det nåværende passordet ditt.",
+      "samePassword": "Det nye passordet må være forskjellig fra det nåværende."
+    },
+    "language": {
+      "heading": "Språk",
+      "lead": "Språket på knapper og meldinger. Studiematerialet ditt beholder språket i filene dine."
+    },
+    "data": {
+      "heading": "Dataene dine",
+      "lead": "Et slettet prosjekt kan gjenopprettes i 30 dager.",
+      "deleteProject": "Slett et prosjekt",
+      "delete": "Slett"
+    }
   },
   "verify": {
     "success": "E-postadressen din er bekreftet.",
@@ -309,7 +344,11 @@
     "scope_too_large": "Det er mye materiale. Velg færre emner eller én fil.",
     "insufficient_material": "Det er ikke nok ferdig materiale til dette ennå.",
     "material_removed": "Filen dette kom fra, er fjernet.",
-    "link_expired": "Lenken er utløpt. Skann en ny kode på datamaskinen."
+    "link_expired": "Lenken er utløpt. Skann en ny kode på datamaskinen.",
+    "wrong_password": "Det er ikke det nåværende passordet ditt.",
+    "name_from_google": "Navnet ditt kommer fra Google-kontoen din.",
+    "no_password": "Denne kontoen logger inn med Google og har ikke passord.",
+    "too_many_attempts": "For mange forsøk. Vent noen minutter og prøv igjen."
   },
   "inlineError": {
     "reassurance": "Ingenting du har laget, er borte.",

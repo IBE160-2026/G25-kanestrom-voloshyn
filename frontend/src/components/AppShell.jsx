@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Outlet, useNavigate, useParams } from 'react-router'
+import { Outlet, useMatch, useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { errorText } from '../i18n/errors.js'
 import ErrorLine from './ErrorLine.jsx'
@@ -22,13 +22,14 @@ function isActive(project) {
 }
 
 // The shell of the signed-in pages (DESIGN.md › Layout & Spacing): the Sidebar (or its strip), the
-// Top bar with the open Project's name, and the page. It loads the profile and the Projects once
+// Top bar with the open Project's name (or "Settings" on /settings), and the page. It loads the profile and the Projects once
 // and shares them with the pages through the outlet context. When the session has ended,
 // api/client.js and RequireSession take the student to Login, so no error is shown for that.
 export default function AppShell() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { projectId } = useParams()
+  const onSettings = useMatch('/settings') !== null
   const [me, setMe] = useState(null)
   const [projects, setProjects] = useState(null) // null until loaded
   const [loadError, setLoadError] = useState(null)
@@ -251,7 +252,8 @@ export default function AppShell() {
   const archivedProjects = projects ? projects.filter((p) => p.archived_at && !p.deleted_at) : []
   const deletedProjects = projects ? projects.filter((p) => p.deleted_at) : []
   const current = projectId ? projects?.find((p) => p.id === projectId) : null
-  const title = current ? <ProjectName key={current.id} project={current} onRenamed={upsertProject} /> : null
+  let title = current ? <ProjectName key={current.id} project={current} onRenamed={upsertProject} /> : null
+  if (onSettings) title = <h1 className={styles.pageTitle}>{t('settings.title')}</h1>
 
   return (
     <div className={styles.shell}>
@@ -284,6 +286,8 @@ export default function AppShell() {
           <Outlet
             context={{
               me,
+              // Settings saves the first name: the Top bar greeting follows at once (Story 7.3a).
+              setMe,
               projects,
               activeProjects,
               creating,
@@ -295,6 +299,7 @@ export default function AppShell() {
               markPrivacyAccepted,
               archiveProject,
               restoreProject,
+              deleteProject,
               purgeProject,
             }}
           />

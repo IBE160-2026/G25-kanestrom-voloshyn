@@ -252,9 +252,44 @@
   "account": {
     "welcome": "Welcome, {{firstName}}",
     "menu": "Account menu",
+    "settings": "Settings",
     "language": "Language",
     "logOut": "Log out",
     "googleTakeover": "Your account now signs in with Google."
+  },
+  "settings": {
+    "title": "Settings",
+    "account": {
+      "heading": "Account",
+      "leadEmail": "Your name and how you sign in.",
+      "leadGoogle": "Your name, email and picture come from your Google account.",
+      "firstName": "First name",
+      "viaGoogle": "Signs in with Google",
+      "viaEmail": "Signs in with email",
+      "logOut": "Log out"
+    },
+    "password": {
+      "open": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "repeat": "Repeat new password",
+      "save": "Save password",
+      "cancel": "Cancel",
+      "mismatch": "The passwords don't match.",
+      "changed": "Your password is changed.",
+      "currentRequired": "Enter your current password.",
+      "samePassword": "The new password must be different from the current one."
+    },
+    "language": {
+      "heading": "Language",
+      "lead": "The language of buttons and messages. Your study material stays in the language of your files."
+    },
+    "data": {
+      "heading": "Your data",
+      "lead": "A deleted project can be restored for 30 days.",
+      "deleteProject": "Delete a project",
+      "delete": "Delete"
+    }
   },
   "verify": {
     "success": "Your email is verified.",
@@ -308,7 +343,11 @@
     "scope_too_large": "That's a lot of material. Pick fewer topics or one file.",
     "insufficient_material": "There isn't enough ready material for this yet.",
     "material_removed": "The file this came from was removed.",
-    "link_expired": "This link has expired. Scan a new code on your computer."
+    "link_expired": "This link has expired. Scan a new code on your computer.",
+    "wrong_password": "That's not your current password.",
+    "name_from_google": "Your name comes from your Google account.",
+    "no_password": "This account signs in with Google and has no password.",
+    "too_many_attempts": "Too many tries. Wait a few minutes and try again."
   },
   "inlineError": {
     "reassurance": "Nothing you've made is lost.",

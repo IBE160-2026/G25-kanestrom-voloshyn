@@ -309,7 +309,7 @@ describe('setNewPassword', () => {
 
   it.each([
     ['weak_password', 'password_too_short'],
-    ['same_password', 'failed'],
+    ['same_password', 'same_password'],
     [undefined, 'failed'],
   ])('maps Supabase error %s to %s', async (code, expected) => {
     updateUserMock.mockResolvedValue({ data: { user: null }, error: { code, status: 422 } })

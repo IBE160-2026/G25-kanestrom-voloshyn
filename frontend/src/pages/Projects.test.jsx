@@ -177,7 +177,7 @@ describe('Projects page (Story 2.1)', () => {
 })
 
 describe('Account menu', () => {
-  it('shows the avatar initials and opens with Language and Log out', async () => {
+  it('shows the avatar initials and opens with Settings, Language, and Log out', async () => {
     answer()
     const user = userEvent.setup()
     renderRoute('/projects')
@@ -196,8 +196,9 @@ describe('Account menu', () => {
     expect(english).toHaveAttribute('lang', 'en')
     expect(norsk).toHaveAttribute('lang', 'nb')
     expect(within(menu).getByRole('menuitem', { name: en.account.logOut })).toBeInTheDocument()
-    // No dead controls: Settings arrives with Story 7.3.
-    expect(within(menu).queryByText('Settings')).not.toBeInTheDocument()
+    // Settings comes first (EXPERIENCE.md › Account menu, Story 7.3a).
+    const items = [...menu.querySelectorAll('[role^="menuitem"]')].map((item) => item.textContent)
+    expect(items).toEqual([en.account.settings, 'English', 'Norsk', en.account.logOut])
   })
 
   it('works from the keyboard: open, move, choose, Escape returns focus to the trigger', async () => {
@@ -209,8 +210,10 @@ describe('Account menu', () => {
     await tabTo(user, button)
     await user.keyboard('{Enter}')
     const menu = await screen.findByRole('menu')
-    await waitFor(() => expect(within(menu).getByRole('menuitemradio', { name: 'English' })).toHaveFocus())
+    await waitFor(() => expect(within(menu).getByRole('menuitem', { name: en.account.settings })).toHaveFocus())
 
+    await user.keyboard('{ArrowDown}')
+    expect(within(menu).getByRole('menuitemradio', { name: 'English' })).toHaveFocus()
     await user.keyboard('{ArrowDown}')
     expect(within(menu).getByRole('menuitemradio', { name: 'Norsk' })).toHaveFocus()
     await user.keyboard('{Enter}')
