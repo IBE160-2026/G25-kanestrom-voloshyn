@@ -280,6 +280,7 @@
       "logOut": "Logg ut",
       "linkGoogle": "Koble til Google-konto",
       "verifyFirst": "Bekreft e-postadressen din først",
+      "verified": "E-postadressen er bekreftet",
       "resend": "Send bekreftelseslenken på nytt",
       "resent": "Vi har sendt en ny lenke. Den gjelder i 24 timer."
     },

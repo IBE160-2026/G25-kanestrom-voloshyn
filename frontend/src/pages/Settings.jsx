@@ -118,6 +118,16 @@ function AccountSection({ me, setMe, linkError }) {
         <div className={styles.whoText}>
           {google ? <p className={styles.name}>{me.first_name}</p> : <NameField me={me} setMe={setMe} />}
           {me.email && <p className={styles.email}>{me.email}</p>}
+          {/* An email Account whose address is confirmed says so (Cristoffer, 2026-11-20); until then the
+              "Verify your email first" row below stands instead. */}
+          {me.email && methods.includes('email') && me.email_verified && (
+            <p className={styles.verified}>
+              <svg className={styles.verifiedIcon} viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+                <path d="M2.5 6.5l2.5 2.5 4.5-5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {t('settings.account.verified')}
+            </p>
+          )}
           {/* One line per sign-in method: an Account with both shows both. */}
           {methods.includes('email') && <p className={styles.via}>{t('settings.account.viaEmail')}</p>}
           {google && <p className={styles.via}>{t('settings.account.viaGoogle')}</p>}

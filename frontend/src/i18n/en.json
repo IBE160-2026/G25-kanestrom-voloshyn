@@ -279,6 +279,7 @@
       "logOut": "Log out",
       "linkGoogle": "Link Google account",
       "verifyFirst": "Verify your email first",
+      "verified": "Email verified",
       "resend": "Resend verification email",
       "resent": "We've sent a new link. It works for 24 hours."
     },

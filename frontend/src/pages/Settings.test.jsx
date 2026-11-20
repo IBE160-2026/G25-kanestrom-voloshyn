@@ -138,6 +138,27 @@ describe('Opening Settings', () => {
 })
 
 describe('Account (email)', () => {
+  it('a verified email Account shows "Email verified" under the address; an unverified one does not', async () => {
+    setup({ me: { ...PROFILE, email_verified: true } })
+    await openSettings()
+    expect(section(en.settings.account.heading)).toHaveTextContent(en.settings.account.verified)
+    expect(screen.queryByText(en.settings.account.verifyFirst)).not.toBeInTheDocument()
+  })
+
+  it('an unverified email Account shows no "Email verified" line', async () => {
+    setup()
+    await openSettings()
+    expect(screen.queryByText(en.settings.account.verified)).not.toBeInTheDocument()
+    expect(screen.getByText(en.settings.account.verifyFirst)).toBeInTheDocument()
+  })
+
+  it('reads "E-postadressen er bekreftet" in Norwegian', async () => {
+    await i18n.changeLanguage('nb')
+    setup({ me: { ...PROFILE, email_verified: true, language: 'nb' } })
+    await openSettings(nb)
+    expect(section(nb.settings.account.heading)).toHaveTextContent(nb.settings.account.verified)
+  })
+
   it('shows the editable name, the email, "Signs in with email", Log out, and Change password', async () => {
     setup()
     await openSettings()
