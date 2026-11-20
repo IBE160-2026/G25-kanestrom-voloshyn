@@ -335,8 +335,10 @@ describe('Account (Google)', () => {
     expect(within(account).queryByRole('textbox')).not.toBeInTheDocument()
     expect(within(account).getByText('Emma')).toBeInTheDocument()
     expect(account).toHaveTextContent('emma@example.com')
-    expect(within(account).getByText(en.settings.account.viaGoogle)).toBeInTheDocument()
-    expect(within(account).getByText(en.settings.account.viaEmail)).toBeInTheDocument()
+    // One line for both methods.
+    expect(within(account).getByText(en.settings.account.viaBoth)).toBeInTheDocument()
+    expect(within(account).queryByText(en.settings.account.viaEmail)).not.toBeInTheDocument()
+    expect(within(account).queryByText(en.settings.account.viaGoogle)).not.toBeInTheDocument()
     expect(account.querySelector(`img[src="${PICTURE}"]`)).not.toBeNull()
     // It has an email identity too, so it still has a password to change.
     expect(within(account).getByRole('button', { name: en.settings.password.open })).toBeInTheDocument()
@@ -654,6 +656,6 @@ describe('Norwegian', () => {
     const account = section(nb.settings.account.heading)
 
     expect(account).toHaveTextContent(nb.settings.account.leadGoogle)
-    expect(account).toHaveTextContent(nb.settings.account.viaGoogle)
+    expect(account).toHaveTextContent(nb.settings.account.viaBoth)
   })
 })

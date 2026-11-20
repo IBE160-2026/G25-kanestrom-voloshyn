@@ -277,6 +277,7 @@
       "firstName": "Fornavn",
       "viaGoogle": "Logger inn med Google",
       "viaEmail": "Logger inn med e-post",
+      "viaBoth": "Logger inn med e-post og Google",
       "logOut": "Logg ut",
       "linkGoogle": "Koble til Google-konto",
       "verifyFirst": "Bekreft e-postadressen din først",
