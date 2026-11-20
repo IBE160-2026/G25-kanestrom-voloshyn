@@ -44,3 +44,17 @@ Cristoffer testet i nettleseren og ba om endringer:
 
 ### Åpne punkter
 - Ingen nye. Tekstene, dokumentendringene og den manuelle sjekken av fargene står allerede i issues.md.
+
+## 2026-11-20 kl. 15:20 — crikan01
+
+### Oppgave
+Cristoffer: alt fungerer, push og merge.
+
+### Plan
+- Pushe `feature/theme-options`, merge den inn i main med `--no-ff` og pushe main.
+
+### Resultat
+- `77d0eb8`: merge til main, «feat: add theme options with Default, Light and Dark themes and accent colours». Grenen og main er pushet.
+
+### Åpne punkter
+- Ingen nye. Tekstene og endringene i de endelige dokumentene står i issues.md. Den manuelle sjekken av fargene er gjort: Cristoffer sa at alt fungerer.

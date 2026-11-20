@@ -60,4 +60,4 @@
 - [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Godkjenn «Email verified» / «E-postadressen er bekreftet» i Innstillinger, og før det inn i EXPERIENCE.md.
 - [ ] 2026-11-20 [innlogging-en-linje](973-2026-11-20-14-26-32-innlogging-en-linje.md) — Godkjenn «Signs in with Email» og «Signs in with Email and Google» / «Logger inn med e-post og Google», og oppdater EXPERIENCE.md L273.
 - [ ] 2026-11-20 [tema-og-aksentfarger](972-2026-11-20-14-56-27-tema-og-aksentfarger.md) — Godkjenn tekstene i «Utseende», og før temaendringen inn i PRD §7.2, DESIGN.md, spine og EXPERIENCE.md (forslag i spec-theme-options › Implementation Notes).
-- [ ] 2026-11-20 [tema-og-aksentfarger](972-2026-11-20-14-56-27-tema-og-aksentfarger.md) — Sjekk lyst tema og hver aksentfarge manuelt i appen: quiz-tilbakemelding, feillinjer, sidepanel og dialoger.
+- [x] 2026-11-20 [tema-og-aksentfarger](972-2026-11-20-14-56-27-tema-og-aksentfarger.md) — Sjekk lyst tema og hver aksentfarge manuelt i appen: quiz-tilbakemelding, feillinjer, sidepanel og dialoger. (løst 2026-11-20)
