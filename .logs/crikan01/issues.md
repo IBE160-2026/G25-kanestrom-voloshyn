@@ -53,3 +53,4 @@
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Sletting av kontoen og ny registrering med samme e-post nullstiller dagens grenser (vurder).
 - [ ] 2026-11-20 [story-7-3-7-4](977-2026-11-20-02-48-31-story-7-3-7-4-settings-and-delete-account.md) — Oppdater EXPERIENCE.md L75 og DESIGN.md L657: Settings er nå et overlegg, ikke en side (forslaget til tekst står i spec-7-3a › Amendments).
 - [ ] 2026-11-20 [passordfelt](976-2026-11-20-13-01-33-passordfelt.md) — Godkjenn tekstene for vis/skjul passord, Caps Lock og «Gjenta passordet», og før dem inn i EXPERIENCE.md (L42, L405, Strings) sammen med det nye gjenta-feltet.
+- [ ] 2026-11-20 [drop-overlay](975-2026-11-20-13-06-05-drop-overlay.md) — Godkjenn «Drop files here» / «Slipp filene her» og før det fullskjerms slipp-overlegget inn i DESIGN.md og EXPERIENCE.md.
