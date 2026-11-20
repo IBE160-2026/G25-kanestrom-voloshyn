@@ -104,3 +104,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-3a-settings-page.md`
   summary: Story 7.3b must set a Google-linked Account's first name from the Google profile on linking, since Settings shows it read-only as "from your Google account".
   evidence: Review of 7.3a: `fill_unset` only fills an unset name.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-4-delete-my-account.md`
+  summary: Account deletion goes on to delete the auth user even when `storage.delete_prefix` failed (errors are swallowed), so the student's files can outlive the Account with no retry.
+  evidence: Review of 7.4 (EC, BH); same root as the 7.2b Storage-retry entry — have `delete_prefix` report failure, or sweep orphaned prefixes in the hourly task.

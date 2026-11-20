@@ -20,7 +20,8 @@ const GOOGLE_ERRORS = ['failed', 'identityInUse']
 // POST /api/auth/after-sign-in, whose profile carries the Account's language (FR-29). Every
 // refusal shows one message that never says whether the email exists. After the session ended
 // mid-use, it shows the signed-out notice and returns to the remembered route; after a password
-// reset, the password-changed notice. "Forgot password?" leads to the reset request (FR-3).
+// reset, the password-changed notice; after Account deletion, the account-deleted notice.
+// "Forgot password?" leads to the reset request (FR-3).
 // "Sign in with Google" (FR-19) shows when Google is configured; a failed Google sign-in comes
 // back here from /auth/callback with its error in the history state, shown in the Error line.
 export default function Login() {
@@ -41,15 +42,17 @@ export default function Login() {
   // the email and password are locked (read-only) meanwhile.
   const [signedIn, setSignedIn] = useState(false)
   // A notice handed over by navigation: a Google takeover ended the session, the session ended
-  // mid-use, or the password was reset.
+  // mid-use, the password was reset, or the Account was deleted (FR-28).
   const noticeKey =
     location.state?.googleTakeover === true
       ? 'account.googleTakeover'
       : location.state?.passwordChanged === true
         ? 'reset.saved'
-        : location.state?.sessionExpired === true
-          ? 'session.expired'
-          : null
+        : location.state?.accountDeleted === true
+          ? 'account.deleted'
+          : location.state?.sessionExpired === true
+            ? 'session.expired'
+            : null
   // A failed Google sign-in handed over by /auth/callback (AuthCallback.jsx).
   const googleError = GOOGLE_ERRORS.includes(location.state?.googleError) ? location.state.googleError : null
 

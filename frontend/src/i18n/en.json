@@ -255,7 +255,8 @@
     "settings": "Settings",
     "language": "Language",
     "logOut": "Log out",
-    "googleTakeover": "Your account now signs in with Google."
+    "googleTakeover": "Your account now signs in with Google.",
+    "deleted": "Your account and files have been deleted."
   },
   "settings": {
     "title": "Settings",
@@ -288,7 +289,18 @@
       "heading": "Your data",
       "lead": "A deleted project can be restored for 30 days.",
       "deleteProject": "Delete a project",
-      "delete": "Delete"
+      "delete": "Delete",
+      "deleteAccount": "Delete my account and all my files",
+      "deleteAccountButton": "Delete my account"
+    },
+    "deleteAccountDialog": {
+      "title": "Delete your account?",
+      "lost": "Your projects, including those in Deleted projects, and their files, mistakes, and generated material are deleted now.",
+      "final": "This can't be undone.",
+      "word": "DELETE",
+      "label": "Type {{word}} to confirm",
+      "cancel": "Cancel",
+      "confirm": "Delete account"
     }
   },
   "verify": {

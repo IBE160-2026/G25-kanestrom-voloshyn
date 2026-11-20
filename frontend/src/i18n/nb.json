@@ -256,7 +256,8 @@
     "settings": "Innstillinger",
     "language": "Språk",
     "logOut": "Logg ut",
-    "googleTakeover": "Kontoen din logger nå inn med Google."
+    "googleTakeover": "Kontoen din logger nå inn med Google.",
+    "deleted": "Kontoen din og filene dine er slettet."
   },
   "settings": {
     "title": "Innstillinger",
@@ -289,7 +290,18 @@
       "heading": "Dataene dine",
       "lead": "Et slettet prosjekt kan gjenopprettes i 30 dager.",
       "deleteProject": "Slett et prosjekt",
-      "delete": "Slett"
+      "delete": "Slett",
+      "deleteAccount": "Slett kontoen min og alle filene mine",
+      "deleteAccountButton": "Slett kontoen min"
+    },
+    "deleteAccountDialog": {
+      "title": "Vil du slette kontoen din?",
+      "lost": "Prosjektene dine, også de i Slettede prosjekter, med filer, feil og generert innhold, slettes nå.",
+      "final": "Dette kan ikke angres.",
+      "word": "SLETT",
+      "label": "Skriv {{word}} for å bekrefte",
+      "cancel": "Avbryt",
+      "confirm": "Slett kontoen"
     }
   },
   "verify": {

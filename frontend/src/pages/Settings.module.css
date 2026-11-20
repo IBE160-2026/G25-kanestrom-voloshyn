@@ -252,6 +252,19 @@
   outline: none;
 }
 
+/* Your data › Delete my account and all my files: the title with its ghost button beside it. */
+.accountRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-4);
+}
+
+.accountRow > .rowTitle {
+  margin: 0;
+}
+
 .projectList {
   margin: 0;
   padding: 0;

@@ -1,5 +1,5 @@
-"""GET and PATCH /api/me, PATCH /api/me/prefs, the notice routes, and the password check: the signed-in
-Account's profile (AD-19) and Settings (FR-27)."""
+"""GET, PATCH, and DELETE /api/me, PATCH /api/me/prefs, the notice routes, and the password check: the
+signed-in Account's profile (AD-19), Settings (FR-27), and Account deletion (FR-28)."""
 
 from typing import Annotated, Any, Literal
 from uuid import UUID
@@ -11,7 +11,7 @@ from app import supabase_auth
 from app.api.conn import Conn
 from app.auth import CurrentUser, ReleasedUserAuth, UserAuth
 from app.errors import AppError
-from app.services import identity
+from app.services import account, identity
 
 router = APIRouter()
 
@@ -141,4 +141,16 @@ async def check_password(body: PasswordCheck, user: ReleasedUserAuth, request: R
     state = request.app.state
     if not await supabase_auth.check_password(state.http, state.settings, user.email, body.current_password):
         raise AppError(400, "wrong_password", "That isn't the current password")
+    return Response(status_code=204)
+
+
+@router.delete("/me", status_code=204)
+async def delete_me(user: ReleasedUserAuth, request: Request) -> Response:
+    """Delete the Account now and for good (FR-28): every Project in any state, its files, Mistakes,
+    and generated material, then the auth user (`profiles` and every app table cascade). `503
+    auth_unavailable` when the last step fails; a retry works. Account bookkeeping, on the AD-22
+    route-guard allowlist; no request connection is held while it waits for running jobs (AD-18).
+    """
+    state = request.app.state
+    await account.delete_account(state.pool, state.storage, state.runner, state.http, state.settings, user.account_id)
     return Response(status_code=204)

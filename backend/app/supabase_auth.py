@@ -150,6 +150,25 @@ async def set_password(client: httpx2.AsyncClient, settings: Settings, account_i
         raise _unavailable(f"HTTP {response.status_code}")
 
 
+async def delete_user(client: httpx2.AsyncClient, settings: Settings, account_id: UUID) -> None:
+    """Delete the user with admin `DELETE /auth/v1/admin/users/{id}` (Account deletion, FR-28, AD-19).
+
+    `profiles` and every app table cascade from `auth.users`. A 404 means already deleted and is fine.
+    A timeout, connection error, or any other answer but 200/204 raises `auth_unavailable` (503). No
+    response body is ever logged.
+    """
+    try:
+        response = await client.delete(f"/auth/v1/admin/users/{account_id}", headers=admin_headers(settings))
+    except httpx2.HTTPError as exc:
+        logger.warning("Supabase Auth delete user failed: %s", type(exc).__name__)
+        raise _unavailable(type(exc).__name__) from None
+    if response.status_code == 404:
+        return
+    if response.status_code not in (200, 204):
+        logger.warning("Supabase Auth answered %s to delete user", response.status_code)
+        raise _unavailable(f"HTTP {response.status_code}")
+
+
 async def check_password(client: httpx2.AsyncClient, settings: Settings, email: str, password: str) -> bool:
     """Whether `password` is the Account's current password (Settings › Change password, FR-27).
 

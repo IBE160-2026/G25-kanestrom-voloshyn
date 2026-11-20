@@ -5,7 +5,8 @@ import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import Avatar from '../components/Avatar.jsx'
 import DeleteProjectDialog from '../components/DeleteProjectDialog.jsx'
 import ErrorLine from '../components/ErrorLine.jsx'
-import { useChooseLanguage, useLogOut } from '../components/accountActions.js'
+import DeleteAccountDialog from '../components/DeleteAccountDialog.jsx'
+import { useChooseLanguage, useDeleteAccount, useLogOut } from '../components/accountActions.js'
 import { errorText } from '../i18n/errors.js'
 import { LANGUAGES } from '../i18n/index.js'
 import ChangePassword from './ChangePassword.jsx'
@@ -206,10 +207,13 @@ function LanguageSection() {
 // Your data: "Delete a project" lists the active and archived Projects, each with Delete, which opens
 // the same Confirm dialog (delete project) as the Sidebar (FR-24); it shows once the Projects have loaded
 // and there is one to delete. A deleted Project leaves the list and
-// moves to Deleted projects. "Delete my account and all my files" comes with Story 7.4.
+// moves to Deleted projects. "Delete my account and all my files" opens the Confirm dialog (delete
+// account) (FR-28, Story 7.4); after the deletion the student lands on Login.
 function DataSection({ projects, deleteProject }) {
   const { t } = useTranslation()
   const [deleting, setDeleting] = useState(null) // { project, trigger }
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const deleteAccount = useDeleteAccount()
   const heading = useRef(null)
   const title = useRef(null)
   const id = useId()
@@ -249,6 +253,20 @@ function DataSection({ projects, deleteProject }) {
         // The row left the list: focus its sub-section title, or the section heading when none are left.
         onFocusLost={() => (title.current ?? heading.current)?.focus()}
       />
+      <div className={listed.length > 0 ? `${styles.row} ${styles.accountRow}` : styles.accountRow}>
+        <h3 id={`${id}-account`} className={styles.rowTitle}>
+          {t('settings.data.deleteAccount')}
+        </h3>
+        <button
+          type="button"
+          className={styles.ghostSmall}
+          aria-describedby={`${id}-account`}
+          onClick={() => setDeletingAccount(true)}
+        >
+          {t('settings.data.deleteAccountButton')}
+        </button>
+      </div>
+      <DeleteAccountDialog open={deletingAccount} onDelete={deleteAccount} onClose={() => setDeletingAccount(false)} />
     </Section>
   )
 }

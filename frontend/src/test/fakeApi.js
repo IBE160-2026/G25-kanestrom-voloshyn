@@ -80,7 +80,8 @@ export const IMAGE_LIMIT = 25
  * `material_limit_reached`). Archive (Story 7.1) sets `archived_at` (409 `project_read_only` for a
  * deleted Project) and revokes its links; delete (Story 7.2a) sets `deleted_at` and `purge_at` (30
  * days later), keeps `archived_at`, revokes its links, and cancels its active jobs; restore clears
- * `archived_at`, `deleted_at`, and `purge_at`. All three are idempotent. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
+ * `archived_at`, `deleted_at`, and `purge_at`. All three are idempotent. DELETE /api/me (Story 7.4)
+ * sets `accountDeleted` and empties the Projects. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
  * answers carry a `Date` header that far ahead of the test's clock. Returns the live
  * state.
  */
@@ -124,6 +125,7 @@ export function fakeApi({
     batches: [], // phone batches: { id, token, photos: [names], finalized } (Story 6.2)
     photoRequests: [], // names of photos sent, accepted or refused, in order
     passwordChecks: 0, // POST /api/me/password/check calls (Story 7.3a)
+    accountDeleted: false, // DELETE /api/me answered (Story 7.4)
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
@@ -142,6 +144,12 @@ export function fakeApi({
       if (body.first_name !== undefined && state.me.sign_in_methods?.includes('google')) throw rule('name_from_google')
       const changes = body.first_name !== undefined ? { ...body, first_name: Array.from(body.first_name.trim()).slice(0, 100).join('') } : body
       return Object.assign(state.me, changes)
+    }
+    if (path === '/api/me' && method === 'DELETE') {
+      // Delete my account (Story 7.4): everything goes; 204.
+      state.accountDeleted = true
+      state.projects = []
+      return null
     }
     if (path === '/api/me/password/check' && method === 'POST') {
       state.passwordChecks += 1

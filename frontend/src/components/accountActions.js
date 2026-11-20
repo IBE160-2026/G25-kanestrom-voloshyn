@@ -1,5 +1,5 @@
 // Account actions shared by the Account menu and the Settings page (Story 7.3a): the language switch,
-// saved to the Account (FR-29), and Log out (FR-2).
+// saved to the Account (FR-29), Log out (FR-2), and Delete my account (FR-28, Story 7.4).
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
@@ -41,5 +41,28 @@ export function useLogOut() {
     forgetRoute()
     await signOut()
     navigate('/', { replace: true })
+  }
+}
+
+/**
+ * `deleteAccount()`: DELETE /api/me (FR-28), then the session ends as Log out does and Login shows
+ * "Your account and files have been deleted." (EXPERIENCE.md › Destructive actions). Rejects, with
+ * nothing signed out, only when that request fails: once it has succeeded, the sign-out is best
+ * effort and it always ends on Login.
+ */
+export function useDeleteAccount() {
+  const navigate = useNavigate()
+
+  return async function deleteAccount() {
+    await apiFetch('/api/me', { method: 'DELETE' })
+    // The Account is gone: the session's refusals show no expiry notice and remember no route.
+    try {
+      detachSignedOutListener()
+      forgetRoute()
+      await signOut()
+    } catch {
+      // The Account is deleted anyway; Login follows.
+    }
+    navigate('/', { replace: true, state: { accountDeleted: true } })
   }
 }
