@@ -10,6 +10,7 @@ import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
 import { PROFILE, callsTo, fakeApi, project } from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
+import { cachedTheme } from '../theme/index.js'
 
 vi.mock('../auth/index.js', async () => (await import('../test/mocks.js')).authMock())
 vi.mock('../api/client.js', async () => (await import('../test/mocks.js')).clientMock())
@@ -146,7 +147,8 @@ describe('Confirm dialog (delete account)', () => {
   })
 
   it('confirming deletes the Account, ends the session, and lands on Login with the notice; Back stays out', async () => {
-    const state = fakeApi({ projects: [BIOLOGY] })
+    // A light, cyan Account: its cached theme is forgotten with it.
+    const state = fakeApi({ projects: [BIOLOGY], me: { ...PROFILE, ui_prefs: { theme: 'light', accent: 'cyan' } } })
     const order = []
     vi.mocked(detachSignedOutListener).mockImplementation(() => order.push('detach'))
     vi.mocked(signOut).mockImplementation(async () => {
@@ -160,12 +162,14 @@ describe('Confirm dialog (delete account)', () => {
     // A route remembered earlier is forgotten with the Account.
     window.sessionStorage.setItem(RETURN_TO_KEY, '/projects/bio')
     const dialog = await openDialog(user)
+    expect(cachedTheme()).toEqual({ theme: 'light', accent: 'cyan' })
 
     await user.type(wordInput(dialog), 'DELETE')
     await user.click(confirmButton(dialog))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/'))
     expect(state.accountDeleted).toBe(true)
+    expect(cachedTheme()).toBeNull()
     expect(callsTo('/api/me', 'DELETE')).toHaveLength(1)
     expect(order).toEqual(['detach', 'signOut'])
     expect(window.sessionStorage.getItem(RETURN_TO_KEY)).toBeNull()

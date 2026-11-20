@@ -301,6 +301,23 @@
       "heading": "Språk",
       "lead": "Språket på knapper og meldinger. Studiematerialet ditt beholder språket i filene dine."
     },
+    "appearance": {
+      "heading": "Utseende",
+      "lead": "Hvordan Study Buddy ser ut på denne og de andre enhetene dine.",
+      "theme": "Tema",
+      "accent": "Aksentfarge",
+      "themeName": {
+        "default": "Standard",
+        "light": "Lyst",
+        "dark": "Mørkt"
+      },
+      "accentName": {
+        "default": "Standard",
+        "blue": "Blå",
+        "violet": "Fiolett",
+        "cyan": "Cyan"
+      }
+    },
     "data": {
       "heading": "Dataene dine",
       "lead": "Et slettet prosjekt kan gjenopprettes i 30 dager.",

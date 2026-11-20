@@ -7,6 +7,7 @@ import { apiFetch, detachSignedOutListener } from '../api/client.js'
 import { signOut } from '../auth/index.js'
 import { forgetRoute } from '../auth/returnTo.js'
 import { LANGUAGES, setLanguage } from '../i18n/index.js'
+import { applySignedOutTheme } from '../theme/index.js'
 
 /**
  * `chooseLanguage(lng)`: the interface switches at once, then PATCH /api/me saves it. A failed save
@@ -40,6 +41,8 @@ export function useLogOut() {
     detachSignedOutListener()
     forgetRoute()
     await signOut()
+    // Login shows the Default theme; the next reload doesn't paint this Account's choice.
+    applySignedOutTheme({ forget: true })
     navigate('/', { replace: true })
   }
 }
@@ -63,6 +66,7 @@ export function useDeleteAccount() {
     } catch {
       // The Account is deleted anyway; Login follows.
     }
+    applySignedOutTheme({ forget: true })
     navigate('/', { replace: true, state: { accountDeleted: true } })
   }
 }
