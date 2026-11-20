@@ -57,3 +57,4 @@
 - [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Godkjenn teksten for email_not_verified, og endre AD-19 i spine (fjerning med studentens token, ikke admin-API; en kobling med samme e-post gir takeover).
 - [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Vurder en enkel grense for «Send bekreftelseslenken på nytt», slik at knappen ikke kan brukes til å sende mange e-poster til en annen persons innboks.
 - [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Oppdater EXPERIENCE.md L42 og L405: Opprett konto har ikke lenger «Sign in with Google»; den er bare på innloggingssiden.
+- [ ] 2026-11-20 [story-7-3b](974-2026-11-20-13-45-08-story-7-3b-link-google.md) — Godkjenn «Email verified» / «E-postadressen er bekreftet» i Innstillinger, og før det inn i EXPERIENCE.md.
