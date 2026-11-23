@@ -1,6 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
-// 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), Mistakes (Story
-// 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
+// 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), flashcard sets and
+// marks (Stories 4.1 + 4.2), Mistakes (Story 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
 // (Stories 6.1 + 6.2), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
@@ -64,7 +64,10 @@ export const IMAGE_LIMIT = 25
  * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
  * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions` and
  * `max_cards`: a number, or a function of the scope (Stories 3.1a, 4.1). A flashcards request (Story 4.1)
- * adds a running `flashcards` job like a quiz request; `finishFlashcards` completes it with a saved set. A quiz request adds a running `quiz` job at the
+ * adds a running `flashcards` job like a quiz request; `finishFlashcards` completes it with a saved set.
+ * `flashcardSets` lists stored sets (see `flashcardSet`); a mark is saved like the server (Story 4.2): a
+ * repeat on a card already "Got it" saves nothing, the final "Got it" ends the set, and an ended set
+ * refuses marks with `409 flashcard_set_ended`. A quiz request adds a running `quiz` job at the
  * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
  * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
@@ -117,8 +120,9 @@ export function fakeApi({
     quizRequests: [], // bodies of POST .../quizzes
     quizzes: Object.fromEntries(quizzes.map((q) => [q.id, structuredClone(q)])), // { [quizId]: quiz(...) }
     flashcardRequests: [], // bodies of POST .../flashcard-sets (Story 4.1)
-    // { [setId]: { id, project_id, requested_count, card_count } } (Story 4.1)
-    flashcardSets: Object.fromEntries(flashcardSets.map((f) => [f.id, { ...f }])),
+    // { [setId]: flashcardSet(...) } (Stories 4.1 + 4.2)
+    flashcardSets: Object.fromEntries(flashcardSets.map((f) => [f.id, structuredClone(f)])),
+    flashcardMarks: [], // bodies of POST .../mark, with their card id, saved or not (Story 4.2)
     answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
     mistakes: mistakes.map((m) => ({ withdrawn: false, cleared: false, ...m })), // Story 3.3
@@ -329,7 +333,27 @@ export function fakeApi({
         return { job_id: job.id }
       }
     }
-    // Flashcard generation (Story 4.1): like the quiz request; the set is read back as its counts.
+    // Studying a set (Story 4.2): like the server, the session is derived from the stored marks.
+    const markCall = path.match(/^\/api\/projects\/([^/]+)\/flashcard-sets\/([^/]+)\/cards\/([^/]+)\/mark$/)
+    if (markCall && method === 'POST') {
+      const [, id, setId, cardId] = markCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+      if (!['got_it', 'not_yet'].includes(body?.mark)) throw rule('invalid_request', { fields: ['mark'] })
+      const found = state.flashcardSets[setId]
+      if (!found || found.project_id !== id) throw notFound()
+      if (found.ended_at) throw rule('flashcard_set_ended')
+      if (!found.cards.some((c) => c.id === cardId)) throw notFound()
+      state.flashcardMarks.push({ card_id: cardId, ...body })
+      const { queue } = flashcardSession(found)
+      if (queue.includes(cardId)) {
+        found.marks.push({ card_id: cardId, mark: body.mark })
+        if (body.mark === 'got_it' && queue.length === 1) found.ended_at = '2026-11-23T12:00:00Z'
+      }
+      return shownSet(found)
+    }
+    // Flashcard generation (Story 4.1): like the quiz request.
     const flashcardCall = path.match(/^\/api\/projects\/([^/]+)\/flashcard-sets(?:\/([^/]+))?$/)
     if (flashcardCall) {
       const [, id, setId] = flashcardCall
@@ -338,7 +362,7 @@ export function fakeApi({
       if (setId && method === 'GET') {
         const found = state.flashcardSets[setId]
         if (!found || found.project_id !== id) throw notFound()
-        return { id: found.id, requested_count: found.requested_count, card_count: found.card_count }
+        return shownSet(found)
       }
       if (!setId && method === 'POST') {
         if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
@@ -615,6 +639,63 @@ function shownItem(state, item) {
   }
 }
 
+/** The session the server derives from a set's marks: unmarked cards by position, then "Not yet" cards
+ * not yet "Got it", by their latest "Not yet", oldest first. */
+function flashcardSession(set) {
+  const done = new Set()
+  const second = new Set()
+  const latest = new Map()
+  set.marks.forEach((m, order) => {
+    if (m.mark === 'got_it') done.add(m.card_id)
+    else {
+      second.add(m.card_id)
+      latest.set(m.card_id, order)
+    }
+  })
+  const unmarked = set.cards.filter((c) => !done.has(c.id) && !latest.has(c.id)).map((c) => c.id)
+  const again = [...latest.keys()].filter((id) => !done.has(id)).sort((a, b) => latest.get(a) - latest.get(b))
+  return { queue: [...unmarked, ...again], done, second }
+}
+
+/** A stored set as the server shows it (Story 4.2). */
+function shownSet(set) {
+  const { queue, done, second } = flashcardSession(set)
+  return {
+    id: set.id,
+    requested_count: set.requested_count,
+    card_count: set.cards.length,
+    ended_at: set.ended_at,
+    cards: set.cards.map((c) => ({ ...c, sources: c.sources.map((label) => ({ label })) })),
+    queue,
+    done_count: done.size,
+    second_try_count: second.size,
+  }
+}
+
+/**
+ * A stored flashcard set of `n` cards in Project `projectId`: card i reads "Question {i}?" / "Answer {i}."
+ * with source "notes.pdf · Page {i}" (1-based), id `{id}-c{i}`. `requested` is the frozen count (default
+ * `n`); `marks` lists saved marks in order ([cardIndex (0-based), 'got_it' | 'not_yet']); `ended` sets
+ * `ended_at`.
+ */
+export function flashcardSet(id, projectId, { n = 3, requested = n, marks = [], ended = false } = {}) {
+  const cards = Array.from({ length: n }, (_, i) => ({
+    id: `${id}-c${i + 1}`,
+    position: i,
+    question: `Question ${i + 1}?`,
+    answer: `Answer ${i + 1}.`,
+    sources: [`notes.pdf · Page ${i + 1}`],
+  }))
+  return {
+    id,
+    project_id: projectId,
+    requested_count: requested,
+    cards,
+    marks: marks.map(([index, mark]) => ({ card_id: cards[index].id, mark })),
+    ended_at: ended ? '2026-11-23T11:00:00Z' : null,
+  }
+}
+
 /** A stored Question as the server shows it: the key, explanation, and sources only once answered. */
 function shownQuestion(q) {
   return {
@@ -831,7 +912,7 @@ function generationJob(state, id, kind, jobId, body) {
 export function finishFlashcards(state, jobId, cardCount) {
   const job = state.jobs.find((j) => j.id === jobId)
   const setId = `set-${jobId}`
-  state.flashcardSets[setId] = { id: setId, project_id: job.project_id, requested_count: job.count, card_count: cardCount }
+  state.flashcardSets[setId] = flashcardSet(setId, job.project_id, { n: cardCount, requested: job.count })
   Object.assign(job, { status: 'completed', progress_step: null, result_ref: setId })
   return setId
 }

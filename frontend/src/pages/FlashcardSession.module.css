@@ -1,0 +1,327 @@
+/* Studying a flashcard set (DESIGN.md › Layout › Activities, Activity header, Progress bar, Flashcard,
+   Flashcard end screen, Key hint, Source label; components › flashcard, flashcard-end-screen; mock
+   key-flashcards.html states 2-4). No green and no amber: flashcards are not a right-or-wrong moment. */
+.activity {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Activity header: as on the Quiz. */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-content-x);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backButton {
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-ui-size);
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background: var(--color-hover);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+}
+
+/* Activity content centres at the reading width. */
+.session {
+  width: 100%;
+  max-width: var(--space-reading-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-content-x) var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Progress: a muted "{n} of {total}" line over the 4px Progress bar, filled in primary. */
+.progressLine {
+  align-self: flex-end;
+  color: var(--color-text-muted);
+  font-size: var(--type-ui-size);
+}
+
+.bar {
+  height: var(--space-1);
+  margin-bottom: var(--space-5);
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--type-body-size);
+}
+
+/* Flashcard: one centred surface card with generous padding; the whole card flips. */
+.card {
+  width: 100%;
+  min-height: calc(var(--space-7) * 6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-7) var(--space-6);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xl);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+/* The flip: a subtle turn only when motion is welcome; instant otherwise. */
+@media (prefers-reduced-motion: no-preference) {
+  .face {
+    animation: turn 0.2s ease-out;
+  }
+}
+
+@keyframes turn {
+  from {
+    opacity: 0;
+    transform: perspective(800px) rotateY(-12deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.overline {
+  margin-bottom: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--type-overline-size);
+  font-weight: var(--type-overline-weight);
+  letter-spacing: var(--type-overline-letter-spacing);
+  text-transform: uppercase;
+}
+
+.term {
+  font-size: var(--type-card-term-size);
+  font-weight: var(--type-card-term-weight);
+  letter-spacing: var(--type-card-term-letter-spacing);
+  overflow-wrap: anywhere;
+}
+
+/* The back: the question small and muted, then the answer and its Source labels. */
+.termSmall {
+  margin-bottom: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--type-body-reading-size);
+  overflow-wrap: anywhere;
+}
+
+.back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The live region that announces the answer: read by screen readers, not shown. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.answer {
+  max-width: var(--space-reading-width);
+  font-size: var(--type-card-answer-size);
+  font-weight: var(--type-card-answer-weight);
+  line-height: var(--type-card-answer-line-height);
+  overflow-wrap: anywhere;
+}
+
+.flipHint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* Source labels: muted pills. */
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.source {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}
+
+/* Below the card: ghost "Stop for now" left; ghost "Not yet" and primary "Got it" right. */
+.under {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.primary,
+.ghost {
+  min-height: var(--space-touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--type-button-size);
+  font-weight: var(--type-button-weight);
+  cursor: pointer;
+}
+
+.primary {
+  border: none;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.ghost {
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.ghost:hover:not(:disabled),
+.card:hover {
+  background: var(--color-hover);
+}
+
+.primary:disabled,
+.ghost:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* Key hint: a small outlined key cap; desktop only. */
+.key {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--space-5);
+  height: var(--space-5);
+  padding: 0 var(--space-1);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-xs);
+  font-family: inherit;
+  font-size: var(--type-key-hint-size);
+  font-weight: var(--type-key-hint-weight);
+  line-height: 1;
+}
+
+.onPrimary {
+  color: var(--color-on-primary);
+  border-color: var(--color-on-primary);
+}
+
+@media (hover: none) {
+  .key {
+    display: none;
+  }
+}
+
+.backButton:focus-visible,
+.card:focus-visible,
+.primary:focus-visible,
+.ghost:focus-visible,
+.headline:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+/* Flashcard end screen: a centred title-lg headline in the text colour; primary then ghost; no score. */
+.end {
+  width: 100%;
+  max-width: var(--space-reading-width);
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-content-x);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-5);
+  text-align: center;
+}
+
+.headline {
+  color: var(--color-text);
+  font-size: var(--type-title-lg-size);
+  font-weight: var(--type-title-lg-weight);
+  letter-spacing: var(--type-title-lg-letter-spacing);
+}
+
+.endActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+/* Skeleton (DESIGN.md › Skeleton): a static block while the set loads. */
+.skeleton {
+  width: 100%;
+  min-height: calc(var(--space-7) * 5);
+  background: var(--color-border);
+  border-radius: var(--radius-xl);
+}

@@ -173,10 +173,20 @@
     },
     "cancelled": "Cancelled. Your choices are kept.",
     "failed": "We couldn't make the flashcards.",
-    "ready_one": "Your flashcards are ready: {{count}} card.",
-    "ready_other": "Your flashcards are ready: {{count}} cards.",
     "fewer_one": "Only {{count}} card was possible from this material.",
     "fewer_other": "Only {{count}} cards were possible from this material.",
+    "session": {
+      "progress": "{{n}} of {{total}}",
+      "term": "Term",
+      "flip": "Click to flip",
+      "spaceKey": "Space",
+      "gotIt": "Got it",
+      "notYet": "Not yet",
+      "stop": "Stop for now",
+      "end_one": "{{count}} card done. {{m}} needed a second try",
+      "end_other": "{{count}} cards done. {{m}} needed a second try",
+      "more": "Make more cards"
+    },
     "notice": "Your flashcards on <topic></topic> are ready · <open>Open</open>"
   },
   "review": {

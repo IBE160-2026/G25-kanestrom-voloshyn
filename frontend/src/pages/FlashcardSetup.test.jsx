@@ -1,4 +1,5 @@
-// Flashcards setup, generation, the set-ready page, and the finish notice (Story 4.1, FR-13, FR-26).
+// Flashcards setup, generation, and the finish notice (Story 4.1, FR-13, FR-26). The study session the
+// finished set opens on is tested in FlashcardSession.test.jsx (Story 4.2).
 // api/client.js and auth/ are mocked (spine › Tests); test/fakeApi.js plays the backend, and stepJob /
 // finishFlashcards / failJob move the flashcards job on.
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -7,7 +8,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { hasSession } from '../auth/index.js'
 import en from '../i18n/en.json'
 import nb from '../i18n/nb.json'
-import { callsTo, failJob, fakeApi, finishFlashcards, material, project, stepJob, topics } from '../test/fakeApi.js'
+import {
+  callsTo,
+  failJob,
+  fakeApi,
+  finishFlashcards,
+  flashcardSet,
+  material,
+  project,
+  stepJob,
+  topics,
+} from '../test/fakeApi.js'
 import { i18n, renderRoute } from '../test/render.jsx'
 import { POLL_MS } from './GenerationSetup.jsx'
 import { NOTICE_POLL_MS } from './useQuizNotices.js'
@@ -132,7 +143,7 @@ describe('Flashcards setup', () => {
     expect(await screen.findByText("There's only enough material for 4 cards.")).toBeInTheDocument()
   })
 
-  it('shows the Progress steps in turn, then the set-ready page, replacing the setup in the history', async () => {
+  it('shows the Progress steps in turn, then the first card, replacing the setup in the history', async () => {
     const { state, router } = await startSet()
 
     await waitFor(() => expect(stepLine()).toBe(STEP(1, 'reading')))
@@ -146,23 +157,22 @@ describe('Flashcards setup', () => {
     finishFlashcards(state, 'f-1', 10)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(await screen.findByRole('heading', { name: 'Your flashcards are ready: 10 cards.' })).toBeInTheDocument()
+    expect(await screen.findByText('1 of 10')).toBeInTheDocument()
+    expect(screen.getByTestId('flashcard')).toHaveTextContent('Question 1?')
     expect(router.state.location.pathname).toBe('/projects/a/flashcard-sets/set-f-1')
     expect(router.state.historyAction).toBe('REPLACE')
     expect(screen.queryByText(/cards were possible/)).not.toBeInTheDocument()
     expect(callsTo('/api/jobs/f-1/seen', 'POST')).toHaveLength(1)
   })
 
-  it('the ready page says when fewer cards were possible, and "← Back to chat" goes home', async () => {
-    const { state, router } = await startSet()
+  it('the set opens saying when fewer cards were possible', async () => {
+    const { state } = await startSet()
 
     finishFlashcards(state, 'f-1', 6)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(await screen.findByRole('heading', { name: 'Your flashcards are ready: 6 cards.' })).toBeInTheDocument()
+    expect(await screen.findByText('1 of 6')).toBeInTheDocument()
     expect(screen.getByText('Only 6 cards were possible from this material.')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: en.activity.back }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a'))
   })
 
   it('Cancel returns to setup with the choices kept', async () => {
@@ -238,7 +248,7 @@ describe('Flashcards setup', () => {
     finishFlashcards(state, 'f-1', 5)
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
-    expect(await screen.findByRole('heading', { name: 'Treningskortene dine er klare: 5 treningskort.' })).toBeInTheDocument()
+    expect(await screen.findByText('1 av 5')).toBeInTheDocument()
     expect(screen.getByText('Bare 5 treningskort var mulig ut fra materialet.')).toBeInTheDocument()
   })
 
@@ -250,49 +260,6 @@ describe('Flashcards setup', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Vi fikk ikke laget treningskortene.')
-  })
-})
-
-describe('Flashcard set ready page', () => {
-  const SET = { id: 'set-1', project_id: 'a', requested_count: 10, card_count: 10 }
-
-  it('a missing Project goes to /projects', async () => {
-    fakeApi({ projects: [] })
-    const { router } = renderRoute('/projects/zzz/flashcard-sets/set-1')
-
-    await waitFor(() => expect(router.state.location.pathname).toBe('/projects'))
-  })
-
-  it('a missing set shows the Inline error with no Try again', async () => {
-    fakeApi({ projects: [project('a')], materials: READY })
-    renderRoute('/projects/a/flashcard-sets/nope')
-
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent(en.errors.not_found)
-    expect(within(alert).queryByRole('button')).not.toBeInTheDocument()
-  })
-
-  it('a failed read shows Try again, which loads the set', async () => {
-    let failing = true
-    fakeApi({
-      projects: [project('a')],
-      materials: READY,
-      flashcardSets: [SET],
-      routes: {
-        'GET /api/projects/a/flashcard-sets/set-1': async () => {
-          if (failing) throw { code: 'internal_error', params: {} }
-          return { id: 'set-1', requested_count: 10, card_count: 10 }
-        },
-      },
-    })
-    renderRoute('/projects/a/flashcard-sets/set-1')
-
-    const alert = await screen.findByRole('alert')
-    failing = false
-    await userEvent.click(within(alert).getByRole('button', { name: en.inlineError.retry }))
-
-    expect(await screen.findByRole('heading', { name: 'Your flashcards are ready: 10 cards.' })).toBeInTheDocument()
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
 
@@ -308,7 +275,7 @@ describe('Flashcards ready notice', () => {
     topic_labels: [],
     ...overrides,
   })
-  const SET = { id: 'set-1', project_id: 'a', requested_count: 10, card_count: 10 }
+  const SET = flashcardSet('set-1', 'a', { n: 10 })
 
   it('shows "Your flashcards on {topic} are ready · Open", and Open goes to the set', async () => {
     const state = fakeApi({
@@ -326,7 +293,7 @@ describe('Flashcards ready notice', () => {
     await userEvent.click(notices.getByRole('button', { name: 'Open' }))
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a/flashcard-sets/set-1'))
-    expect(await screen.findByRole('heading', { name: 'Your flashcards are ready: 10 cards.' })).toBeInTheDocument()
+    expect(await screen.findByText('1 of 10')).toBeInTheDocument()
     await waitFor(() => expect(state.jobs[0].seen).toBe(true))
   })
 

@@ -174,10 +174,20 @@
     },
     "cancelled": "Avbrutt. Valgene dine er lagret.",
     "failed": "Vi fikk ikke laget treningskortene.",
-    "ready_one": "Treningskortene dine er klare: {{count}} treningskort.",
-    "ready_other": "Treningskortene dine er klare: {{count}} treningskort.",
     "fewer_one": "Bare {{count}} treningskort var mulig ut fra materialet.",
     "fewer_other": "Bare {{count}} treningskort var mulig ut fra materialet.",
+    "session": {
+      "progress": "{{n}} av {{total}}",
+      "term": "Begrep",
+      "flip": "Klikk for å snu",
+      "spaceKey": "Space",
+      "gotIt": "Kan det",
+      "notYet": "Ikke ennå",
+      "stop": "Stopp for nå",
+      "end_one": "{{count}} treningskort ferdig. {{m}} trengte et nytt forsøk",
+      "end_other": "{{count}} treningskort ferdige. {{m}} trengte et nytt forsøk",
+      "more": "Lag flere treningskort"
+    },
     "notice": "Treningskortene dine om <topic></topic> er klare · <open>Åpne</open>"
   },
   "review": {
