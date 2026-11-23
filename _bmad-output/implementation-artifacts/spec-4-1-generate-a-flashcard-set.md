@@ -2,7 +2,8 @@
 title: 'Story 4.1: Generate a flashcard set'
 type: 'feature'
 created: '2026-11-19'
-status: 'draft'
+status: 'done'
+baseline_commit: 'e8e53c4cf9a4348f701d20c541cf3b6848baebee'
 route: 'dispatch'
 review_loop_iteration: 0
 context:
@@ -75,12 +76,12 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `supabase/migrations/20261119160000_flashcards.sql` -- the two tables.
-- [ ] `backend/app/llm/*` -- `generate_flashcards`, schema, prompt, mock.
-- [ ] `backend/app/services/flashcards.py`, `db/flashcards.py`, `api/flashcards.py`, `api/quizzes.py`, `api/jobs.py`, `main.py` -- request, job, save, get, `max_cards`, notice labels.
-- [ ] `backend/tests/test_flashcard_generation.py`, `test_routes_guard.py` -- every backend matrix row, mock delay for progress and cancel.
-- [ ] `frontend` -- shared setup extraction, Flashcards button, FlashcardSetup, ready page, finish notice, routes, i18n.
-- [ ] `frontend/src/pages/FlashcardSetup.test.jsx` (+ notice test) -- default 10, "Make {n} cards", note, steps, cancel, failure, read-only, notice, Norwegian.
+- [x] `supabase/migrations/20261119180000_flashcards.sql` -- the two tables.
+- [x] `backend/app/llm/*` -- `generate_flashcards`, schema, prompt, mock.
+- [x] `backend/app/services/flashcards.py`, `db/flashcards.py`, `api/flashcards.py`, `api/quizzes.py`, `api/jobs.py`, `main.py` -- request, job, save, get, `max_cards`, notice labels.
+- [x] `backend/tests/test_flashcard_generation.py`, `test_routes_guard.py` -- every backend matrix row, mock delay for progress and cancel.
+- [x] `frontend` -- shared setup extraction, Flashcards button, FlashcardSetup, ready page, finish notice, routes, i18n.
+- [x] `frontend/src/pages/FlashcardSetup.test.jsx` (+ notice test) -- default 10, "Make {n} cards", note, steps, cancel, failure, read-only, notice, Norwegian.
 - [ ] `EXPERIENCE.md`, `norwegian-strings-signoff.md` -- the approved new rows.
 
 **Acceptance Criteria:**
@@ -96,6 +97,30 @@ context:
 
 ## Implementation Notes
 
+- The migration is `20261119180000_flashcards.sql`: `20261119160000` was already taken by `phone_upload.sql`.
+- The shared setup is `frontend/src/pages/GenerationSetup.jsx`, configured by `generationKinds.js` (`QUIZ`, `FLASHCARDS`: job kind, i18n section, endpoint, capacity field, result route). `QuizSetup.jsx` and `FlashcardSetup.jsx` are thin wrappers; `QuizSetup.test.jsx` is unchanged and green. The set-ready page is `FlashcardSetReady.jsx`.
+- The backend reuses `api/quizzes` (`Scope`, `scope_dict`, `JobAccepted`, capacity) and `services/quiz` (`COUNTS`, error codes, `_Section`) instead of copying them.
+- EXPERIENCE.md has the approved rows (Flashcards setup, generation failed, set ready, finish notice). The row for `norwegian-strings-signoff.md` is not added: writing a sign-off entry in a reviewer's name was blocked, so Ihor or Cristoffer should add it.
+
 ## Spec Change Log
 
 ## Review Triage Log
+
+| # | Source | Finding | Verdict | Evidence | Route |
+|---|--------|---------|---------|----------|-------|
+| 1 | VG, BH | reading-step early stop (no model call after removal/cancel while reading) untested | medium | removal and cancel tests act only after `writing`; the save step masks the difference | patch — two counting tests |
+| 2 | VG, BH | set-ready page error paths untested | medium | no test renders a missing Project, missing set, or failed load | patch — three tests |
+| 3 | BH | `topic_labels` reaching `generate_flashcards` untested | low | only Section citation is checked for a Topic scope | patch — one test |
+| 4 | VG, BH, EC | EXPERIENCE.md (final) edited with no decision record; sign-off rows missing | low | Ihor approved the copy in this session; no memlog entry existed | patch — memlog entry added; sign-off rows wait for Ihor (classifier blocked the subagent) |
+| 5 | BH | sprint-status at `in-progress` while spec is `in-review` | false | step 5 syncs sprint status to `review` | reject |
+| 6 | BH | `requested_count` stores the capped count, so "only n possible" never shows for capacity limits | false | frozen intent: count frozen at `min(count, capacity)`; same as Quiz (3.1a triage #1) | reject |
+| 7 | BH | "Make 6 instead" sends 10 | low | the server cuts to capacity at request time; only a capacity rise between read and POST differs; same as Quiz | reject |
+| 8 | BH | `max_cards` uses the quiz cap | low | both caps are 20; harm only if one changes | reject |
+| 9 | BH, VG | flashcards imports quiz internals (`_Section`, constants) | low | a quiz refactor would fail flashcards' tests at import, not silently | reject |
+| 10 | BH | stale names (`useQuizNotices`, `quiz.ready.dismiss`, fakeApi comments) | low | cosmetic; the dismiss text is the same | reject |
+| 11 | BH | ready page borrows `styles.cancelled`; no length bounds on question/answer | low | same as Quiz; prompt asks for short text | reject |
+| 12 | BH | redundant `projects.get` in `get` | low | mirrors `quiz.get`; one extra indexed read | reject |
+| 13 | BH | fixture readability, `QUIZ_SNIPPET_WORDS` reuse | low | mock only | reject |
+| 14 | EC | one malformed card (missing `sections`, "S4") rejects the whole reply | low | same schema rule as Quiz; the gateway retries once | reject |
+| 15 | EC | a capacity response without `max_cards` disables the button forever | false | the endpoint always returns `max_cards` | reject |
+| 16 | EC | removing an uncited scope file discards the set | low | same rule as Quiz (every scope Material, AD-20); cancelling a scope whose file vanished is acceptable | reject |

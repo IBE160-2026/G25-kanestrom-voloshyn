@@ -62,8 +62,9 @@ export const IMAGE_LIMIT = 25
  * id to its files; `jobs` lists jobs ({id, project_id, kind, status}). An upload adds a processing
  * file and a running job. `imagesLeft` is today's image limit left (Story 2.5): an image upload uses
  * one, and at 0 it is refused with `quota_exceeded`. `routes` overrides a handler by "METHOD /path"
- * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions`: a
- * number, or a function of the scope (Story 3.1a). A quiz request adds a running `quiz` job at the
+ * (for example 'POST /api/projects'). `capacity` is what GET .../capacity answers as `max_questions` and
+ * `max_cards`: a number, or a function of the scope (Stories 3.1a, 4.1). A flashcards request (Story 4.1)
+ * adds a running `flashcards` job like a quiz request; `finishFlashcards` completes it with a saved set. A quiz request adds a running `quiz` job at the
  * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
  * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
@@ -94,6 +95,7 @@ export function fakeApi({
   imagesLeft = IMAGE_LIMIT,
   capacity = 20,
   quizzes = [],
+  flashcardSets = [],
   mistakes = [],
   rounds = [],
   appPublicUrl = 'http://192.168.1.20:8000',
@@ -114,6 +116,9 @@ export function fakeApi({
     capacity, // max_questions, or a function of the scope (Story 3.1a)
     quizRequests: [], // bodies of POST .../quizzes
     quizzes: Object.fromEntries(quizzes.map((q) => [q.id, structuredClone(q)])), // { [quizId]: quiz(...) }
+    flashcardRequests: [], // bodies of POST .../flashcard-sets (Story 4.1)
+    // { [setId]: { id, project_id, requested_count, card_count } } (Story 4.1)
+    flashcardSets: Object.fromEntries(flashcardSets.map((f) => [f.id, { ...f }])),
     answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
     mistakes: mistakes.map((m) => ({ withdrawn: false, cleared: false, ...m })), // Story 3.3
@@ -278,7 +283,7 @@ export function fakeApi({
       if (!state.projects.some((p) => p.id === capacityCall[1])) throw notFound()
       const scope = JSON.parse(decodeURIComponent(capacityCall[2]))
       const max = typeof state.capacity === 'function' ? state.capacity(scope) : state.capacity
-      return { max_questions: max }
+      return { max_questions: max, max_cards: max }
     }
     // Taking a Quiz (Story 3.2): like the server, scored here, saved once, the key hidden until answered.
     const answerCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes\/([^/]+)\/questions\/([^/]+)\/answer$/)
@@ -319,22 +324,27 @@ export function fakeApi({
         if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
         if (!(state.materials[id] ?? []).some((m) => m.status === 'ready')) throw rule('insufficient_material')
         state.quizRequests.push(body)
-        // Like the server: the frozen count is the asked one cut to the scope's capacity.
-        const max = typeof state.capacity === 'function' ? state.capacity(body.scope) : state.capacity
-        const job = {
-          id: `q-${state.quizRequests.length}`,
-          project_id: id,
-          kind: 'quiz',
-          status: 'running',
-          progress_step: 'reading',
-          result_ref: null,
-          error_code: null,
-          count: Math.min(body.count, max),
-          // Like the server: the chosen Topics' labels, frozen in order; none for "All topics" (Story 3.1b).
-          topic_labels: (body.scope?.topic_ids ?? []).map(
-            (topicId) => (state.materials[id] ?? []).flatMap((m) => m.topics ?? []).find((t) => t.id === topicId)?.label,
-          ).filter((label) => label !== undefined),
-        }
+        const job = generationJob(state, id, 'quiz', `q-${state.quizRequests.length}`, body)
+        state.jobs.push(job)
+        return { job_id: job.id }
+      }
+    }
+    // Flashcard generation (Story 4.1): like the quiz request; the set is read back as its counts.
+    const flashcardCall = path.match(/^\/api\/projects\/([^/]+)\/flashcard-sets(?:\/([^/]+))?$/)
+    if (flashcardCall) {
+      const [, id, setId] = flashcardCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (setId && method === 'GET') {
+        const found = state.flashcardSets[setId]
+        if (!found || found.project_id !== id) throw notFound()
+        return { id: found.id, requested_count: found.requested_count, card_count: found.card_count }
+      }
+      if (!setId && method === 'POST') {
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        if (!(state.materials[id] ?? []).some((m) => m.status === 'ready')) throw rule('insufficient_material')
+        state.flashcardRequests.push(body)
+        const job = generationJob(state, id, 'flashcards', `f-${state.flashcardRequests.length}`, body)
         state.jobs.push(job)
         return { job_id: job.id }
       }
@@ -795,6 +805,35 @@ export function finish(state, materialId, changes = { status: 'ready' }, { proje
   }
   const job = state.jobs.find((j) => j.result_ref === materialId)
   if (job) job.status = 'completed'
+}
+
+/** A running quiz or flashcards job at the `reading` step, as the server queues it: the frozen count is
+ * the asked one cut to the scope's capacity, with the chosen Topics' labels in order ("All topics": none). */
+function generationJob(state, id, kind, jobId, body) {
+  const max = typeof state.capacity === 'function' ? state.capacity(body.scope) : state.capacity
+  return {
+    id: jobId,
+    project_id: id,
+    kind,
+    status: 'running',
+    progress_step: 'reading',
+    result_ref: null,
+    error_code: null,
+    count: Math.min(body.count, max),
+    topic_labels: (body.scope?.topic_ids ?? []).map(
+      (topicId) => (state.materials[id] ?? []).flatMap((m) => m.topics ?? []).find((t) => t.id === topicId)?.label,
+    ).filter((label) => label !== undefined),
+  }
+}
+
+/** Complete a flashcards job with a saved set of `cardCount` cards (its `requested_count` is the job's
+ * frozen count). Returns the set id. */
+export function finishFlashcards(state, jobId, cardCount) {
+  const job = state.jobs.find((j) => j.id === jobId)
+  const setId = `set-${jobId}`
+  state.flashcardSets[setId] = { id: setId, project_id: job.project_id, requested_count: job.count, card_count: cardCount }
+  Object.assign(job, { status: 'completed', progress_step: null, result_ref: setId })
+  return setId
 }
 
 /** Move a running quiz job to `step` ('reading', 'writing', or 'checking'). */

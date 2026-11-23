@@ -104,7 +104,8 @@
     }
   },
   "tools": {
-    "quiz": "Quiz"
+    "quiz": "Quiz",
+    "flashcards": "Treningskort"
   },
   "mistakes": {
     "card_one": "Du har {{count}} feil å repetere",
@@ -155,6 +156,29 @@
       "more": "{{a}} og {{n}} til",
       "dismiss": "Lukk"
     }
+  },
+  "flashcards": {
+    "title": "Lag treningskort",
+    "topics": "Hvilke emner?",
+    "allTopics": "Alle emner",
+    "count": "Hvor mange treningskort?",
+    "make_one": "Lag {{count}} treningskort",
+    "make_other": "Lag {{count}} treningskort",
+    "tooLittle_one": "Det er bare nok materiale til {{count}} treningskort.",
+    "tooLittle_other": "Det er bare nok materiale til {{count}} treningskort.",
+    "makeInstead": "Lag {{count}} i stedet",
+    "steps": {
+      "reading": "Leser materialet ditt",
+      "writing": "Skriver treningskort",
+      "checking": "Sjekker kildene"
+    },
+    "cancelled": "Avbrutt. Valgene dine er lagret.",
+    "failed": "Vi fikk ikke laget treningskortene.",
+    "ready_one": "Treningskortene dine er klare: {{count}} treningskort.",
+    "ready_other": "Treningskortene dine er klare: {{count}} treningskort.",
+    "fewer_one": "Bare {{count}} treningskort var mulig ut fra materialet.",
+    "fewer_other": "Bare {{count}} treningskort var mulig ut fra materialet.",
+    "notice": "Treningskortene dine om <topic></topic> er klare · <open>Åpne</open>"
   },
   "review": {
     "steps": {

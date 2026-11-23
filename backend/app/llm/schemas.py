@@ -103,6 +103,36 @@ class QuizDraft(BaseModel):
         return value[:QUIZ_MAX] if isinstance(value, list) else value
 
 
+# At most this many flashcards per set, server-enforced (AD-12).
+FLASHCARDS_MAX = 20
+
+
+class DraftCard(BaseModel):
+    """One flashcard as the model writes it: a question, its answer, and the 1-based Section numbers
+    (`S1…Sn`) it rests on. The service maps the numbers back to Section ids (AD-7)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # A blank question or answer drops that card in the service's check, not the whole reply.
+    question: str
+    answer: str
+    # May be empty: an uncited card is dropped by the service, not retried.
+    sections: list[int]
+
+
+class FlashcardDraft(BaseModel):
+    """`generate_flashcards`: up to 20 cards (FR-13). Extra cards are cut, not refused."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cards: Annotated[list[DraftCard], Field(max_length=FLASHCARDS_MAX)]
+
+    @field_validator("cards", mode="before")
+    @classmethod
+    def _cap(cls, value: object) -> object:
+        return value[:FLASHCARDS_MAX] if isinstance(value, list) else value
+
+
 # At most this many Practice Questions per Mistake Review round (AD-11, AD-12).
 PRACTICE_MAX = 20
 

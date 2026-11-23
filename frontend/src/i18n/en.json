@@ -103,7 +103,8 @@
     }
   },
   "tools": {
-    "quiz": "Quiz"
+    "quiz": "Quiz",
+    "flashcards": "Flashcards"
   },
   "mistakes": {
     "card_one": "{{count}} mistake to review",
@@ -154,6 +155,29 @@
       "more": "{{a}} and {{n}} more",
       "dismiss": "Dismiss"
     }
+  },
+  "flashcards": {
+    "title": "Make flashcards",
+    "topics": "Which topics?",
+    "allTopics": "All topics",
+    "count": "How many cards?",
+    "make_one": "Make {{count}} card",
+    "make_other": "Make {{count}} cards",
+    "tooLittle_one": "There's only enough material for {{count}} card.",
+    "tooLittle_other": "There's only enough material for {{count}} cards.",
+    "makeInstead": "Make {{count}} instead",
+    "steps": {
+      "reading": "Reading your material",
+      "writing": "Writing cards",
+      "checking": "Checking sources"
+    },
+    "cancelled": "Cancelled. Your choices are kept.",
+    "failed": "We couldn't make the flashcards.",
+    "ready_one": "Your flashcards are ready: {{count}} card.",
+    "ready_other": "Your flashcards are ready: {{count}} cards.",
+    "fewer_one": "Only {{count}} card was possible from this material.",
+    "fewer_other": "Only {{count}} cards were possible from this material.",
+    "notice": "Your flashcards on <topic></topic> are ready · <open>Open</open>"
   },
   "review": {
     "steps": {

@@ -108,6 +108,25 @@ def generate_quiz(labels: Sequence[str], texts: Sequence[str], count: int) -> di
     return {"questions": questions}
 
 
+def generate_flashcards(labels: Sequence[str], texts: Sequence[str], count: int) -> dict[str, Any]:
+    """`count` cards (the caller passes `min(requested, capacity)`, AD-4) cycling over the Sections:
+    card k cites Section `(k - 1) % n + 1`, and its answer quotes the start of that Section."""
+    sections = len(texts)
+    cards = []
+    for k in range(1, count + 1 if sections else 1):
+        number = (k - 1) % sections + 1
+        label = labels[number - 1] or f"Section {number}"
+        snippet = " ".join(texts[number - 1].split()[:QUIZ_SNIPPET_WORDS]) or label
+        cards.append(
+            {
+                "question": f"Card {k}: What does {label} say?",
+                "answer": snippet,
+                "sections": [number],
+            }
+        )
+    return {"cards": cards}
+
+
 def generate_practice(targets: Sequence[dict[str, Any]], labels: Sequence[str], texts: Sequence[str]) -> dict[str, Any]:
     """One item per target, in order (AD-4). Each target is `{mistake_id, question, correct_answer,
     sections}` with 1-based numbers into `labels`/`texts`. Item k asks again about the target's

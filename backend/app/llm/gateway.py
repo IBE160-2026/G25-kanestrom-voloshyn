@@ -26,7 +26,17 @@ from app.config import ConfigError, LlmMode, Settings
 from app.extraction.text import count_words
 from app.llm import fixtures
 from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
-from app.llm.schemas import PRACTICE_MAX, QUIZ_MAX, DetectedTopics, ImageText, PracticeDraft, ProjectName, QuizDraft
+from app.llm.schemas import (
+    FLASHCARDS_MAX,
+    PRACTICE_MAX,
+    QUIZ_MAX,
+    DetectedTopics,
+    FlashcardDraft,
+    ImageText,
+    PracticeDraft,
+    ProjectName,
+    QuizDraft,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -299,6 +309,32 @@ class Gateway:
                 {"role": "user", "content": user},
             ],
             fixture=lambda: fixtures.generate_quiz(labels, texts, mock_count),
+        )
+
+    async def generate_flashcards(
+        self, sections: Sequence[LabelledSection], count: int, topic_labels: Sequence[str] = ()
+    ) -> FlashcardDraft:
+        """Up to `count` (at most 20) flashcards from the Sections, each a question and answer citing the
+        1-based Section numbers it rests on (FR-13). `topic_labels` asks the model to focus on those
+        Topics. The caller has already checked the scope against the context budget (AD-7), so this is
+        one call. Mock mode returns `min(count, capacity)` cards (`fixtures.generate_flashcards`)."""
+        texts = [s.text for s in sections]
+        labels = [s.label for s in sections]
+        count = max(0, min(count, FLASHCARDS_MAX))
+        mock_count = min(count, estimate_items(texts, self._settings.capacity_words_per_item, FLASHCARDS_MAX))
+        # Student-written labels are data: quoted in the user message, never in the system prompt.
+        focus = focus_block(topic_labels)
+        material = label_sections(texts)
+        user = f"{focus}\n\n{material}" if focus else material
+        return await self._run(
+            task="generate_flashcards",
+            schema=FlashcardDraft,
+            model=self._settings.llm_text_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("generate_flashcards").replace("{count}", str(count))},
+                {"role": "user", "content": user},
+            ],
+            fixture=lambda: fixtures.generate_flashcards(labels, texts, mock_count),
         )
 
     async def generate_practice(self, targets: Sequence[PracticeTarget]) -> PracticeDraft:
