@@ -1,7 +1,8 @@
 """Background jobs (AD-20).
 
 - `GET /api/projects/{project_id}/jobs`: active jobs plus finished ones not yet seen; the SPA polls
-  it every 2 s while something is active. A `quiz` job carries its frozen `topic_labels` (Story 3.1b).
+  it every 2 s while something is active. A `quiz` or `flashcards` job carries its frozen `topic_labels` (Stories
+  3.1b, 4.1).
 - `POST /api/jobs/{job_id}/seen`: dismisses a finished job (bookkeeping, on the guard's allowlist).
 - `POST /api/jobs/{job_id}/cancel`: a student's cancel (bookkeeping, on the allowlist, so it also works
   in an archived Project); `204`, also for a job that already finished. A queued job ends `cancelled`
@@ -22,6 +23,9 @@ from app.services import jobs, projects
 
 router = APIRouter()
 
+# Job kinds whose frozen `topic_labels` the list exposes.
+LABELLED_KINDS = ("quiz", "flashcards")
+
 
 class Job(BaseModel):
     id: UUID
@@ -32,14 +36,14 @@ class Job(BaseModel):
     error_code: str | None
     created_at: datetime
     finished_at: datetime | None
-    # A `quiz` job's frozen focus labels (Story 3.1b), for the "is ready" notice; empty means "All topics"
-    # and is always empty for other kinds.
+    # A `quiz` or `flashcards` job's frozen focus labels (Stories 3.1b, 4.1), for the "is ready" notice;
+    # empty means "All topics" and is always empty for other kinds.
     topic_labels: list[str] = []
 
     @classmethod
     def from_row(cls, row: dict) -> "Job":
         params = row.get("params")
-        labels = params.get("topic_labels") if row["kind"] == "quiz" and isinstance(params, dict) else None
+        labels = params.get("topic_labels") if row["kind"] in LABELLED_KINDS and isinstance(params, dict) else None
         # Only string items of a list; anything else (missing, null, a bad type) is no labels.
         kept = [label for label in labels if isinstance(label, str)] if isinstance(labels, list) else []
         return cls.model_validate({**row, "topic_labels": kept})

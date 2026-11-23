@@ -152,6 +152,21 @@ def test_quiz_generation_is_guarded():
     assert active_project in _calls(route.dependant)
 
 
+def test_flashcard_generation_is_guarded():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(
+        r for r in api_routes(app) if r.path == "/api/projects/{project_id}/flashcard-sets" and "POST" in r.methods
+    )
+    assert active_project in _calls(route.dependant)
+
+
+def test_a_flashcard_set_is_an_unguarded_read():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/flashcard-sets/{set_id}")
+    assert route.methods == {"GET"}
+    assert active_project not in _calls(route.dependant)
+
+
 def test_job_cancel_is_allowlisted_bookkeeping():
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     route = next(r for r in api_routes(app) if r.path == "/api/jobs/{job_id}/cancel" and "POST" in r.methods)

@@ -9,8 +9,10 @@ from app.llm.gateway import Gateway, PracticeTarget, create_gateway, practice_se
 from app.llm.schemas import (
     DetectedTopic,
     DetectedTopics,
+    DraftCard,
     DraftPractice,
     DraftQuestion,
+    FlashcardDraft,
     ImageText,
     PracticeDraft,
     ProjectName,
@@ -20,8 +22,10 @@ from app.llm.schemas import (
 __all__ = [
     "DetectedTopic",
     "DetectedTopics",
+    "DraftCard",
     "DraftPractice",
     "DraftQuestion",
+    "FlashcardDraft",
     "Gateway",
     "ImageText",
     "LLMError",

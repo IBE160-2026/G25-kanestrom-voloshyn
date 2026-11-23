@@ -6,7 +6,8 @@ import styles from './ReadyNotice.module.css'
 // as an underlined primary-coloured link, and a × ("Dismiss"). No badge, no fill; not a chat message.
 // The caller puts it in a polite live region. The Topic labels come from model output, so the {topic}
 // text is a React text child, never part of the string <Trans> parses. A `review_round` job (Story 3.4)
-// reads "Your practice questions are ready · Open" instead.
+// reads "Your practice questions are ready · Open" instead, and a `flashcards` job (Story 4.1) "Your
+// flashcards on {topic} are ready · Open", with the same {topic} rules.
 export default function ReadyNotice({ kind = 'quiz', labels, onOpen, onDismiss }) {
   const { t } = useTranslation()
   const open = <button type="button" className={styles.open} data-notice-open="" onClick={onOpen} />
@@ -16,7 +17,10 @@ export default function ReadyNotice({ kind = 'quiz', labels, onOpen, onDismiss }
         {kind === 'review_round' ? (
           <Trans i18nKey="review.ready" components={{ open }} />
         ) : (
-          <Trans i18nKey="quiz.ready.message" components={{ topic: <Plain text={topicText(t, labels)} />, open }} />
+          <Trans
+            i18nKey={kind === 'flashcards' ? 'flashcards.notice' : 'quiz.ready.message'}
+            components={{ topic: <Plain text={topicText(t, labels)} />, open }}
+          />
         )}
       </p>
       <button type="button" className={styles.dismiss} aria-label={t('quiz.ready.dismiss')} onClick={onDismiss}>

@@ -160,6 +160,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Finished-generation message | "Your quiz on {topic} is ready · Open" | Quizen din om {topic} er klar · Åpne |
 | Finished-generation message, {topic} | No topics chosen: "all topics" · two: "{a} and {b}" · three or more: "{a} and {n} more" · dismiss: "Dismiss" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer with Story 3.1b] | alle emner · {a} og {b} · {a} og {n} til · Lukk |
 | Finished-generation message, Mistake Review | "Your practice questions are ready · Open" [ASSUMPTION: copy] | Øvingsspørsmålene dine er klare · Åpne |
+| Finished-generation message, Flashcards | "Your flashcards on {topic} are ready · Open" ({topic} as for the Quiz) [ASSUMPTION: copy, approved 2026-11-19 by Ihor with Story 4.1] | Treningskortene dine om {topic} er klare · Åpne |
 | File menu trigger, accessible name | "More options for {file name}" [ASSUMPTION] | Flere valg for {file name} |
 | File menu item | "Remove" | Fjern |
 | Remove file dialog, title | "Remove {file name}?" [ASSUMPTION] | Vil du fjerne {file name}? |
@@ -252,6 +253,9 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Chat, message limit reached | "You've used today's 50 messages. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 50 meldinger. Prøv igjen i morgen. |
 | Mistakes card, action | "Start" | Start |
 | Quiz setup | "Make a quiz" · "Which topics?" · "All topics" [ASSUMPTION: copy] | Lag en quiz · Hvilke emner? · Alle emner |
+| Flashcards setup | "Make flashcards" [ASSUMPTION: copy, approved 2026-11-19 by Ihor with Story 4.1] | Lag treningskort |
+| Flashcards, generation failed | "We couldn't make the flashcards." + "Try again" [ASSUMPTION: copy, approved 2026-11-19 by Ihor with Story 4.1] | Vi fikk ikke laget treningskortene. · Prøv igjen |
+| Flashcards, set ready (until Story 4.2) | "Your flashcards are ready: {n} cards." ("1 card") · fewer than asked: "Only {n} cards were possible from this material." · "← Back to chat" [ASSUMPTION: copy, approved 2026-11-19 by Ihor with Story 4.1] | Treningskortene dine er klare: {n} treningskort. · Bare {n} treningskort var mulig ut fra materialet. |
 | Answer option labels | "Your answer" · "Correct answer" | Ditt svar · Riktig svar |
 | Feedback, correct | "Correct" [ASSUMPTION: copy] | Riktig |
 | Score summary | "{correct} of {total} correct" · "Missed questions stay in your review." · "New quiz" [ASSUMPTION: copy] | {correct} av {total} riktige · Spørsmål du bommet på, ligger i repetisjonen din. · Ny quiz |

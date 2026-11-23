@@ -1,7 +1,7 @@
 """Quiz setup, generation, and taking (FR-10, FR-11, FR-26, AD-7, AD-9, AD-20).
 
-- `GET /api/projects/{project_id}/capacity?scope=<json>`: `{max_questions}` for a scope, deterministic,
-  with no model call. A read, so no read-only guard.
+- `GET /api/projects/{project_id}/capacity?scope=<json>`: `{max_questions, max_cards}` for a scope,
+  deterministic, with no model call; both are the same estimate (AD-7, Story 4.1). A read, so no read-only guard.
 - `POST /api/projects/{project_id}/quizzes` `{scope, count}`: requires an active Project
   (`ActiveProject`); resolves the scope, refuses one over the context budget (`422 scope_too_large`), and
   queues a `quiz` job: `202 {job_id}`.
@@ -57,6 +57,8 @@ def scope_dict(scope: Scope) -> dict[str, Any]:
 
 class Capacity(BaseModel):
     max_questions: int
+    # Flashcards (Story 4.1) use the same capacity as Quiz questions.
+    max_cards: int
 
 
 class QuizRequest(BaseModel):
@@ -118,9 +120,8 @@ async def get_capacity(
         raise AppError(422, "invalid_request", "scope must be {all_topics: true} or {topic_ids: [...]}",
                        {"fields": ["scope"]}) from None
     words_per_item = request.app.state.settings.capacity_words_per_item
-    return Capacity(
-        max_questions=await quiz.capacity(conn, user.account_id, project_id, scope_dict(parsed), words_per_item)
-    )
+    items = await quiz.capacity(conn, user.account_id, project_id, scope_dict(parsed), words_per_item)
+    return Capacity(max_questions=items, max_cards=items)
 
 
 @router.post("/quizzes", status_code=202, response_model=JobAccepted)

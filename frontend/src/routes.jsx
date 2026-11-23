@@ -4,6 +4,8 @@ import RequireSession from './components/RequireSession.jsx'
 import AuthCallback from './pages/AuthCallback.jsx'
 import CreateAccount from './pages/CreateAccount.jsx'
 import EmailVerified from './pages/EmailVerified.jsx'
+import FlashcardSetReady from './pages/FlashcardSetReady.jsx'
+import FlashcardSetup from './pages/FlashcardSetup.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
 import PhoneUpload from './pages/PhoneUpload.jsx'
@@ -37,6 +39,8 @@ export const routes = [
           { path: '/projects/:projectId', element: <ProjectHome /> },
           { path: '/projects/:projectId/quiz', element: <QuizSetup /> },
           { path: '/projects/:projectId/quizzes/:quizId', element: <QuizPage /> },
+          { path: '/projects/:projectId/flashcards', element: <FlashcardSetup /> },
+          { path: '/projects/:projectId/flashcard-sets/:setId', element: <FlashcardSetReady /> },
           { path: '/projects/:projectId/review', element: <ReviewStart /> },
           { path: '/projects/:projectId/review/:roundId', element: <ReviewSession /> },
         ],
