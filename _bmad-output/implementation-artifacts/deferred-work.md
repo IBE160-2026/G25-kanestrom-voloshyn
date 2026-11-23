@@ -110,3 +110,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-7-4-delete-my-account.md`
   summary: Account deletion goes on to delete the auth user even when `storage.delete_prefix` failed (errors are swallowed), so the student's files can outlive the Account with no retry.
   evidence: Review of 7.4 (EC, BH); same root as the 7.2b Storage-retry entry — have `delete_prefix` report failure, or sweep orphaned prefixes in the hourly task.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-2-study-a-flashcard-set.md`
+  summary: Add a concurrency test showing two simultaneous final "Got it" marks on one flashcard set still end the set (unverified, medium if it fails).
+  evidence: The set-row lock in services/flashcards.mark is untested; settle with a two-connection test that marks the last two cards at once and asserts ended_at is set.

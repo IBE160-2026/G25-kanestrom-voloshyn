@@ -49,6 +49,7 @@ Each row points to the "Strings by surface" rows for that flow.
 | Quiz | Quiz setup, count picker, too-little-material note, answer labels, feedback (correct, not quite), next question, see results, score summary | [x] | [x] |
 | Flashcards | Count picker, too-little-material note, actions, progress, end screen | [x] | [x] |
 | Flashcards, Story 4.1 additions (new 2026-11-23) | Flashcards setup ("Lag treningskort"), Flashcards generation failed, Flashcards set ready (until Story 4.2), Finished-generation message for Flashcards | [x] | [ ] |
+| Flashcards, Story 4.2 additions (new 2026-11-23) | Flashcard, front ("Begrep", "Klikk for å snu") | [x] | [ ] |
 | Summary | Summarize setup, "Saved to History" | [x] | [x] |
 | Mistake Review | Mistakes card and Start, progress, context, next mistake, Round done, All cleared, saved line, already starting, source file removed | [x] | [x] |
 | History | History link, filter, empty, loading, error, "Do it again", Unfinished, source removed | [x] | [x] |

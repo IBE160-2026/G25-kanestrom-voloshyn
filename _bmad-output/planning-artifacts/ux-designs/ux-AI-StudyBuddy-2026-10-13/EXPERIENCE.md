@@ -265,6 +265,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Generation cancelled | "Cancelled. Your choices are kept." [ASSUMPTION: copy] | Avbrutt. Valgene dine er lagret. |
 | Flashcards, actions | "Got it" · "Not yet" · "Stop for now" | Kan det · Ikke ennå · Stopp for nå |
 | Flashcards, progress | "{n} of {total}" | {n} av {total} |
+| Flashcard, front | Overline "Term" · "Click to flip" with the Space key hint (DESIGN.md › Flashcard) [ASSUMPTION: copy, approved 2026-11-23 by Ihor with Story 4.2] | Begrep · Klikk for å snu |
 | Flashcard end screen | "{n} cards done. {m} needed a second try" ("1 card done") · "Make more cards" | {n} treningskort ferdige. {m} trengte et nytt forsøk ("1 treningskort ferdig") · Lag flere treningskort |
 | Activity header, every activity | "← Back to chat" | ← Tilbake til samtalen |
 | Mistake Review, progress | "{n} of {m} cleared" | {n} av {m} repetert |

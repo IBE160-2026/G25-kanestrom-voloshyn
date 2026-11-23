@@ -117,7 +117,9 @@ def test_a_mock_set_of_10_from_all_topics_saves_10_cited_cards(client, student, 
     assert (step, error) == (None, None)
     response = client.get(f"/api/projects/{project}/flashcard-sets/{set_id}", headers=bearer(student["token"]))
     assert response.status_code == 200, response.text
-    assert response.json() == {"id": str(set_id), "requested_count": 10, "card_count": 10}
+    body = response.json()
+    assert (body["id"], body["requested_count"], body["card_count"], body["ended_at"]) == (str(set_id), 10, 10, None)
+    assert len(body["cards"]) == len(body["queue"]) == 10
 
     cards = cards_of(db, set_id)
     assert [c[0] for c in cards] == list(range(10))

@@ -167,6 +167,17 @@ def test_a_flashcard_set_is_an_unguarded_read():
     assert active_project not in _calls(route.dependant)
 
 
+def test_flashcard_marks_are_guarded():
+    # Story 4.2: a mark is a content mutation (AD-22).
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(
+        r
+        for r in api_routes(app)
+        if r.path == "/api/projects/{project_id}/flashcard-sets/{set_id}/cards/{card_id}/mark" and "POST" in r.methods
+    )
+    assert active_project in _calls(route.dependant)
+
+
 def test_job_cancel_is_allowlisted_bookkeeping():
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     route = next(r for r in api_routes(app) if r.path == "/api/jobs/{job_id}/cancel" and "POST" in r.methods)
