@@ -41,3 +41,6 @@
 - [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Cristoffer ticks the Story 4.3 row in `norwegian-strings-signoff.md`.
 - [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Manual check of Summarize in the running app (setup, progress, view, notice).
 - [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Quiz/Flashcards setup don't restore the chosen topics when a running job is resumed (deferred-work.md).
+- [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Cristoffer ticks the Story 4.4 row in `norwegian-strings-signoff.md`.
+- [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Manual check of the chat in the running app (streaming over the Vite proxy, a real browser disconnect, "not covered", the limit notice) and in live mode against OpenRouter.
+- [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Frontend timeout flakes under full-parallel load now hit more files; raise `testTimeout` or cap `maxWorkers` (deferred-work.md).
