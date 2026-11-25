@@ -38,3 +38,6 @@
 - [ ] 2026-11-23 [story-4-2-study-a-flashcard-set](990-2026-11-23-17-41-40-story-4-2-study-a-flashcard-set.md) — Cristoffer ticks the Story 4.1 and 4.2 rows in `norwegian-strings-signoff.md`.
 - [ ] 2026-11-23 [story-4-2-study-a-flashcard-set](990-2026-11-23-17-41-40-story-4-2-study-a-flashcard-set.md) — Manual check of the flashcard session in the running app (flip, keys, Not yet coming back, end screen, screen reader announces the answer).
 - [ ] 2026-11-23 [story-4-2-study-a-flashcard-set](990-2026-11-23-17-41-40-story-4-2-study-a-flashcard-set.md) — Concurrency test for two simultaneous final "Got it" marks (deferred-work.md).
+- [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Cristoffer ticks the Story 4.3 row in `norwegian-strings-signoff.md`.
+- [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Manual check of Summarize in the running app (setup, progress, view, notice).
+- [ ] 2026-11-25 [story-4-3-summaries](989-2026-11-25-19-37-51-story-4-3-summaries.md) — Quiz/Flashcards setup don't restore the chosen topics when a running job is resumed (deferred-work.md).
