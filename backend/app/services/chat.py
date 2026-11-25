@@ -1,6 +1,6 @@
 """Ask AI: the Project's chat and its streamed, sourced answers (Story 4.4: FR-16, AD-7, AD-12, AD-18, AD-25).
 
-Story 4.4 keeps one chat per Project. `open_chat` returns it, creating it on first use; a read, so it
+A Project holds several chats (Story 4.5): `open_chat` returns the one last opened, creating it on first use; a read, so it
 also opens in a read-only Project. A chat whose one-file scope is no longer Ready falls back to all
 materials on its next read (and on the next send).
 
@@ -126,8 +126,8 @@ async def set_scope(conn: AsyncConnection, account_id: UUID, chat_id: UUID, scop
 
 
 async def open_chat(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
-    """`{id, current_scope, messages: [{id, role, text, sources: [{label}]}]}`, the chat created on first
-    use. A read: no guard, so a read-only Project's thread still shows."""
+    """`{id, current_scope, messages: [{id, role, text, sources: [{label}]}]}`: the Project's chat last
+    opened (Story 4.5), created on first use. A read: no guard, so a read-only Project's thread still shows."""
     await projects.get(conn, account_id, project_id)
     chat = await repo.latest_for_project(conn, account_id, project_id)
     if chat is None:
@@ -136,6 +136,33 @@ async def open_chat(conn: AsyncConnection, account_id: UUID, project_id: UUID) -
         chat = await repo.latest_for_project(conn, account_id, project_id)
         if chat is None:
             chat = await repo.insert(conn, account_id, project_id)
+    return await _view(conn, account_id, chat)
+
+
+async def open_chat_by_id(conn: AsyncConnection, account_id: UUID, chat_id: UUID) -> dict[str, Any]:
+    """Open one chat of the Account (Story 4.5; History links here in Story 5.1). It becomes the Project's
+    chat last opened. A read: no guard, so a read-only Project's chat still opens."""
+    return await _view(conn, account_id, await get_chat(conn, account_id, chat_id))
+
+
+async def new_chat(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any]:
+    """"New chat" (Story 4.5, FR-16): a fresh, empty chat on all materials, which becomes the one last
+    opened; the previous chat is left unchanged. When the chat last opened has no messages yet, it is
+    reused (reset to all materials) instead of adding another empty chat, unless an answer is streaming in
+    it. Requires an active Project; `require_active` locks the Project row, so two at once add one chat."""
+    await projects.require_active(conn, account_id, project_id)
+    current = await repo.latest_for_project(conn, account_id, project_id)
+    # Never reuse a chat whose first answer is still streaming: its turn would land in the "new" chat.
+    if current is not None and not is_busy(current["id"]) and not await repo.has_messages(conn, current["id"]):
+        await repo.set_scope(conn, current["id"], dict(ALL_MATERIALS))
+        chat = {**current, "current_scope": dict(ALL_MATERIALS)}
+    else:
+        chat = await repo.insert(conn, account_id, project_id)
+    return await _view(conn, account_id, chat)
+
+
+async def _view(conn: AsyncConnection, account_id: UUID, chat: dict[str, Any]) -> dict[str, Any]:
+    """Make `chat` the one last opened and return it with its scope and thread."""
     scope = await _current_scope(conn, account_id, chat)
     await repo.touch(conn, chat["id"])
     rows = await repo.messages(conn, chat["id"])

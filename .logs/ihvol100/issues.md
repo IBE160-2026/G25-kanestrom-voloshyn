@@ -44,3 +44,5 @@
 - [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Cristoffer ticks the Story 4.4 row in `norwegian-strings-signoff.md`.
 - [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Manual check of the chat in the running app (streaming over the Vite proxy, a real browser disconnect, "not covered", the limit notice) and in live mode against OpenRouter.
 - [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Frontend timeout flakes under full-parallel load now hit more files; raise `testTimeout` or cap `maxWorkers` (deferred-work.md).
+- [ ] 2026-11-25 [story-4-5-several-chats](987-2026-11-25-21-36-17-story-4-5-several-chats.md) — Manual check of New chat and reopening the last chat in the running app.
+- [ ] 2026-11-25 [story-4-5-several-chats](987-2026-11-25-21-36-17-story-4-5-several-chats.md) — Epic 4 retrospective (optional in sprint-status) once 4.5 is merged.

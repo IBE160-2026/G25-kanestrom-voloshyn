@@ -12,6 +12,8 @@
 //   sending again can help (`failure.retryable`). `quota_exceeded`
 //   sets the messages left to 0 instead (the Limit notice turns into the limit message).
 // - `setScope(scope)` saves `{"all_materials": true}` or `{"material_id": M}` for this chat.
+// - `newChat()` (Story 4.5) opens a fresh, empty chat from `POST /api/projects/{id}/chats`; `switching`
+//   ignores sends and another New chat while it loads (the button stays enabled so it keeps focus).
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import { streamEvents } from '../api/stream.js'
@@ -32,6 +34,7 @@ export function useChat(projectId, { enabled }) {
   const [failure, setFailure] = useState(null) // { question, error }
   const [scopeError, setScopeError] = useState(null)
   const [announcement, setAnnouncement] = useState(null) // { id, text } of the last completed answer
+  const [switching, setSwitching] = useState(false) // "New chat" is loading (Story 4.5)
   const controller = useRef(null)
   const live = useRef(true)
 
@@ -71,7 +74,7 @@ export function useChat(projectId, { enabled }) {
   const send = useCallback(
     async (raw) => {
       const question = raw.trim()
-      if (!chat || !question || controller.current) return
+      if (!chat || !question || controller.current || switching) return
       const abort = new AbortController()
       controller.current = abort
       setFailure(null)
@@ -127,7 +130,7 @@ export function useChat(projectId, { enabled }) {
       }
       setFailure({ question, error, retryable: !RULES.has(error?.code) })
     },
-    [chat],
+    [chat, switching],
   )
 
   const retry = useCallback(() => {
@@ -148,8 +151,30 @@ export function useChat(projectId, { enabled }) {
     [chat],
   )
 
+  // "New chat" (Story 4.5): the server returns a fresh, empty chat (the previous one is kept) and makes
+  // it the one last opened. While it loads (`switching`) a send or another New chat is ignored. A typed
+  // draft stays in the composer. A failure shows the Inline error alone; the current chat stays.
+  const newChat = useCallback(async () => {
+    if (!chat || controller.current || switching) return
+    setScopeError(null)
+    setSwitching(true)
+    try {
+      const fresh = await apiFetch(`/api/projects/${projectId}/chats`, { method: 'POST' })
+      if (!live.current) return
+      setChat(fresh)
+      setFailure(null)
+      setAnnouncement(null)
+    } catch (err) {
+      if (live.current && !SIGNED_OUT_CODES.has(err?.code)) setScopeError(err)
+    } finally {
+      if (live.current) setSwitching(false)
+    }
+  }, [chat, projectId, switching])
+
   return {
     chat,
+    newChat,
+    switching,
     loadError,
     reload,
     left,

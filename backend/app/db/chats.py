@@ -31,12 +31,12 @@ async def get_for_update(conn: AsyncConnection, account_id: UUID, chat_id: UUID)
 
 
 async def latest_for_project(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> dict[str, Any] | None:
-    """The Project's chat (Story 4.4 keeps one; the newest, should there be more)."""
+    """The Project's chat last opened (Story 4.5: `last_opened_at`, newest first; ties by creation)."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             f"""
             SELECT {_COLUMNS} FROM chats WHERE account_id = %s AND project_id = %s
-            ORDER BY created_at DESC, id DESC LIMIT 1
+            ORDER BY last_opened_at DESC, created_at DESC, id DESC LIMIT 1
             """,
             (account_id, project_id),
         )
@@ -49,6 +49,13 @@ async def insert(conn: AsyncConnection, account_id: UUID, project_id: UUID) -> d
             f"INSERT INTO chats (account_id, project_id) VALUES (%s, %s) RETURNING {_COLUMNS}", (account_id, project_id)
         )
         return await cur.fetchone()
+
+
+async def has_messages(conn: AsyncConnection, chat_id: UUID) -> bool:
+    async with conn.cursor() as cur:
+        await cur.execute("SELECT EXISTS (SELECT 1 FROM chat_messages WHERE chat_id = %s)", (chat_id,))
+        row = await cur.fetchone()
+    return bool(row and row[0])
 
 
 async def touch(conn: AsyncConnection, chat_id: UUID) -> None:

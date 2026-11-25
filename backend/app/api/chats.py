@@ -1,8 +1,11 @@
 """Ask AI (Story 4.4: FR-16, AD-12, AD-18, AD-22, AD-25).
 
-- `GET /api/projects/{project_id}/chat`: the Project's chat, created on first use, with its messages in
+- `GET /api/projects/{project_id}/chat`: the Project's chat last opened (`last_opened_at`, Story 4.5), created on first use, with its messages in
   `seq` order: `{id, current_scope, messages: [{id, role, text, sources: [{label}]}]}`. A read, so it also
   answers in a read-only Project.
+- `POST /api/projects/{project_id}/chats` (Story 4.5): "New chat". Requires an active Project; returns a fresh,
+  empty chat on all materials (`201`, the shape above), reusing the current chat when it has no messages yet.
+- `GET /api/chats/{chat_id}` (Story 4.5): opens one chat of the Account and makes it the one last opened.
 - `PATCH /api/chats/{chat_id}` `{scope: {"all_materials": true} | {"material_id": M}}`: requires an active
   Project (`ActiveChat`, then `require_active` in the service); M must be a Ready file of the Project.
 - `POST /api/chats/{chat_id}/messages` `{text}` (1-2000 characters): an `EventSourceResponse` of
@@ -21,7 +24,7 @@ from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.api.conn import Conn
-from app.api.deps import ActiveChat
+from app.api.deps import ActiveChat, ActiveProject
 from app.auth import ReleasedUserAuth, UserAuth
 from app.services import chat
 
@@ -76,6 +79,16 @@ class Chat(ChatScope):
 @router.get("/projects/{project_id}/chat", response_model=Chat)
 async def get_chat(project_id: UUID, user: UserAuth, conn: Conn) -> Chat:
     return Chat.model_validate(await chat.open_chat(conn, user.account_id, project_id))
+
+
+@router.post("/projects/{project_id}/chats", status_code=201, response_model=Chat)
+async def new_chat(project: ActiveProject, user: UserAuth, conn: Conn) -> Chat:
+    return Chat.model_validate(await chat.new_chat(conn, user.account_id, project["id"]))
+
+
+@router.get("/chats/{chat_id}", response_model=Chat)
+async def open_chat(chat_id: UUID, user: UserAuth, conn: Conn) -> Chat:
+    return Chat.model_validate(await chat.open_chat_by_id(conn, user.account_id, chat_id))
 
 
 @router.patch("/chats/{chat_id}", response_model=ChatScope)

@@ -110,6 +110,7 @@
     "label": "Studer dette materialet"
   },
   "chat": {
+    "newChat": "Ny samtale",
     "answerFrom": "Svar fra",
     "allMaterials": "Alt materiale",
     "oneFile": "Én fil",
