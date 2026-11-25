@@ -14,6 +14,7 @@ import DropOverlay from '../components/DropOverlay.jsx'
 import { useBlockWindowFileDrop, useDropTarget, useWindowFileDrop } from '../components/useDropTarget.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './ProjectHome.module.css'
+import ProjectChat from './ProjectChat.jsx'
 import { useMistakes } from './useMistakes.js'
 import { ACCEPT, useProjectFiles } from './useProjectFiles.js'
 import { useQuizNotices } from './useQuizNotices.js'
@@ -27,8 +28,8 @@ export const NAME_WAIT_MS = 30000
 
 // Project home (FR-4, FR-6, FR-8; DESIGN.md › Layout › Project home, mock key-project-home.html).
 // Opening it reads the Project through GET /api/projects/{id}, which records it as the last opened,
-// and lists its files. The chat column shows the Upload drop zone until a file is Ready (the chat
-// arrives with its own story); the tool buttons row holds Quiz, Flashcards, and Summarize; the Files panel is on the right.
+// and lists its files. The chat column shows the Upload drop zone until a file is Ready, then the chat
+// (Story 4.4, ProjectChat); the tool buttons row holds Quiz, Flashcards, and Summarize; the Files panel is on the right.
 // Files are uploaded from the drop zone's "browse", the panel's Upload button, or a drop on either.
 // A static skeleton shows while it loads (EXPERIENCE.md › Project cold-load). A missing or foreign
 // Project goes back to /projects. A read-only Project lists its files but takes no uploads.
@@ -349,58 +350,84 @@ export default function ProjectHome() {
             ))}
           </div>
           {failed && <ErrorLine>{errorText(t, failed)}</ErrorLine>}
-          {ready && !anyReady && (
-            <div
-              className={`${styles.dropZone} ${drop.over ? styles.over : ''}`}
-              data-testid="drop-zone"
-              {...drop.handlers}
-            >
-              <h2 className={styles.dropHeading}>{t('projectHome.dropZone.heading')}</h2>
-              <p className={styles.dropBody}>
-                <Trans
-                  i18nKey="projectHome.dropZone.body"
-                  components={{
-                    browse: <button type="button" className={styles.browse} onClick={openPicker} disabled={readOnly} />,
-                  }}
-                />
-              </p>
-              <p className={styles.dropTypes}>{t('files.types')}</p>
-              <p className={styles.dropOr}>{t('login.or')}</p>
-              <button type="button" className={styles.phone} onClick={openPhone} disabled={readOnly}>
-                {t('files.uploadPhone')}
-              </button>
-            </div>
-          )}
-          {ready && anyReady && <div className={styles.thread} />}
-          {!ready && !failed && <div className={`${styles.skeleton} ${styles.skeletonChat}`} aria-hidden="true" />}
-          {/* Tool buttons row: Quiz (Story 3.1a), Flashcards (Story 4.1), and Summarize (Story 4.3),
-              disabled until a file is Ready and while read-only. */}
-          <div ref={toolsRow} className={styles.tools} data-testid="tools-row" tabIndex={-1}>
-            <button
-              type="button"
-              className={styles.tool}
-              disabled={!ready || !anyReady || readOnly}
-              onClick={() => navigate(`/projects/${projectId}/quiz`)}
-            >
-              {t('tools.quiz')}
-            </button>
-            <button
-              type="button"
-              className={styles.tool}
-              disabled={!ready || !anyReady || readOnly}
-              onClick={() => navigate(`/projects/${projectId}/flashcards`)}
-            >
-              {t('tools.flashcards')}
-            </button>
-            <button
-              type="button"
-              className={styles.tool}
-              disabled={!ready || !anyReady || readOnly}
-              onClick={() => navigate(`/projects/${projectId}/summarize`)}
-            >
-              {t('tools.summarize')}
-            </button>
-          </div>
+          {/* The chat (Story 4.4): Chat bar, thread, tool buttons row, composer. Until a file is Ready, the
+              Upload drop zone (or the skeleton while loading) takes the Chat bar's and thread's place. */}
+          <ProjectChat
+            // Keyed by Project: a chat's thread, draft, and stream never carry over.
+            key={projectId}
+            projectId={projectId}
+            enabled={ready && anyReady}
+            readOnly={readOnly}
+            materials={files.materials}
+            placeholder={
+              ready ? (
+                <div
+                  className={`${styles.dropZone} ${drop.over ? styles.over : ''}`}
+                  data-testid="drop-zone"
+                  {...drop.handlers}
+                >
+                  <h2 className={styles.dropHeading}>{t('projectHome.dropZone.heading')}</h2>
+                  <p className={styles.dropBody}>
+                    <Trans
+                      i18nKey="projectHome.dropZone.body"
+                      components={{
+                        browse: (
+                          <button type="button" className={styles.browse} onClick={openPicker} disabled={readOnly} />
+                        ),
+                      }}
+                    />
+                  </p>
+                  <p className={styles.dropTypes}>{t('files.types')}</p>
+                  <p className={styles.dropOr}>{t('login.or')}</p>
+                  <button type="button" className={styles.phone} onClick={openPhone} disabled={readOnly}>
+                    {t('files.uploadPhone')}
+                  </button>
+                </div>
+              ) : failed ? null : (
+                <div className={`${styles.skeleton} ${styles.skeletonChat}`} aria-hidden="true" />
+              )
+            }
+            tools={
+              // Tool buttons row, labelled "Study this material": Quiz (Story 3.1a), Flashcards (Story
+              // 4.1), and Summarize (Story 4.3), disabled until a file is Ready and while read-only.
+              <div
+                ref={toolsRow}
+                className={styles.tools}
+                data-testid="tools-row"
+                tabIndex={-1}
+                role="group"
+                aria-label={t('tools.label')}
+              >
+                <span className={styles.toolsLabel} aria-hidden="true">
+                  {t('tools.label')}
+                </span>
+                <button
+                  type="button"
+                  className={styles.tool}
+                  disabled={!ready || !anyReady || readOnly}
+                  onClick={() => navigate(`/projects/${projectId}/quiz`)}
+                >
+                  {t('tools.quiz')}
+                </button>
+                <button
+                  type="button"
+                  className={styles.tool}
+                  disabled={!ready || !anyReady || readOnly}
+                  onClick={() => navigate(`/projects/${projectId}/flashcards`)}
+                >
+                  {t('tools.flashcards')}
+                </button>
+                <button
+                  type="button"
+                  className={styles.tool}
+                  disabled={!ready || !anyReady || readOnly}
+                  onClick={() => navigate(`/projects/${projectId}/summarize`)}
+                >
+                  {t('tools.summarize')}
+                </button>
+              </div>
+            }
+          />
         </div>
       </section>
       <FilesPanel

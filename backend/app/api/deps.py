@@ -7,9 +7,9 @@ from fastapi import Depends
 
 from app.api.conn import Conn, request_conn
 from app.auth import UserAuth
-from app.services import projects
+from app.services import chat, projects
 
-__all__ = ["ActiveProject", "Conn", "active_project", "request_conn"]
+__all__ = ["ActiveChat", "ActiveProject", "Conn", "active_chat", "active_project", "request_conn"]
 
 
 async def active_project(project_id: UUID, user: UserAuth, conn: Conn) -> dict[str, Any]:
@@ -23,3 +23,17 @@ async def active_project(project_id: UUID, user: UserAuth, conn: Conn) -> dict[s
 
 
 ActiveProject = Annotated[dict[str, Any], Depends(active_project)]
+
+
+async def active_chat(chat_id: UUID, user: UserAuth, conn: Conn) -> dict[str, Any]:
+    """The URL's chat, owned by the caller, in a Project that is neither archived nor deleted (AD-22).
+
+    The guard for chat routes, which carry no Project id: `404 not_found` for a missing or foreign
+    chat, `409 project_read_only` otherwise. Like `active_project`, it takes no row lock.
+    """
+    found = await chat.get_chat(conn, user.account_id, chat_id)
+    await projects.check_active(conn, user.account_id, found["project_id"])
+    return found
+
+
+ActiveChat = Annotated[dict[str, Any], Depends(active_chat)]

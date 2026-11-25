@@ -13,19 +13,21 @@ import base64
 import json
 import logging
 import time
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import Any, Protocol
 
+import httpx2
 import openai
 from pydantic import BaseModel, ValidationError
 
 from app.config import ConfigError, LlmMode, Settings
 from app.extraction.text import count_words
 from app.llm import fixtures
-from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderUnavailable
+from app.llm.citations import LabelStripper
+from app.llm.errors import LLMError, LLMOutputError, ProviderRateLimited, ProviderStreamError, ProviderUnavailable
 from app.llm.schemas import (
     FLASHCARDS_MAX,
     PRACTICE_MAX,
@@ -54,6 +56,9 @@ MOCK_MODEL = "mock"
 # A focus label in a request is cut to this many characters.
 FOCUS_LABEL_MAX = 100
 PROMPTS_DIR = Path(__file__).resolve().parent / "prompts"
+# A chat answer: at most this many tokens, and the whole stream within this many seconds (AD-25).
+CHAT_MAX_TOKENS = 1500
+CHAT_STREAM_DEADLINE_SECONDS = 60.0
 
 
 class SectionLike(Protocol):
@@ -87,6 +92,28 @@ class PracticeTarget:
     correct_text: str
     sections: Sequence[IdentifiedSection]
     wrong_text: str = ""
+
+
+@dataclass(frozen=True)
+class ChatTurn:
+    """An earlier message of the chat, sent as context: `role` is "user" or "assistant"."""
+
+    role: str
+    text: str
+
+
+@dataclass(frozen=True)
+class ChatDelta:
+    """Answer text to forward now, with the inline labels already removed."""
+
+    text: str
+
+
+@dataclass(frozen=True)
+class ChatSources:
+    """The end of a streamed answer: the cited Sections' ids, validated and in first-cited order."""
+
+    section_ids: tuple[Any, ...]
 
 
 def practice_sections(targets: Sequence[PracticeTarget]) -> list[IdentifiedSection]:
@@ -130,6 +157,17 @@ def focus_block(topic_labels: Sequence[str]) -> str:
 
 def estimate_tokens(texts: Sequence[str]) -> int:
     return sum(len(text) for text in texts) // CHARS_PER_TOKEN
+
+
+def fit_tokens(text: str, budget_tokens: int) -> str:
+    """`text` cut to about `budget_tokens` (the same estimate as `estimate_tokens`)."""
+    return text[: max(0, budget_tokens) * CHARS_PER_TOKEN]
+
+
+def chat_overhead_tokens(question: str) -> int:
+    """What a chat request spends besides its Sections and earlier turns: the system prompt and the
+    question (AD-25)."""
+    return estimate_tokens([load_prompt("answer_chat"), question])
 
 
 def items_for(section_count: int, words: int, words_per_item: int, cap: int = QUIZ_MAX) -> int:
@@ -396,6 +434,117 @@ class Gateway:
             fixture=lambda: fixtures.generate_practice(described, labels, texts),
         )
 
+    async def answer_chat_stream(
+        self, sections: Sequence[IdentifiedSection], history: Sequence[ChatTurn], question: str
+    ) -> AsyncIterator[ChatDelta | ChatSources]:
+        """A grounded answer to `question`, streamed (FR-16, AD-25): `ChatDelta`s, then one `ChatSources`.
+
+        The Sections are sent as `S1…Sn`, `history` (oldest first) as the earlier turns. The model cites
+        inline `[S3]` labels; they are stripped from the deltas (a label split across chunks is held
+        back) and mapped back to Section ids, unknown labels dropped. An answer the material doesn't
+        cover cites nothing. The caller has already fitted the context to the budget.
+
+        Live, closing this generator (the student left) closes the provider stream. A provider failure,
+        before or mid-stream (an error chunk with HTTP 200), raises a `ProviderError`. Mock mode streams
+        `fixtures.answer_chat` in chunks, honouring `LLM_MOCK_DELAY_MS`.
+        """
+        sections = list(sections)
+        texts = [s.text for s in sections]
+        started = time.perf_counter()
+        used_model = MOCK_MODEL if self.mode == "mock" else self._settings.llm_text_model
+        outcome = "abandoned"
+        stripper = LabelStripper()
+        try:
+            if self.mode == "mock":
+                raw = self._mock_chat_stream(texts, question)
+            else:
+                messages = [
+                    {"role": "system", "content": load_prompt("answer_chat")},
+                    *({"role": turn.role, "content": turn.text} for turn in history),
+                    # The question is student text: data in the user message, after the material.
+                    {"role": "user", "content": f"{label_sections(texts)}\n\nQuestion: {question}"},
+                ]
+                raw = self._live_stream(self._settings.llm_text_model, messages)
+            try:
+                async for chunk in raw:
+                    text = stripper.feed(chunk)
+                    if text:
+                        yield ChatDelta(text)
+            finally:
+                await raw.aclose()
+            rest = stripper.flush()
+            if rest:
+                yield ChatDelta(rest)
+            cited = [sections[n - 1].id for n in stripper.numbers if 1 <= n <= len(sections)]
+            outcome = "ok"
+            yield ChatSources(tuple(dict.fromkeys(cited)))
+        except LLMError as exc:
+            outcome = f"{type(exc).__name__} ({exc})"
+            raise
+        finally:
+            logger.info(
+                "LLM task=answer_chat model=%s duration_ms=%d outcome=%s",
+                used_model,
+                (time.perf_counter() - started) * 1000,
+                outcome,
+            )
+
+    async def _mock_chat_stream(self, texts: list[str], question: str) -> AsyncIterator[str]:
+        chunks = fixtures.chat_chunks(fixtures.answer_chat(texts, question))
+        delay = self._settings.llm_mock_delay_ms / 1000
+        if delay > 0:
+            await asyncio.sleep(delay)
+        for index, chunk in enumerate(chunks):
+            if index and delay > 0:
+                await asyncio.sleep(delay / len(chunks))
+            yield chunk
+
+    async def _live_stream(self, model: str | None, messages: list[dict[str, Any]]) -> AsyncIterator[str]:
+        """Raw text deltas from a streamed completion; the stream is closed however this generator ends."""
+        try:
+            stream = await self._client.chat.completions.create(
+                model=model,
+                messages=messages,
+                stream=True,
+                max_tokens=CHAT_MAX_TOKENS,
+                extra_body={"provider": dict(PROVIDER_PREFERENCES)},
+            )
+        except openai.APIError as exc:
+            raise _provider_error(exc) from None
+        deadline = time.monotonic() + CHAT_STREAM_DEADLINE_SECONDS
+        chunks = stream.__aiter__()
+        try:
+            while True:
+                # The whole answer within the deadline, also when the provider goes quiet.
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    raise ProviderStreamError("The answer took too long")
+                try:
+                    chunk = await asyncio.wait_for(anext(chunks), left)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError:
+                    raise ProviderStreamError("The answer took too long") from None
+                # OpenRouter reports a failure after the 200 as a chunk with `error` (AD-25).
+                extra = getattr(chunk, "model_extra", None) or {}
+                if getattr(chunk, "error", None) or extra.get("error"):
+                    raise ProviderStreamError("Error chunk mid-stream")
+                choices = getattr(chunk, "choices", None) or []
+                if not choices:
+                    continue
+                if getattr(choices[0], "finish_reason", None) == "error":
+                    raise ProviderStreamError("Stream finished with an error")
+                delta = getattr(choices[0], "delta", None)
+                content = getattr(delta, "content", None)
+                if content:
+                    yield content
+        except (openai.APIError, httpx2.HTTPError):
+            raise ProviderStreamError("The stream broke") from None
+        finally:
+            close = getattr(stream, "close", None)
+            if close is not None:
+                await close()
+
     async def mock_pause(self) -> None:
         """In mock mode, wait `LLM_MOCK_DELAY_MS`, so a job's other progress steps (reading, checking)
         can be seen and cancelled like its model call (AD-4). Does nothing live."""
@@ -453,22 +602,27 @@ class Gateway:
                 response_format=_response_format(schema),
                 extra_body={"provider": dict(PROVIDER_PREFERENCES)},
             )
-        except openai.RateLimitError:
-            raise ProviderRateLimited("Provider rate limit (429)") from None
-        except openai.APIStatusError as exc:
-            raise ProviderUnavailable(f"Provider answered {exc.status_code}") from None
-        except openai.APITimeoutError:
-            raise ProviderUnavailable("Provider timed out") from None
-        except openai.APIConnectionError:
-            raise ProviderUnavailable("Provider unreachable") from None
-        except openai.APIError:
-            raise ProviderUnavailable("Provider error") from None
+        except openai.APIError as exc:
+            raise _provider_error(exc) from None
         # A 200 reply can carry an error body with no message; that is invalid output, retried once.
         choices = getattr(response, "choices", None) or []
         if not choices:
             return None
         message = getattr(choices[0], "message", None)
         return getattr(message, "content", None)
+
+
+def _provider_error(exc: openai.APIError) -> ProviderRateLimited | ProviderUnavailable:
+    """The gateway error for an SDK error raised when a request is made."""
+    if isinstance(exc, openai.RateLimitError):
+        return ProviderRateLimited("Provider rate limit (429)")
+    if isinstance(exc, openai.APIStatusError):
+        return ProviderUnavailable(f"Provider answered {exc.status_code}")
+    if isinstance(exc, openai.APITimeoutError):
+        return ProviderUnavailable("Provider timed out")
+    if isinstance(exc, openai.APIConnectionError):
+        return ProviderUnavailable("Provider unreachable")
+    return ProviderUnavailable("Provider error")
 
 
 def create_gateway(settings: Settings, mode: LlmMode) -> Gateway:

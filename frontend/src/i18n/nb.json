@@ -106,7 +106,20 @@
   "tools": {
     "quiz": "Quiz",
     "flashcards": "Treningskort",
-    "summarize": "Oppsummer"
+    "summarize": "Oppsummer",
+    "label": "Studer dette materialet"
+  },
+  "chat": {
+    "answerFrom": "Svar fra",
+    "allMaterials": "Alt materiale",
+    "oneFile": "Én fil",
+    "who": "Study Buddy",
+    "empty": "Spør om hva som helst i materialet ditt.",
+    "thinking": "Study Buddy tenker …",
+    "answerReady": "Svaret er klart",
+    "placeholder": "Spør om materialet ditt",
+    "send": "Send",
+    "limitReached": "Du har brukt dagens 50 meldinger. Prøv igjen i morgen."
   },
   "mistakes": {
     "card_one": "Du har {{count}} feil å repetere",

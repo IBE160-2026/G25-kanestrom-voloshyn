@@ -168,3 +168,34 @@ def generate_practice(targets: Sequence[dict[str, Any]], labels: Sequence[str], 
             }
         )
     return {"items": items}
+
+
+# The mock chat (AD-4): a question sharing a word of 5+ letters with the supplied Sections is "covered".
+CHAT_NOT_COVERED = "Your material doesn't cover this question, so I can't answer it from your files."
+CHAT_CHUNK_CHARS = 12
+_CHAT_WORD = re.compile(r"[^\W\d_]{5,}")
+_CHAT_STOPWORDS = frozenset(
+    {"about", "which", "where", "there", "their", "these", "those", "would", "could", "should", "explain", "please"}
+)
+
+
+def _chat_words(text: str) -> set[str]:
+    return {word.casefold() for word in _CHAT_WORD.findall(text)} - _CHAT_STOPWORDS
+
+
+def answer_chat(texts: Sequence[str], question: str) -> str:
+    """The raw answer, inline labels included, as a live model would stream it (AD-4). A covered question
+    quotes the start of S1 (and S2) and cites them; otherwise the fixed "not covered" sentence, uncited."""
+    asked = _chat_words(question)
+    if not texts or not any(asked & _chat_words(text) for text in texts):
+        return CHAT_NOT_COVERED
+    parts = []
+    for number, text in enumerate(texts[:2], start=1):
+        snippet = " ".join(text.split()[:QUIZ_SNIPPET_WORDS]) or f"Section {number}"
+        parts.append(f"{'From your material' if number == 1 else 'Also'}: {snippet} [S{number}]")
+    return "\n\n".join(parts)
+
+
+def chat_chunks(text: str) -> list[str]:
+    """The answer cut into fixed-size chunks, so labels split across chunk edges."""
+    return [text[start : start + CHAT_CHUNK_CHARS] for start in range(0, len(text), CHAT_CHUNK_CHARS)]

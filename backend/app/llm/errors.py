@@ -19,3 +19,7 @@ class ProviderRateLimited(ProviderError):
 
 class ProviderUnavailable(ProviderError):
     """The provider answered 402/403 or another error status, timed out, or couldn't be reached."""
+
+
+class ProviderStreamError(ProviderError):
+    """A streamed reply failed part-way: an error chunk (sent with HTTP 200) or a broken stream."""

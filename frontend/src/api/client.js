@@ -84,9 +84,11 @@ export class ApiError extends Error {
  * so the browser sets the multipart Content-Type with its boundary. `auth: false` skips the bearer
  * token (only /api/config and the phone page). `onResponse(response)` sees a successful response before
  * its body is read. Resolves with the parsed JSON (or null for 204); rejects with an ApiError.
+ * `raw: true` (the chat's event stream, api/stream.js) resolves with the successful Response itself,
+ * body unread; errors are handled as for any other call. `signal` aborts the request.
  */
-export async function apiFetch(path, { method = 'GET', body, auth = true, onResponse } = {}) {
-  const headers = { Accept: 'application/json' }
+export async function apiFetch(path, { method = 'GET', body, auth = true, onResponse, raw: rawResponse = false, signal } = {}) {
+  const headers = { Accept: rawResponse ? 'text/event-stream' : 'application/json' }
   const raw = typeof FormData !== 'undefined' && body instanceof FormData
   if (body !== undefined && !raw) headers['Content-Type'] = 'application/json'
   let token = null
@@ -101,8 +103,10 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, onResp
       method,
       headers,
       body: body === undefined || raw ? body : JSON.stringify(body),
+      signal,
     })
-  } catch {
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new ApiError(0, { code: 'aborted' })
     throw new ApiError(0, { code: 'network_error' })
   }
 
@@ -123,6 +127,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, onResp
   } catch {
     // a header reader never fails the request
   }
+  if (rawResponse) return response
   if (response.status === 204) return null
   try {
     return await response.json()
