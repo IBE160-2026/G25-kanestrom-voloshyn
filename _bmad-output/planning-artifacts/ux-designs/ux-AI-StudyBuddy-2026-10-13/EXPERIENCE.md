@@ -250,6 +250,8 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Upload, image limit reached | "You've used today's 25 images. Try again tomorrow." [ASSUMPTION: copy] | Du har brukt dagens 25 bilder. Prøv igjen i morgen. |
 | Topic list, add | "+ Add topic" | + Legg til emne |
 | Chat, scope control | "All materials" · "One file" | Alt materiale · Én fil |
+| Chat bar, scope label (also the Scope control's accessible name) | "Answer from" [ASSUMPTION: copy, approved 2026-11-25 by Ihor with Story 4.4] | Svar fra |
+| Tool buttons row, label | "Study this material" [ASSUMPTION: copy, approved 2026-11-25 by Ihor with Story 4.4] | Studer dette materialet |
 | Chat, composer | "Ask about your material" · "Send" [ASSUMPTION: placeholder] | Spør om materialet ditt · Send |
 | Tool buttons | "Quiz" · "Flashcards" · "Summarize" | Quiz · Treningskort · Oppsummer |
 | Limit notice | "{n} messages left today" · "{n} images left today" ("1 message", "1 image" for one) | {n} meldinger igjen i dag · {n} bilder igjen i dag ("1 melding igjen i dag", "1 bilde igjen i dag") |

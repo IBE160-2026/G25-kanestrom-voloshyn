@@ -1,6 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
 // 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), flashcard sets and
-// marks (Stories 4.1 + 4.2), summaries (Story 4.3), Mistakes (Story 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
+// marks (Stories 4.1 + 4.2), summaries (Story 4.3), the chat and its streamed answers (Story 4.4), Mistakes (Story 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
 // (Stories 6.1 + 6.2), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
@@ -70,7 +70,15 @@ export const IMAGE_LIMIT = 25
  * refuses marks with `409 flashcard_set_ended`. A summary request (Story 4.3) checks like the server (a file
  * that isn't Ready or a Topic of another file is `404 not_found`) and adds a running `summary` job with
  * its frozen `file_name` and `topic_labels`; `finishSummary` completes it with a saved summary, and
- * `summaries` lists stored ones (see `summary`). A quiz request adds a running `quiz` job at the
+ * `summaries` lists stored ones (see `summary`). The chat (Story 4.4): GET .../chat creates a Project's
+ * chat on first use (`chats` maps a Project id to a stored one, see `chatOf`); PATCH /api/chats/{id}
+ * saves the scope like the server (read-only `409`, a file that isn't Ready `404`); a send is refused like
+ * the server (`project_read_only`, `insufficient_material`, `quota_exceeded` at 0 of `messagesLeft`,
+ * `chat_busy` while one streams) and otherwise answers with a fake event stream: with `chatStream:
+ * 'auto'` (the default) `chatAnswer(question, state)` → `{deltas, sources}` or `{error}` plays at once;
+ * with 'manual' each send pushes a controller onto `state.streams` (`delta(text)`, `done(sources)`,
+ * `error(code)`). A completed answer stores both messages and uses one of `messagesLeft`; an aborted
+ * one (`state.aborted`) stores nothing. A quiz request adds a running `quiz` job at the
  * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
  * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
@@ -108,6 +116,10 @@ export function fakeApi({
   appPublicUrl = 'http://192.168.1.20:8000',
   serverOffsetMs = null,
   linkTtlMs = 10 * 60 * 1000,
+  chats = {},
+  messagesLeft = MESSAGE_LIMIT,
+  chatStream = 'auto',
+  chatAnswer = defaultChatAnswer,
 } = {}) {
   const state = {
     me: { ...me },
@@ -143,10 +155,17 @@ export function fakeApi({
     verificationsSent: 0, // POST /api/me/verification calls answered 204 (Story 7.3b)
     googleFirstName: null, // the Google first name POST /api/me/google-link takes (Story 7.3b)
     accountDeleted: false, // DELETE /api/me answered (Story 7.4)
+    chats: Object.fromEntries(Object.entries(chats).map(([id, c]) => [id, structuredClone(c)])), // Story 4.4
+    messagesLeft, // today's Ask AI messages left (Story 4.4)
+    chatSends: [], // bodies of POST /api/chats/{id}/messages, refused or not
+    scopeChanges: [], // bodies of PATCH /api/chats/{id}
+    streams: [], // manual stream controllers, in send order
+    aborted: 0, // streams the SPA aborted
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
-  const handle = async (path, { method = 'GET', body } = {}) => {
+  const handle = async (path, options = {}) => {
+    const { method = 'GET', body } = options
     const override = routes[`${method} ${path}`]
     if (override) return override(body, state)
 
@@ -202,7 +221,47 @@ export function fakeApi({
       state.me = { ...state.me, privacy_notice_accepted: true }
       return state.me
     }
-    if (path === '/api/usage' && method === 'GET') return { images_left_today: state.imagesLeft }
+    if (path === '/api/usage' && method === 'GET') {
+      return { images_left_today: state.imagesLeft, messages_left_today: state.messagesLeft }
+    }
+    // The chat (Story 4.4).
+    const chatHome = path.match(/^\/api\/projects\/([^/]+)\/chat$/)
+    if (chatHome && method === 'GET') {
+      const id = chatHome[1]
+      if (!state.projects.some((p) => p.id === id)) throw notFound()
+      state.chats[id] = state.chats[id] ?? chatOf(`chat-${id}`)
+      const found = state.chats[id]
+      const scoped = found.current_scope?.material_id
+      if (scoped && !(state.materials[id] ?? []).some((m) => m.id === scoped && m.status === 'ready')) {
+        found.current_scope = { all_materials: true }
+      }
+      return structuredClone(found)
+    }
+    const chatCall = path.match(/^\/api\/chats\/([^/]+)(\/messages)?$/)
+    if (chatCall) {
+      const [, chatId, messages] = chatCall
+      const projectId = Object.keys(state.chats).find((id) => state.chats[id].id === chatId)
+      if (!projectId) throw notFound()
+      const owner = state.projects.find((p) => p.id === projectId)
+      const found = state.chats[projectId]
+      const readyFiles = (state.materials[projectId] ?? []).filter((m) => m.status === 'ready')
+      if (!messages && method === 'PATCH') {
+        state.scopeChanges.push(body)
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        const scope = body?.scope ?? {}
+        if (scope.material_id && !readyFiles.some((m) => m.id === scope.material_id)) throw notFound()
+        found.current_scope = scope.material_id ? { material_id: scope.material_id } : { all_materials: true }
+        return { id: chatId, current_scope: { ...found.current_scope } }
+      }
+      if (messages && method === 'POST') {
+        state.chatSends.push(body)
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        if (readyFiles.length === 0) throw rule('insufficient_material')
+        if (found.streaming) throw rule('chat_busy')
+        if (state.messagesLeft <= 0) throw rule('quota_exceeded', { limit: MESSAGE_LIMIT, kind: 'ask_ai_message' })
+        return chatStreamResponse(state, found, body.text, options.signal, chatStream === 'manual' ? null : chatAnswer)
+      }
+    }
     if (path === '/api/config' && method === 'GET') {
       return { supabase_url: 'http://127.0.0.1:54321', supabase_publishable_key: 'pk', google_enabled: false, app_public_url: appPublicUrl }
     }
@@ -646,6 +705,103 @@ export function fakeApi({
 }
 
 const rule = (code, params = {}) => ({ code, params })
+
+export const MESSAGE_LIMIT = 50
+
+/** A stored chat: `{id, current_scope, messages: [{id, role, text, sources}]}`. */
+export function chatOf(id, { scope = { all_materials: true }, messages = [] } = {}) {
+  return { id, current_scope: scope, messages }
+}
+
+/** The fake's default answer: two deltas and one Source label. */
+function defaultChatAnswer() {
+  return { deltas: ['From your ', 'notes.'], sources: [{ label: 'notes.md · Page 1' }] }
+}
+
+const sse = (name, data) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`
+
+/**
+ * A successful send's Response stand-in: `body.getReader()` reads the queued event text (strings, which
+ * api/stream.js accepts like bytes). `answer` plays a scripted answer at once; null pushes a controller
+ * onto `state.streams` instead. An abort through `signal` ends the read with an AbortError and stores
+ * nothing.
+ */
+function chatStreamResponse(state, chat, question, signal, answer) {
+  const queue = []
+  let waiting = null
+  let closed = false
+  let failure = null
+  const settle = (result) => {
+    if (!waiting) return false
+    const { resolve, reject } = waiting
+    waiting = null
+    if (result instanceof Error) reject(result)
+    else resolve(result)
+    return true
+  }
+  const push = (text) => {
+    if (closed) return
+    if (!settle({ value: text, done: false })) queue.push(text)
+  }
+  const close = () => {
+    closed = true
+    chat.streaming = false
+    settle({ value: undefined, done: true })
+  }
+  let text = ''
+  const controller = {
+    delta(part) {
+      text += part
+      push(sse('delta', { text: part }))
+    },
+    done(sources = []) {
+      const n = chat.messages.length
+      const messageId = `${chat.id}-m${n + 2}`
+      chat.messages.push({ id: `${chat.id}-m${n + 1}`, role: 'user', text: question, sources: [] })
+      chat.messages.push({ id: messageId, role: 'assistant', text: text.trim(), sources })
+      state.messagesLeft = Math.max(0, state.messagesLeft - 1)
+      push(sse('done', { message_id: messageId, sources }))
+      close()
+    },
+    error(code = 'llm_unavailable') {
+      push(sse('error', { code }))
+      close()
+    },
+  }
+  chat.streaming = true
+  signal?.addEventListener('abort', () => {
+    if (closed) return
+    state.aborted += 1
+    closed = true
+    chat.streaming = false
+    failure = Object.assign(new Error('aborted'), { name: 'AbortError' })
+    settle(failure)
+  })
+  const reader = {
+    read() {
+      if (queue.length) return Promise.resolve({ value: queue.shift(), done: false })
+      if (failure) return Promise.reject(failure)
+      if (closed) return Promise.resolve({ value: undefined, done: true })
+      return new Promise((resolve, reject) => {
+        waiting = { resolve, reject }
+      })
+    },
+    releaseLock() {},
+  }
+  if (answer) {
+    const scripted = answer(question, state)
+    if (scripted.error) {
+      for (const part of scripted.deltas ?? []) controller.delta(part)
+      controller.error(scripted.error)
+    } else {
+      for (const part of scripted.deltas) controller.delta(part)
+      controller.done(scripted.sources ?? [])
+    }
+  } else {
+    state.streams.push(controller)
+  }
+  return { ok: true, status: 200, body: { getReader: () => reader } }
+}
 
 /** The Project's outstanding Mistakes, oldest first: neither withdrawn nor cleared. */
 function outstandingOf(state, projectId) {

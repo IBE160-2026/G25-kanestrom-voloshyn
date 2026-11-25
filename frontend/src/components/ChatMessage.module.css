@@ -1,0 +1,59 @@
+/* Chat message (DESIGN.md › Chat message; mock key-project-home.html › .me, .ai, .cites). */
+.me {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 var(--space-5);
+}
+
+.bubble {
+  max-width: 72%;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.answer {
+  max-width: 94%;
+  margin: 0 0 var(--space-6);
+}
+
+.who {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  font-weight: 500;
+}
+
+.text {
+  margin: 0 0 var(--space-3);
+  font-size: var(--type-body-reading-size);
+  font-weight: var(--type-body-reading-weight);
+  line-height: var(--type-body-reading-line-height);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Source labels: a row of muted pills. */
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}

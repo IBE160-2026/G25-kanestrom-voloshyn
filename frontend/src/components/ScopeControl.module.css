@@ -1,0 +1,88 @@
+/* Scope control (DESIGN.md › Scope control; mock key-project-home.html › .seg): a bordered segmented
+   control; the selected segment is primary-subtle. The file list is a surface menu like the Overflow menu. */
+.segments {
+  display: inline-flex;
+  min-width: 0;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: calc(var(--space-7) * 5);
+  min-height: calc(var(--space-touch-target-min) - var(--space-3));
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.segment:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.segment.on {
+  background: var(--color-primary-subtle);
+  color: var(--color-text);
+}
+
+.segment:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.segment:focus-visible {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.caret {
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--type-overline-size);
+}
+
+.menu {
+  min-width: calc(var(--space-7) * 4);
+  max-width: calc(var(--space-7) * 8);
+  padding: var(--space-1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  font-size: var(--type-ui-size);
+  z-index: 10;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  min-height: var(--space-touch-target-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  outline: none;
+}
+
+.item[data-highlighted] {
+  background: var(--color-hover);
+}
+
+.item[data-state='checked'] {
+  background: var(--color-primary-subtle);
+}

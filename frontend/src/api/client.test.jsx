@@ -140,6 +140,33 @@ describe('apiFetch', () => {
     await expect(client.apiFetch('/api/me')).rejects.toMatchObject({ code: 'network_error' })
   })
 
+  it('raw: true resolves with the unread Response and asks for text/event-stream (Story 4.4)', async () => {
+    const stream = new Response('event: delta\ndata: {}\n\n', { status: 200 })
+    fetchMock.mockImplementation(async (path) => (path === '/api/config' ? json(200, CONFIG) : stream))
+
+    const response = await client.apiFetch('/api/chats/c1/messages', { method: 'POST', body: { text: 'Hi' }, raw: true })
+
+    expect(response).toBe(stream)
+    expect(response.bodyUsed).toBe(false)
+    const [, options] = callTo('/api/chats/c1/messages')
+    expect(options.headers).toMatchObject({ Accept: 'text/event-stream', Authorization: 'Bearer tok' })
+  })
+
+  it('passes the signal to fetch, and an abort rejects with code aborted', async () => {
+    const controller = new AbortController()
+    fetchMock.mockImplementation(async (path, options) => {
+      if (path === '/api/config') return json(200, CONFIG)
+      expect(options.signal).toBe(controller.signal)
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    })
+
+    const error = await client.apiFetch('/api/chats/c1/messages', { method: 'POST', raw: true, signal: controller.signal }).catch((e) => e)
+
+    expect(error).toBeInstanceOf(client.ApiError)
+    expect(error.code).toBe('aborted')
+    expect(callTo('/api/chats/c1/messages')[1].signal).toBe(controller.signal)
+  })
+
   it('retries /api/config after a failed load', async () => {
     let first = true
     fetchMock.mockImplementation(async (path) => {

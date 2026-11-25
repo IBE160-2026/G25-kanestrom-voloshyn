@@ -18,9 +18,11 @@ from app.config import get_settings
 from app.errors import AppError
 
 IMAGE_EXTRACTION = "image_extraction"
+# One Ask AI message, across every chat and Project (FR-16, Story 4.4).
+ASK_AI_MESSAGE = "ask_ai_message"
 
-# Units per Account per day. Epic 4 adds 'ask_ai_message' (50).
-LIMITS = {IMAGE_EXTRACTION: 25}
+# Units per Account per day.
+LIMITS = {IMAGE_EXTRACTION: 25, ASK_AI_MESSAGE: 50}
 
 
 class QuotaExceeded(AppError):

@@ -4,8 +4,26 @@
 `schemas.py` and raise the exceptions in `errors.py`.
 """
 
-from app.llm.errors import LLMError, LLMOutputError, ProviderError, ProviderRateLimited, ProviderUnavailable
-from app.llm.gateway import Gateway, PracticeTarget, create_gateway, practice_sections
+from app.llm.errors import (
+    LLMError,
+    LLMOutputError,
+    ProviderError,
+    ProviderRateLimited,
+    ProviderStreamError,
+    ProviderUnavailable,
+)
+from app.llm.gateway import (
+    ChatDelta,
+    ChatSources,
+    ChatTurn,
+    Gateway,
+    PracticeTarget,
+    chat_overhead_tokens,
+    create_gateway,
+    estimate_tokens,
+    fit_tokens,
+    practice_sections,
+)
 from app.llm.schemas import (
     DetectedTopic,
     DetectedTopics,
@@ -22,6 +40,9 @@ from app.llm.schemas import (
 )
 
 __all__ = [
+    "ChatDelta",
+    "ChatSources",
+    "ChatTurn",
     "DetectedTopic",
     "DetectedTopics",
     "DraftCard",
@@ -38,9 +59,13 @@ __all__ = [
     "ProjectName",
     "ProviderError",
     "ProviderRateLimited",
+    "ProviderStreamError",
     "ProviderUnavailable",
     "QuizDraft",
     "SummaryDraft",
+    "chat_overhead_tokens",
     "create_gateway",
+    "estimate_tokens",
+    "fit_tokens",
     "practice_sections",
 ]

@@ -105,7 +105,20 @@
   "tools": {
     "quiz": "Quiz",
     "flashcards": "Flashcards",
-    "summarize": "Summarize"
+    "summarize": "Summarize",
+    "label": "Study this material"
+  },
+  "chat": {
+    "answerFrom": "Answer from",
+    "allMaterials": "All materials",
+    "oneFile": "One file",
+    "who": "Study Buddy",
+    "empty": "Ask anything about your material.",
+    "thinking": "Study Buddy is thinking…",
+    "answerReady": "Answer ready",
+    "placeholder": "Ask about your material",
+    "send": "Send",
+    "limitReached": "You've used today's 50 messages. Try again tomorrow."
   },
   "mistakes": {
     "card_one": "{{count}} mistake to review",

@@ -1,0 +1,18 @@
+/* Chat bar (DESIGN.md › Chat bar; mock key-project-home.html › .chatbar): a muted caption-size row. */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--space-touch-target-min);
+  margin-bottom: var(--space-5);
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+.scope {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}

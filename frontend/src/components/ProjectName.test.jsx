@@ -46,7 +46,7 @@ describe('Top bar rename', () => {
     expect(callsTo('/api/projects/a', 'PATCH')).toEqual([
       ['/api/projects/a', { method: 'PATCH', body: { name: '  Biology 101  ' } }],
     ])
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
   })
 
   it('Esc restores the old name and sends no request', async () => {
@@ -60,7 +60,7 @@ describe('Top bar rename', () => {
     await user.clear(field)
     await user.type(field, 'Chemistry{Escape}')
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Biology' })).toBeInTheDocument()
     expect(sidebarLinks()[0]).toHaveTextContent('Biology')
     expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
@@ -175,7 +175,7 @@ describe('Top bar rename: keyboard and edge cases', () => {
     await user.click(await openTitle())
     await user.keyboard('{Enter}')
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
   })
@@ -190,7 +190,7 @@ describe('Top bar rename: keyboard and edge cases', () => {
     await user.clear(field)
     await user.type(field, ' Biology {Enter}')
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
     expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
   })
 
@@ -334,7 +334,7 @@ describe('Sidebar rename', () => {
     await waitFor(() => expect(field).toHaveFocus())
     await user.type(field, ' changed{Escape}')
 
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: en.projects.rename })).not.toBeInTheDocument()
     expect(sidebarLinks()[0]).toHaveTextContent('Biology')
     expect(callsTo('/api/projects/a', 'PATCH')).toEqual([])
   })

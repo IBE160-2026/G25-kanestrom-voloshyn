@@ -11,6 +11,7 @@ from fastapi import APIRouter, FastAPI
 
 from app import supabase_auth
 from app.api import auth as auth_api
+from app.api import chats as chats_api
 from app.api import config as config_api
 from app.api import flashcards as flashcards_api
 from app.api import jobs as jobs_api
@@ -80,6 +81,7 @@ def _api_router() -> APIRouter:
     api.include_router(quizzes_api.router)
     api.include_router(flashcards_api.router)
     api.include_router(summaries_api.router)
+    api.include_router(chats_api.router)
     api.include_router(mistakes_api.router)
     api.include_router(review_api.router)
     api.include_router(jobs_api.router)

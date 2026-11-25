@@ -116,3 +116,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-3-summarize-a-file-or-one-of-its-topics.md`
   summary: Quiz and Flashcards setup don't restore the chosen topics when resuming a running job, so a later cancel ("Your choices are kept.") or Try again uses "All topics" (unverified, medium).
   evidence: GenerationSetup.jsx resume path sets only the progress; settle by checking a resumed job's cancel in the browser, then restore from the job's frozen topic labels as SummarizeSetup now does.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-4-ask-ai-streamed-sourced-answers.md`
+  summary: Frontend timeout flakes under full-parallel Vitest load now hit more files (Appearance, DeleteAccount, ForgotPassword, Projects Log out) as the suite grows.
+  evidence: 962/962 pass with --maxWorkers=4 and each file passes alone; full-parallel runs fail 1-5 unrelated tests by timeout. Settle by raising testTimeout or capping maxWorkers in vitest config.
