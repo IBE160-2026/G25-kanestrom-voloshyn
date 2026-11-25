@@ -113,3 +113,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-2-study-a-flashcard-set.md`
   summary: Add a concurrency test showing two simultaneous final "Got it" marks on one flashcard set still end the set (unverified, medium if it fails).
   evidence: The set-row lock in services/flashcards.mark is untested; settle with a two-connection test that marks the last two cards at once and asserts ended_at is set.
+- source_spec: `_bmad-output/implementation-artifacts/spec-4-3-summarize-a-file-or-one-of-its-topics.md`
+  summary: Quiz and Flashcards setup don't restore the chosen topics when resuming a running job, so a later cancel ("Your choices are kept.") or Try again uses "All topics" (unverified, medium).
+  evidence: GenerationSetup.jsx resume path sets only the progress; settle by checking a resumed job's cancel in the browser, then restore from the job's frozen topic labels as SummarizeSetup now does.

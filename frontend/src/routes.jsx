@@ -16,6 +16,8 @@ import QuizSetup from './pages/QuizSetup.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import ReviewSession from './pages/ReviewSession.jsx'
 import ReviewStart from './pages/ReviewStart.jsx'
+import SummarizeSetup from './pages/SummarizeSetup.jsx'
+import SummaryView from './pages/SummaryView.jsx'
 
 export const routes = [
   { path: '/', element: <Login /> },
@@ -41,6 +43,8 @@ export const routes = [
           { path: '/projects/:projectId/quizzes/:quizId', element: <QuizPage /> },
           { path: '/projects/:projectId/flashcards', element: <FlashcardSetup /> },
           { path: '/projects/:projectId/flashcard-sets/:setId', element: <FlashcardSession /> },
+          { path: '/projects/:projectId/summarize', element: <SummarizeSetup /> },
+          { path: '/projects/:projectId/summaries/:summaryId', element: <SummaryView /> },
           { path: '/projects/:projectId/review', element: <ReviewStart /> },
           { path: '/projects/:projectId/review/:roundId', element: <ReviewSession /> },
         ],

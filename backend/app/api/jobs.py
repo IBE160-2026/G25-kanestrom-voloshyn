@@ -1,8 +1,8 @@
 """Background jobs (AD-20).
 
 - `GET /api/projects/{project_id}/jobs`: active jobs plus finished ones not yet seen; the SPA polls
-  it every 2 s while something is active. A `quiz` or `flashcards` job carries its frozen `topic_labels` (Stories
-  3.1b, 4.1).
+  it every 2 s while something is active. A `quiz`, `flashcards`, or `summary` job carries its frozen
+  `topic_labels` (Stories 3.1b, 4.1, 4.3), and a `summary` job its frozen `file_name` (Story 4.3).
 - `POST /api/jobs/{job_id}/seen`: dismisses a finished job (bookkeeping, on the guard's allowlist).
 - `POST /api/jobs/{job_id}/cancel`: a student's cancel (bookkeeping, on the allowlist, so it also works
   in an archived Project); `204`, also for a job that already finished. A queued job ends `cancelled`
@@ -24,7 +24,9 @@ from app.services import jobs, projects
 router = APIRouter()
 
 # Job kinds whose frozen `topic_labels` the list exposes.
-LABELLED_KINDS = ("quiz", "flashcards")
+LABELLED_KINDS = ("quiz", "flashcards", "summary")
+# Job kinds whose frozen `file_name` the list exposes.
+FILE_KINDS = ("summary",)
 
 
 class Job(BaseModel):
@@ -36,9 +38,11 @@ class Job(BaseModel):
     error_code: str | None
     created_at: datetime
     finished_at: datetime | None
-    # A `quiz` or `flashcards` job's frozen focus labels (Stories 3.1b, 4.1), for the "is ready" notice;
+    # A `quiz`, `flashcards`, or `summary` job's frozen focus labels (Stories 3.1b, 4.1, 4.3), for the "is ready" notice;
     # empty means "All topics" and is always empty for other kinds.
     topic_labels: list[str] = []
+    # A `summary` job's frozen file name (Story 4.3), for "Your summary of {file} is ready"; null otherwise.
+    file_name: str | None = None
 
     @classmethod
     def from_row(cls, row: dict) -> "Job":
@@ -46,7 +50,10 @@ class Job(BaseModel):
         labels = params.get("topic_labels") if row["kind"] in LABELLED_KINDS and isinstance(params, dict) else None
         # Only string items of a list; anything else (missing, null, a bad type) is no labels.
         kept = [label for label in labels if isinstance(label, str)] if isinstance(labels, list) else []
-        return cls.model_validate({**row, "topic_labels": kept})
+        file_name = params.get("file_name") if row["kind"] in FILE_KINDS and isinstance(params, dict) else None
+        return cls.model_validate(
+            {**row, "topic_labels": kept, "file_name": file_name if isinstance(file_name, str) else None}
+        )
 
 
 @router.get("/projects/{project_id}/jobs", response_model=list[Job])

@@ -30,12 +30,14 @@ from app.llm.schemas import (
     FLASHCARDS_MAX,
     PRACTICE_MAX,
     QUIZ_MAX,
+    SUMMARY_SECTIONS_MAX,
     DetectedTopics,
     FlashcardDraft,
     ImageText,
     PracticeDraft,
     ProjectName,
     QuizDraft,
+    SummaryDraft,
 )
 
 logger = logging.getLogger(__name__)
@@ -335,6 +337,29 @@ class Gateway:
                 {"role": "user", "content": user},
             ],
             fixture=lambda: fixtures.generate_flashcards(labels, texts, mock_count),
+        )
+
+    async def summarize(self, sections: Sequence[LabelledSection], topic_labels: Sequence[str] = ()) -> SummaryDraft:
+        """A title and up to 8 sections summarizing the Sections, each citing the 1-based Section numbers it
+        rests on (FR-15). `topic_labels` (at most one: the chosen Topic) asks the model to focus on it. The
+        summary is written in the material's main language, whatever the UI language. The caller has
+        already checked the scope against the context budget (AD-7), so this is one call. Mock mode
+        returns `fixtures.summarize`."""
+        texts = [s.text for s in sections]
+        labels = [s.label for s in sections]
+        # Student-written labels are data: quoted in the user message, never in the system prompt.
+        focus = focus_block(topic_labels)
+        material = label_sections(texts)
+        user = f"{focus}\n\n{material}" if focus else material
+        return await self._run(
+            task="summarize",
+            schema=SummaryDraft,
+            model=self._settings.llm_text_model,
+            messages=lambda: [
+                {"role": "system", "content": load_prompt("summarize").replace("{max}", str(SUMMARY_SECTIONS_MAX))},
+                {"role": "user", "content": user},
+            ],
+            fixture=lambda: fixtures.summarize(labels, texts, list(topic_labels)),
         )
 
     async def generate_practice(self, targets: Sequence[PracticeTarget]) -> PracticeDraft:

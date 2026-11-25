@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 
 // The "is ready" notices on the Project home (Story 3.1b, FR-26, AD-20; EXPERIENCE.md ›
-// Finished-generation message): quizzes, Mistake Review rounds (Story 3.4), and flashcard sets (Story
-// 4.1), under the same rules.
+// Finished-generation message): quizzes, Mistake Review rounds (Story 3.4), flashcard sets (Story 4.1),
+// and summaries (Story 4.3), under the same rules.
 //
-// - Opening the Project reads its jobs once; while any `quiz`, `flashcards`, or `review_round` job is queued or
+// - Opening the Project reads its jobs once; while any `quiz`, `flashcards`, `summary`, or `review_round` job is queued or
 //   running, it reads them again every 2 s, and stops when none is (or when the page goes away).
 // - Each completed job of those kinds not yet seen is a notice, newest first. Failed and
 //   cancelled ones are left alone, and other job kinds keep their own handling.
@@ -13,7 +13,7 @@ import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 // - `open(job)` hides the notice at once and marks the job seen in the background; `dismiss(job)`
 //   marks it seen and drops the notice only once that worked.
 export const NOTICE_POLL_MS = 2000
-const KINDS = new Set(['quiz', 'flashcards', 'review_round'])
+const KINDS = new Set(['quiz', 'flashcards', 'summary', 'review_round'])
 const ACTIVE = new Set(['queued', 'running'])
 
 export function useQuizNotices(projectId) {

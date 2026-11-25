@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
-import GenerationProgress from '../components/GenerationProgress.jsx'
 import InlineError from '../components/InlineError.jsx'
 import { COLLAPSE_ABOVE, groupTopics } from '../components/topicGroups.js'
 import { errorText } from '../i18n/errors.js'
 import styles from './QuizSetup.module.css'
+import GenerationJobProgress from './GenerationJobProgress.jsx'
 import { COUNTS, requestCount } from './quizCounts.js'
+import { useGenerationJob } from './useGenerationJob.js'
 
 // The shared setup and generation flow for a Quiz (Story 3.1a) and a flashcard set (Story 4.1) (FR-10,
 // FR-13, FR-26, AD-7, AD-20; DESIGN.md › Activity header, Topic scope picker, Count picker,
@@ -23,37 +24,13 @@ import { COUNTS, requestCount } from './quizCounts.js'
 //   a failed capacity read shows the Inline error with "Try again" (read it again), and a scope with no
 //   Ready material says so. The API takes only 5, 10, or 20, so an offered count is sent as the next of
 //   those up; the server freezes the count cut to the capacity.
-// - "Make {n} questions" / "Make {n} cards" queues the job (202 {job_id}); the Progress steps (the shared
-//   GenerationProgress) then follow its `progress_step`, polled every 2 s, never moving backwards.
-//   Opening the page while a job of this kind is still running for this Project (leaving and coming
-//   back, or a reload) shows that job's progress instead of a new setup.
-// - Cancel sends the cancel, then reads the job again: cancelled -> back to setup with the choices kept
-//   and "Cancelled. Your choices are kept."; completed meanwhile -> the result page; still running
-//   -> it stays on the progress view until the next poll sees it end. A failed cancel request shows the
-//   Inline error on the progress view.
-// - A failed job or request shows the Inline error on the setup with "Try again" (which starts a new job
-//   from the same choices); a rule (`scope_too_large`, `insufficient_material`, `material_removed`, ...)
-//   shows only its message.
-// - Done: the page moves on to the result (the Quiz page, or the flashcard set's page), replacing the
-//   setup in the history, so Back returns to chat.
-// - Focus moves with the view: to the progress steps, and back to the setup heading after a cancel (or
-//   to "Try again" after a failure).
+// - "Make {n} questions" / "Make {n} cards" queues the job; the generation lifecycle (progress, resuming
+//   a running job, cancel, failure with "Try again", and moving on to the result: the Quiz page, or the
+//   flashcard set's page) is the shared useGenerationJob, also used by Summarize (Story 4.3).
 // - Archived or deleted: read-only, nothing can be made.
-export const POLL_MS = 2000
+export { POLL_MS } from './useGenerationJob.js'
 export const DEFAULT_COUNT = 10
-const STEPS = ['reading', 'writing', 'checking']
-const ACTIVE = new Set(['queued', 'running'])
 const GONE = new Set(['not_found', 'invalid_request'])
-// Refusals that name a rule: sending the same request again can't help. A failed job's `error_code`
-// is read the same way.
-const RULES = new Set([
-  'scope_too_large',
-  'insufficient_material',
-  'material_removed',
-  'project_read_only',
-  'not_found',
-  'invalid_request',
-])
 
 export default function GenerationSetup({ kind }) {
   const { t, i18n } = useTranslation()
@@ -66,33 +43,19 @@ export default function GenerationSetup({ kind }) {
   const [count, setCount] = useState(DEFAULT_COUNT)
   const [capacity, setCapacity] = useState(null) // { key, max } or { key, error }
   const [open, setOpen] = useState(() => new Map()) // group rows the student toggled
-  const [phase, setPhase] = useState('setup') // setup | sending | generating
-  const [job, setJob] = useState(null) // { id, reached: index of the furthest step seen }
-  const [failure, setFailure] = useState(null) // { message, retry }
-  const [cancelled, setCancelled] = useState(false)
-  const [cancelling, setCancelling] = useState(false)
-  const [cancelError, setCancelError] = useState(null)
   const [capacityAttempt, setCapacityAttempt] = useState(0)
-  const errorBox = useRef(null)
-  const setupHeading = useRef(null)
-  const progressRegion = useRef(null)
-  const shownPhase = useRef(null)
+  const generation = useGenerationJob(kind, projectId)
+  const { phase, failure, cancelled, errorBox, setupHeading } = generation
 
   useEffect(() => {
     let live = true
     // A job of this kind still running for this Project (the student left and came back) resumes its progress.
-    const running = apiFetch(`/api/projects/${projectId}/jobs`).then(
-      (list) => (Array.isArray(list) ? list : []).find((job) => job.kind === kind.kind && ACTIVE.has(job.status)),
-      () => null,
-    )
+    const running = generation.findActive()
     Promise.all([apiFetch(`/api/projects/${projectId}`), apiFetch(`/api/projects/${projectId}/materials`), running])
       .then(([project, materials, active]) => {
         if (!live) return
         setLoaded({ id: projectId, project, materials: Array.isArray(materials) ? materials : [] })
-        if (active) {
-          setJob({ id: active.id, reached: Math.max(0, STEPS.indexOf(active.progress_step)) })
-          setPhase('generating')
-        }
+        generation.resume(active)
       })
       .catch((err) => {
         if (!live || SIGNED_OUT_CODES.has(err?.code)) return
@@ -102,6 +65,8 @@ export default function GenerationSetup({ kind }) {
     return () => {
       live = false
     }
+    // `generation`'s helpers only use setters and the request helpers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, navigate, kind.kind])
 
   const data = loaded?.id === projectId ? loaded : null
@@ -137,110 +102,7 @@ export default function GenerationSetup({ kind }) {
     setCapacityAttempt((attempt) => attempt + 1)
   }
 
-  /** Act on the job as last read; true once it has ended (the view has moved on). */
-  async function settle(found, jobId, isLive = () => true) {
-    const seen = () => apiFetch(`/api/jobs/${jobId}/seen`, { method: 'POST' }).catch(() => {})
-    if (found && ACTIVE.has(found.status)) {
-      const step = STEPS.indexOf(found.progress_step)
-      setJob((current) => (current?.id === jobId ? { ...current, reached: Math.max(current.reached, step) } : current))
-      return false
-    }
-    if (found?.status === 'completed') {
-      await seen()
-      if (isLive()) navigate(kind.result(projectId, found.result_ref), { replace: true })
-      return true
-    } else if (found?.status === 'cancelled') {
-      setCancelled(true)
-      setPhase('setup')
-    } else {
-      // Failed, or no longer listed: the Inline error on the setup, with the choices kept.
-      const code = found?.error_code
-      const rule = RULES.has(code)
-      setFailure({ message: rule ? errorText(t, { code }) : t(`${kind.copy}.failed`), retry: !rule })
-      setPhase('setup')
-    }
-    setCancelling(false)
-    setCancelError(null)
-    if (found) seen()
-    return true
-  }
-
-  // Poll the job while it runs (AD-20).
-  const jobId = phase === 'generating' ? job?.id : null
-  useEffect(() => {
-    if (!jobId) return undefined
-    const poll = { live: true, timer: null }
-    const tick = async () => {
-      try {
-        const list = await apiFetch(`/api/projects/${projectId}/jobs`)
-        if (!poll.live) return
-        const found = (Array.isArray(list) ? list : []).find((item) => item.id === jobId)
-        if (await settle(found, jobId, () => poll.live)) return
-      } catch (err) {
-        if (!poll.live || SIGNED_OUT_CODES.has(err?.code)) return
-        // A failed poll is tried again on the next tick.
-      }
-      if (poll.live) poll.timer = setTimeout(tick, POLL_MS)
-    }
-    tick()
-    return () => {
-      poll.live = false
-      clearTimeout(poll.timer)
-    }
-    // `settle` only uses setters and the request helpers; the poll restarts only with a new job.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId, projectId])
-
-  // Focus follows the view (EXPERIENCE.md › Accessibility): the progress steps, or the setup heading
-  // after a cancel ("Try again" takes it after a failure, below).
-  useEffect(() => {
-    const previous = shownPhase.current
-    shownPhase.current = phase
-    if (previous === null || previous === phase) return
-    if (phase === 'generating') progressRegion.current?.focus()
-    else if (phase === 'setup' && previous === 'generating' && !failure?.retry) setupHeading.current?.focus()
-  }, [phase, failure])
-
-  // "Try again" takes focus after a failure (EXPERIENCE.md › Inline error).
-  useEffect(() => {
-    if (failure?.retry) errorBox.current?.querySelector('button')?.focus()
-  }, [failure])
-
-  async function make() {
-    setFailure(null)
-    setCancelled(false)
-    setPhase('sending')
-    try {
-      const answer = await apiFetch(`/api/projects/${projectId}/${kind.endpoint}`, {
-        method: 'POST',
-        body: { scope, count: requestCount(count) },
-      })
-      setJob({ id: answer.job_id, reached: 0 })
-      setPhase('generating')
-    } catch (err) {
-      setPhase('setup')
-      if (SIGNED_OUT_CODES.has(err?.code)) return
-      const rule = RULES.has(err?.code)
-      setFailure({ message: rule ? errorText(t, err) : t(`${kind.copy}.failed`), retry: !rule })
-    }
-  }
-
-  async function cancel() {
-    const id = job?.id
-    if (!id || cancelling) return
-    setCancelling(true)
-    setCancelError(null)
-    try {
-      await apiFetch(`/api/jobs/${id}/cancel`, { method: 'POST' })
-      const list = await apiFetch(`/api/projects/${projectId}/jobs`)
-      const found = (Array.isArray(list) ? list : []).find((item) => item.id === id)
-      // Still running: the server ends it at its next step; the poll sees that.
-      await settle(found, id)
-    } catch (err) {
-      setCancelling(false)
-      if (!SIGNED_OUT_CODES.has(err?.code)) setCancelError(err)
-    }
-  }
+  const make = () => generation.make({ scope, count: requestCount(count) })
 
   function pickAll() {
     setAllTopics(true)
@@ -425,21 +287,7 @@ export default function GenerationSetup({ kind }) {
         </section>
       )}
 
-      {phase === 'generating' && job && (
-        <GenerationProgress
-          ref={progressRegion}
-          steps={STEPS.map((step) => t(`${kind.copy}.steps.${step}`))}
-          current={job.reached}
-          onCancel={cancel}
-          cancelling={cancelling}
-        >
-          {cancelError && (
-            <div className={styles.error}>
-              <InlineError onRetry={cancel}>{errorText(t, cancelError)}</InlineError>
-            </div>
-          )}
-        </GenerationProgress>
-      )}
+      {phase === 'generating' && <GenerationJobProgress copy={kind.copy} generation={generation} />}
     </div>
   )
 }

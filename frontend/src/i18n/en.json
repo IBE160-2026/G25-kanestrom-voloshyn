@@ -104,7 +104,8 @@
   },
   "tools": {
     "quiz": "Quiz",
-    "flashcards": "Flashcards"
+    "flashcards": "Flashcards",
+    "summarize": "Summarize"
   },
   "mistakes": {
     "card_one": "{{count}} mistake to review",
@@ -188,6 +189,24 @@
       "more": "Make more cards"
     },
     "notice": "Your flashcards on <topic></topic> are ready · <open>Open</open>"
+  },
+  "summary": {
+    "title": "Make a summary",
+    "file": "Which file?",
+    "topic": "Narrow to one topic (optional)",
+    "wholeFile": "Whole file",
+    "make": "Make summary",
+    "steps": {
+      "reading": "Reading your material",
+      "writing": "Writing the summary",
+      "checking": "Checking sources"
+    },
+    "cancelled": "Cancelled. Your choices are kept.",
+    "failed": "We couldn't make your summary.",
+    "notice": "Your summary of <file></file> is ready · <open>Open</open>",
+    "scopeWhole": "Summary of <file></file> · whole file",
+    "scopeTopic": "Summary of <file></file> · <topic></topic>",
+    "saved": "Saved to History"
   },
   "review": {
     "steps": {

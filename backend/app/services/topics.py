@@ -281,9 +281,11 @@ async def add(conn: AsyncConnection, account_id: UUID, project_id: UUID, materia
 async def resolve_scope(
     conn: AsyncConnection, account_id: UUID, project_id: UUID, scope: dict[str, Any]
 ) -> ResolvedScope:
-    """Resolve `{"all_topics": true}` or `{"topic_ids": [...]}` to Sections (AD-7).
+    """Resolve `{"all_topics": true}`, `{"material_id": ...}`, or `{"topic_ids": [...]}` to Sections (AD-7).
 
     - `all_topics`: every Section of every Ready, non-removed Material; no focus labels.
+    - `material_id` (Story 4.3, reused by the chat): every Section of that one Ready, non-removed Material
+      of the Project; no focus labels. Any other Material is `404 not_found`.
     - `topic_ids`: the Topics' Sections; a student Topic with no Sections stands for its whole Material.
       Every chosen Topic's label is passed on as the focus.
     A missing or foreign Project or Topic id, or one of a removed or not-Ready file, is `404 not_found`; a
@@ -293,6 +295,12 @@ async def resolve_scope(
     if scope.get("all_topics") is True:
         rows = await repo.scope_sections_all(conn, account_id, project_id)
         labels: list[str] = []
+    elif scope.get("material_id") is not None:
+        material_id = scope["material_id"]
+        if await repo.ready_material(conn, account_id, project_id, material_id) is None:
+            raise TopicNotFound()
+        rows = await repo.scope_sections_material(conn, account_id, project_id, material_id)
+        labels = []
     else:
         topic_ids = list(dict.fromkeys(scope.get("topic_ids") or []))
         found = await repo.get_many(conn, account_id, project_id, topic_ids) if topic_ids else []

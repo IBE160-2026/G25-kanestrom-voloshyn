@@ -105,7 +105,8 @@
   },
   "tools": {
     "quiz": "Quiz",
-    "flashcards": "Treningskort"
+    "flashcards": "Treningskort",
+    "summarize": "Oppsummer"
   },
   "mistakes": {
     "card_one": "Du har {{count}} feil å repetere",
@@ -189,6 +190,24 @@
       "more": "Lag flere treningskort"
     },
     "notice": "Treningskortene dine om <topic></topic> er klare · <open>Åpne</open>"
+  },
+  "summary": {
+    "title": "Lag et sammendrag",
+    "file": "Hvilken fil?",
+    "topic": "Begrens til ett emne (valgfritt)",
+    "wholeFile": "Hele filen",
+    "make": "Lag sammendrag",
+    "steps": {
+      "reading": "Leser materialet ditt",
+      "writing": "Skriver sammendraget",
+      "checking": "Sjekker kildene"
+    },
+    "cancelled": "Avbrutt. Valgene dine er lagret.",
+    "failed": "Vi fikk ikke laget sammendraget ditt.",
+    "notice": "Sammendraget ditt av <file></file> er klart · <open>Åpne</open>",
+    "scopeWhole": "Sammendrag av <file></file> · hele filen",
+    "scopeTopic": "Sammendrag av <file></file> · <topic></topic>",
+    "saved": "Lagret i historikken"
   },
   "review": {
     "steps": {

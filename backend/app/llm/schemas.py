@@ -133,6 +133,44 @@ class FlashcardDraft(BaseModel):
         return value[:FLASHCARDS_MAX] if isinstance(value, list) else value
 
 
+# At most this many sections per summary (Story 4.3).
+SUMMARY_SECTIONS_MAX = 8
+SUMMARY_TITLE_MAX = 200
+
+
+class DraftSummarySection(BaseModel):
+    """One summary section as the model writes it: a heading, its text, and the 1-based Section numbers
+    (`S1…Sn`) it rests on. The service maps the numbers back to Section ids (AD-7)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # A blank heading or text drops that section in the service's check, not the whole reply.
+    heading: str
+    text: str
+    # May be empty: an uncited section is dropped by the service, not retried.
+    sections: list[int]
+
+
+class SummaryDraft(BaseModel):
+    """`summarize`: a title and up to 8 sections (FR-15). Extra sections are cut, not refused; a long
+    title is cut to 200 characters."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    sections: Annotated[list[DraftSummarySection], Field(max_length=SUMMARY_SECTIONS_MAX)]
+
+    @field_validator("title", mode="after")
+    @classmethod
+    def _cut_title(cls, value: str) -> str:
+        return value[:SUMMARY_TITLE_MAX].strip()
+
+    @field_validator("sections", mode="before")
+    @classmethod
+    def _cap(cls, value: object) -> object:
+        return value[:SUMMARY_SECTIONS_MAX] if isinstance(value, list) else value
+
+
 # At most this many Practice Questions per Mistake Review round (AD-11, AD-12).
 PRACTICE_MAX = 20
 

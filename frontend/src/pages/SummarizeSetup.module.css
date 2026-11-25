@@ -1,0 +1,91 @@
+/* Summarize setup (DESIGN.md › Summarize setup; mock key-summary.html). The shared activity layout, Topic
+   chips, and buttons come from QuizSetup.module.css; these are the file options and the radio chips. */
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A file option: a background row with a radio, the file-type tile, the name, and muted metadata. */
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--space-touch-target-min);
+  padding: var(--space-3);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.file:hover {
+  background: var(--color-hover);
+}
+
+/* Selected: primary border on primary-subtle. */
+.fileOn,
+.fileOn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-subtle);
+}
+
+.file:has(.fileRadio:focus-visible),
+.chip:has(input:focus-visible) {
+  outline: var(--space-focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--space-focus-ring-offset);
+}
+
+.fileRadio {
+  flex: none;
+  margin: 0;
+  accent-color: var(--color-primary);
+}
+
+/* File-type tile, as in the File row. */
+.tile {
+  flex: none;
+  width: var(--space-6);
+  height: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--type-overline-size);
+  font-weight: var(--type-overline-weight);
+  letter-spacing: var(--type-overline-letter-spacing);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  font-size: var(--type-ui-size);
+  font-weight: var(--type-button-weight);
+}
+
+.meta {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}
+
+/* A Topic chip that holds a native radio: centred like the button chips. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+}

@@ -64,7 +64,7 @@ describe('Flashcards setup', () => {
     const button = await screen.findByRole('button', { name: en.tools.flashcards })
     await waitFor(() => expect(button).toBeEnabled())
     const row = within(screen.getByTestId('tools-row')).getAllByRole('button')
-    expect(row.map((b) => b.textContent)).toEqual([en.tools.quiz, en.tools.flashcards])
+    expect(row.map((b) => b.textContent)).toEqual([en.tools.quiz, en.tools.flashcards, en.tools.summarize])
     await userEvent.click(button)
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a/flashcards'))

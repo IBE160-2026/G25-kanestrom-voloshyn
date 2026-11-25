@@ -130,6 +130,8 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Progress steps, Mistake Review start | "Looking at your mistakes → Writing practice questions" | Ser på feilene dine → Skriver øvingsspørsmål |
 | Summarize setup | "Make a summary" · "Which file?" · "Narrow to one topic (optional)" · "Whole file" · "Make summary" [ASSUMPTION: from mock] | Lag et sammendrag · Hvilken fil? · Begrens til ett emne (valgfritt) · Hele filen · Lag sammendrag |
 | Summary view, end | "Saved to History" [ASSUMPTION: from mock] | Lagret i historikken |
+| Summary view, scope line | "Summary of {file} · whole file" · with a topic: "Summary of {file} · {topic}" [ASSUMPTION: copy, approved 2026-11-23 by Ihor with Story 4.3] | Sammendrag av {file} · hele filen · Sammendrag av {file} · {topic} |
+| Summary, generation failed | "We couldn't make your summary." + the Inline error reassurance and "Try again" [ASSUMPTION: copy, approved 2026-11-23 by Ihor with Story 4.3] | Vi fikk ikke laget sammendraget ditt. |
 | History, reopened quiz or flashcard set | "Do it again" | Gjør det igjen |
 | History, unfinished quiz | "Unfinished · {n} of {total}" | Ikke fullført · {n} av {total} |
 | History, source file removed (beside the disabled "Do it again") | "The file this came from was removed." | Filen dette kom fra, er fjernet. |
@@ -161,6 +163,7 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | Finished-generation message, {topic} | No topics chosen: "all topics" · two: "{a} and {b}" · three or more: "{a} and {n} more" · dismiss: "Dismiss" [ASSUMPTION: copy, approved 2026-11-19 by Cristoffer with Story 3.1b] | alle emner · {a} og {b} · {a} og {n} til · Lukk |
 | Finished-generation message, Mistake Review | "Your practice questions are ready · Open" [ASSUMPTION: copy] | Øvingsspørsmålene dine er klare · Åpne |
 | Finished-generation message, Flashcards | "Your flashcards on {topic} are ready · Open" ({topic} as for the Quiz) [ASSUMPTION: copy, approved 2026-11-19 by Ihor with Story 4.1] | Treningskortene dine om {topic} er klare · Åpne |
+| Finished-generation message, Summary | "Your summary of {file} is ready · Open" [ASSUMPTION: copy, approved 2026-11-23 by Ihor with Story 4.3] | Sammendraget ditt av {file} er klart · Åpne |
 | File menu trigger, accessible name | "More options for {file name}" [ASSUMPTION] | Flere valg for {file name} |
 | File menu item | "Remove" | Fjern |
 | Remove file dialog, title | "Remove {file name}?" [ASSUMPTION] | Vil du fjerne {file name}? |
