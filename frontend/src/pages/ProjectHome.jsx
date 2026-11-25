@@ -28,13 +28,14 @@ export const NAME_WAIT_MS = 30000
 // Project home (FR-4, FR-6, FR-8; DESIGN.md › Layout › Project home, mock key-project-home.html).
 // Opening it reads the Project through GET /api/projects/{id}, which records it as the last opened,
 // and lists its files. The chat column shows the Upload drop zone until a file is Ready (the chat
-// arrives with its own story); the tool buttons row holds Quiz and Flashcards; the Files panel is on the right.
+// arrives with its own story); the tool buttons row holds Quiz, Flashcards, and Summarize; the Files panel is on the right.
 // Files are uploaded from the drop zone's "browse", the panel's Upload button, or a drop on either.
 // A static skeleton shows while it loads (EXPERIENCE.md › Project cold-load). A missing or foreign
 // Project goes back to /projects. A read-only Project lists its files but takes no uploads.
 // A quiz finished while the student was elsewhere shows "Your quiz on {topic} is ready · Open" at the
 // top of the chat column (Story 3.1b; see useQuizNotices), also in a read-only Project; a flashcard set
-// reads "Your flashcards on {topic} are ready · Open" and opens the set (Story 4.1).
+// reads "Your flashcards on {topic} are ready · Open" and opens the set (Story 4.1), and a summary
+// "Your summary of {file} is ready · Open" and opens the Summary view (Story 4.3).
 // Above those, the Mistakes card "{n} mistakes to review" shows while the Project is active and has
 // outstanding Mistakes (Story 3.3, FR-9; see useMistakes). It is read when the chat mounts, so coming
 // back from a Quiz shows the new count, and again after a file removal (which may withdraw Mistakes).
@@ -330,10 +331,12 @@ export default function ProjectHome() {
                 key={job.id}
                 kind={job.kind}
                 labels={job.topic_labels}
+                fileName={job.file_name}
                 onOpen={() => {
                   if (!quizNotices.open(job)) return
                   if (job.kind === 'review_round') navigate(`/projects/${projectId}/review/${job.result_ref}`)
                   else if (job.kind === 'flashcards') navigate(`/projects/${projectId}/flashcard-sets/${job.result_ref}`)
+                  else if (job.kind === 'summary') navigate(`/projects/${projectId}/summaries/${job.result_ref}`)
                   else navigate(`/projects/${projectId}/quizzes/${job.result_ref}`)
                 }}
                 onDismiss={async () => {
@@ -370,8 +373,8 @@ export default function ProjectHome() {
           )}
           {ready && anyReady && <div className={styles.thread} />}
           {!ready && !failed && <div className={`${styles.skeleton} ${styles.skeletonChat}`} aria-hidden="true" />}
-          {/* Tool buttons row: Quiz (Story 3.1a) and Flashcards (Story 4.1), disabled until a file is
-              Ready and while read-only. Summarize arrives with its story. */}
+          {/* Tool buttons row: Quiz (Story 3.1a), Flashcards (Story 4.1), and Summarize (Story 4.3),
+              disabled until a file is Ready and while read-only. */}
           <div ref={toolsRow} className={styles.tools} data-testid="tools-row" tabIndex={-1}>
             <button
               type="button"
@@ -388,6 +391,14 @@ export default function ProjectHome() {
               onClick={() => navigate(`/projects/${projectId}/flashcards`)}
             >
               {t('tools.flashcards')}
+            </button>
+            <button
+              type="button"
+              className={styles.tool}
+              disabled={!ready || !anyReady || readOnly}
+              onClick={() => navigate(`/projects/${projectId}/summarize`)}
+            >
+              {t('tools.summarize')}
             </button>
           </div>
         </div>

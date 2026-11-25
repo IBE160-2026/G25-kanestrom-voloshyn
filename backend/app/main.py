@@ -21,13 +21,14 @@ from app.api import phone as phone_api
 from app.api import projects as projects_api
 from app.api import quizzes as quizzes_api
 from app.api import review as review_api
+from app.api import summaries as summaries_api
 from app.api import topics as topics_api
 from app.api import usage as usage_api
 from app.config import Settings, get_settings, resolve_llm_mode
 from app.db.pool import create_pool
 from app.errors import error_response, install_error_handlers
 from app.llm import create_gateway
-from app.services import flashcards, jobs, materials, password_reset, phone, projects, quiz, review
+from app.services import flashcards, jobs, materials, password_reset, phone, projects, quiz, review, summaries
 from app.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,7 @@ def _api_router() -> APIRouter:
     api.include_router(topics_api.router)
     api.include_router(quizzes_api.router)
     api.include_router(flashcards_api.router)
+    api.include_router(summaries_api.router)
     api.include_router(mistakes_api.router)
     api.include_router(review_api.router)
     api.include_router(jobs_api.router)
@@ -136,6 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             materials.KIND: materials.processing_kind(settings, storage, pool, llm),
             quiz.KIND: quiz.quiz_kind(pool, llm),
             flashcards.KIND: flashcards.flashcards_kind(pool, llm),
+            summaries.KIND: summaries.summary_kind(pool, llm),
             review.KIND: review.review_kind(pool, llm, settings.llm_context_budget_tokens),
         }
         runner = jobs.Runner(pool, kinds, settings.jobs_max_concurrent)

@@ -6,9 +6,10 @@ import styles from './ReadyNotice.module.css'
 // as an underlined primary-coloured link, and a × ("Dismiss"). No badge, no fill; not a chat message.
 // The caller puts it in a polite live region. The Topic labels come from model output, so the {topic}
 // text is a React text child, never part of the string <Trans> parses. A `review_round` job (Story 3.4)
-// reads "Your practice questions are ready · Open" instead, and a `flashcards` job (Story 4.1) "Your
-// flashcards on {topic} are ready · Open", with the same {topic} rules.
-export default function ReadyNotice({ kind = 'quiz', labels, onOpen, onDismiss }) {
+// reads "Your practice questions are ready · Open" instead, a `flashcards` job (Story 4.1) "Your
+// flashcards on {topic} are ready · Open", with the same {topic} rules, and a `summary` job (Story 4.3)
+// "Your summary of {file} is ready · Open", with the job's frozen file name as plain text.
+export default function ReadyNotice({ kind = 'quiz', labels, fileName, onOpen, onDismiss }) {
   const { t } = useTranslation()
   const open = <button type="button" className={styles.open} data-notice-open="" onClick={onOpen} />
   return (
@@ -16,6 +17,8 @@ export default function ReadyNotice({ kind = 'quiz', labels, onOpen, onDismiss }
       <p className={styles.text}>
         {kind === 'review_round' ? (
           <Trans i18nKey="review.ready" components={{ open }} />
+        ) : kind === 'summary' ? (
+          <Trans i18nKey="summary.notice" components={{ file: <Plain text={fileName ?? ''} />, open }} />
         ) : (
           <Trans
             i18nKey={kind === 'flashcards' ? 'flashcards.notice' : 'quiz.ready.message'}

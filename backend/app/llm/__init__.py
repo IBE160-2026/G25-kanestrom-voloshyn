@@ -12,11 +12,13 @@ from app.llm.schemas import (
     DraftCard,
     DraftPractice,
     DraftQuestion,
+    DraftSummarySection,
     FlashcardDraft,
     ImageText,
     PracticeDraft,
     ProjectName,
     QuizDraft,
+    SummaryDraft,
 )
 
 __all__ = [
@@ -25,6 +27,7 @@ __all__ = [
     "DraftCard",
     "DraftPractice",
     "DraftQuestion",
+    "DraftSummarySection",
     "FlashcardDraft",
     "Gateway",
     "ImageText",
@@ -37,6 +40,7 @@ __all__ = [
     "ProviderRateLimited",
     "ProviderUnavailable",
     "QuizDraft",
+    "SummaryDraft",
     "create_gateway",
     "practice_sections",
 ]

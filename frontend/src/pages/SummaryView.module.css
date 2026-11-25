@@ -1,0 +1,88 @@
+/* Summary view (DESIGN.md › Summary view, Source label; Layout › Activities; mock key-summary.html). The
+   activity header and the primary button come from QuizSetup.module.css. */
+
+/* A reading column at the reading width. */
+.reading {
+  width: 100%;
+  max-width: var(--space-reading-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-content-x);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.scope {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  color: var(--color-text);
+  font-size: var(--type-title-lg-size);
+  font-weight: var(--type-title-lg-weight);
+  letter-spacing: var(--type-title-lg-letter-spacing);
+  overflow-wrap: anywhere;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heading {
+  color: var(--color-text);
+  font-size: var(--type-heading-size);
+  font-weight: var(--type-heading-weight);
+  overflow-wrap: anywhere;
+}
+
+.text {
+  color: var(--color-text);
+  font-size: var(--type-body-reading-size);
+  font-weight: var(--type-body-reading-weight);
+  line-height: var(--type-body-reading-line-height);
+  overflow-wrap: anywhere;
+}
+
+/* Source labels: a row of muted pills. */
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-size: var(--type-caption-size);
+  overflow-wrap: anywhere;
+}
+
+/* The end: a muted "Saved to History" line, then "← Back to chat" (primary). */
+.end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.saved {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+}

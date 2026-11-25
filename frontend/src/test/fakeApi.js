@@ -1,6 +1,6 @@
 // An in-memory stand-in for the backend's profile, Projects (Story 2.1), Materials, and jobs (Story
 // 2.2) routes, Quiz setup and generation (Story 3.1a), taking a Quiz (Story 3.2), flashcard sets and
-// marks (Stories 4.1 + 4.2), Mistakes (Story 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
+// marks (Stories 4.1 + 4.2), summaries (Story 4.3), Mistakes (Story 3.3), Mistake Review rounds (Stories 3.4 + 3.5), and phone upload links, batches, and photos
 // (Stories 6.1 + 6.2), installed on the
 // mocked apiFetch. The test file must mock '../api/client.js'
 // (test/mocks.js clientMock) first.
@@ -67,7 +67,10 @@ export const IMAGE_LIMIT = 25
  * adds a running `flashcards` job like a quiz request; `finishFlashcards` completes it with a saved set.
  * `flashcardSets` lists stored sets (see `flashcardSet`); a mark is saved like the server (Story 4.2): a
  * repeat on a card already "Got it" saves nothing, the final "Got it" ends the set, and an ended set
- * refuses marks with `409 flashcard_set_ended`. A quiz request adds a running `quiz` job at the
+ * refuses marks with `409 flashcard_set_ended`. A summary request (Story 4.3) checks like the server (a file
+ * that isn't Ready or a Topic of another file is `404 not_found`) and adds a running `summary` job with
+ * its frozen `file_name` and `topic_labels`; `finishSummary` completes it with a saved summary, and
+ * `summaries` lists stored ones (see `summary`). A quiz request adds a running `quiz` job at the
  * `reading` step, with its frozen `topic_labels`; `stepJob`, `finishQuiz`, and `failJob` move it on. The
  * jobs list leaves out finished jobs marked seen, like the server (Story 3.1b). `quizzes` lists stored Quizzes
  * (see `quiz`); an answer is scored and saved once, like the server (Story 3.2), and a newly saved wrong
@@ -99,6 +102,7 @@ export function fakeApi({
   capacity = 20,
   quizzes = [],
   flashcardSets = [],
+  summaries = [],
   mistakes = [],
   rounds = [],
   appPublicUrl = 'http://192.168.1.20:8000',
@@ -123,6 +127,8 @@ export function fakeApi({
     // { [setId]: flashcardSet(...) } (Stories 4.1 + 4.2)
     flashcardSets: Object.fromEntries(flashcardSets.map((f) => [f.id, structuredClone(f)])),
     flashcardMarks: [], // bodies of POST .../mark, with their card id, saved or not (Story 4.2)
+    summaryRequests: [], // bodies of POST .../summaries (Story 4.3)
+    summaries: Object.fromEntries(summaries.map((x) => [x.id, structuredClone(x)])), // { [summaryId]: summary(...) }
     answers: [], // bodies of POST .../answer, with their question id
     cancelled: [], // job ids a cancel was sent for
     mistakes: mistakes.map((m) => ({ withdrawn: false, cleared: false, ...m })), // Story 3.3
@@ -369,6 +375,40 @@ export function fakeApi({
         if (!(state.materials[id] ?? []).some((m) => m.status === 'ready')) throw rule('insufficient_material')
         state.flashcardRequests.push(body)
         const job = generationJob(state, id, 'flashcards', `f-${state.flashcardRequests.length}`, body)
+        state.jobs.push(job)
+        return { job_id: job.id }
+      }
+    }
+    // Summaries (Story 4.3): like the server, one Ready file, whole or narrowed to one of its Topics.
+    const summaryRoute = path.match(/^\/api\/projects\/([^/]+)\/summaries(?:\/([^/]+))?$/)
+    if (summaryRoute) {
+      const [, id, summaryId] = summaryRoute
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (summaryId && method === 'GET') {
+        const found = state.summaries[summaryId]
+        if (!found || found.project_id !== id) throw notFound()
+        const { project_id: _project, ...shown } = found
+        return structuredClone(shown)
+      }
+      if (!summaryId && method === 'POST') {
+        if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+        const file = (state.materials[id] ?? []).find((m) => m.id === body?.material_id && m.status === 'ready')
+        if (!file) throw notFound()
+        const topic = body.topic_id === null ? null : (file.topics ?? []).find((t) => t.id === body.topic_id)
+        if (topic === undefined) throw notFound()
+        state.summaryRequests.push(body)
+        const job = {
+          id: `s-${state.summaryRequests.length}`,
+          project_id: id,
+          kind: 'summary',
+          status: 'running',
+          progress_step: 'reading',
+          result_ref: null,
+          error_code: null,
+          file_name: file.file_name,
+          topic_labels: topic ? [topic.label] : [],
+        }
         state.jobs.push(job)
         return { job_id: job.id }
       }
@@ -915,6 +955,38 @@ export function finishFlashcards(state, jobId, cardCount) {
   state.flashcardSets[setId] = flashcardSet(setId, job.project_id, { n: cardCount, requested: job.count })
   Object.assign(job, { status: 'completed', progress_step: null, result_ref: setId })
   return setId
+}
+
+/**
+ * A stored summary in Project `projectId`: `{id, title, file_name, topic_label, sections}`; section i reads
+ * "Heading {i}" / "Text {i}." with the Source label "{file} · Page {i}".
+ */
+export function summary(id, projectId, { n = 2, fileName = 'notes.md', topicLabel = null, title = 'Photosynthesis' } = {}) {
+  return {
+    id,
+    project_id: projectId,
+    title,
+    file_name: fileName,
+    topic_label: topicLabel,
+    sections: Array.from({ length: n }, (_, k) => ({
+      heading: `Heading ${k + 1}`,
+      text: `Text ${k + 1}.`,
+      sources: [{ label: `${fileName} · Page ${k + 1}` }],
+    })),
+  }
+}
+
+/** Complete a summary job with a saved summary of `n` sections. Returns the summary id. */
+export function finishSummary(state, jobId, n = 2) {
+  const job = state.jobs.find((j) => j.id === jobId)
+  const summaryId = `sum-${jobId}`
+  state.summaries[summaryId] = summary(summaryId, job.project_id, {
+    n,
+    fileName: job.file_name,
+    topicLabel: job.topic_labels[0] ?? null,
+  })
+  Object.assign(job, { status: 'completed', progress_step: null, result_ref: summaryId })
+  return summaryId
 }
 
 /** Move a running quiz job to `step` ('reading', 'writing', or 'checking'). */

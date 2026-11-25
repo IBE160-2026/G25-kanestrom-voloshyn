@@ -161,6 +161,31 @@ async def scope_sections_of(
         return await cur.fetchall()
 
 
+async def scope_sections_material(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, material_id: UUID
+) -> list[dict[str, Any]]:
+    """Every Section of one Ready, non-removed Material of the Project (`id`, `material_id`, `text`);
+    empty for any other Material (Story 4.3)."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(_SCOPE_SECTIONS.format(where="s.material_id = %s"), (account_id, project_id, material_id))
+        return await cur.fetchall()
+
+
+async def ready_material(
+    conn: AsyncConnection, account_id: UUID, project_id: UUID, material_id: UUID
+) -> dict[str, Any] | None:
+    """`id` and `file_name` of a Ready, non-removed Material of this Account and Project; None otherwise."""
+    async with conn.cursor(row_factory=dict_row) as cur:
+        await cur.execute(
+            """
+            SELECT id, file_name FROM study_materials
+            WHERE id = %s AND account_id = %s AND project_id = %s AND removed_at IS NULL AND status = 'ready'
+            """,
+            (material_id, account_id, project_id),
+        )
+        return await cur.fetchone()
+
+
 async def topics_without_sections(conn: AsyncConnection, topic_ids: list[UUID]) -> set[UUID]:
     async with conn.cursor() as cur:
         await cur.execute(

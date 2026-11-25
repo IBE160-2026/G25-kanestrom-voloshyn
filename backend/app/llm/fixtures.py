@@ -7,7 +7,7 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from app.llm.schemas import PROJECT_NAME_MAX, TOPIC_LABEL_MAX
+from app.llm.schemas import PROJECT_NAME_MAX, SUMMARY_SECTIONS_MAX, TOPIC_LABEL_MAX
 
 _HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
 NAME_WORDS = 6
@@ -125,6 +125,22 @@ def generate_flashcards(labels: Sequence[str], texts: Sequence[str], count: int)
             }
         )
     return {"cards": cards}
+
+
+def summarize(labels: Sequence[str], texts: Sequence[str], topic_labels: Sequence[str]) -> dict[str, Any]:
+    """A title and one section per run of Sections (at most 8 runs, in order, AD-4): section k cites the
+    Section numbers of its run (`S1…`), and its text quotes the start of the run's first Section. The
+    title names the focus Topic when there is one."""
+    count = len(texts)
+    runs = min(count, SUMMARY_SECTIONS_MAX)
+    sections = []
+    for k in range(runs):
+        first, last = k * count // runs, (k + 1) * count // runs
+        label = labels[first] or f"Section {first + 1}"
+        snippet = " ".join(texts[first].split()[:QUIZ_SNIPPET_WORDS]) or label
+        sections.append({"heading": f"Part {k + 1}: {label}", "text": snippet, "sections": list(range(first + 1, last + 1))})
+    title = f"Summary: {topic_labels[0]}" if topic_labels else "Summary"
+    return {"title": title, "sections": sections}
 
 
 def generate_practice(targets: Sequence[dict[str, Any]], labels: Sequence[str], texts: Sequence[str]) -> dict[str, Any]:

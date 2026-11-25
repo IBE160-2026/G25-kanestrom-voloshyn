@@ -178,6 +178,20 @@ def test_flashcard_marks_are_guarded():
     assert active_project in _calls(route.dependant)
 
 
+def test_summary_generation_is_guarded():
+    # Story 4.3: queuing a summary is a content mutation (AD-22).
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/summaries" and "POST" in r.methods)
+    assert active_project in _calls(route.dependant)
+
+
+def test_a_summary_is_an_unguarded_read():
+    app = create_app(Settings(_env_file=None, llm_mode="mock"))
+    route = next(r for r in api_routes(app) if r.path == "/api/projects/{project_id}/summaries/{summary_id}")
+    assert route.methods == {"GET"}
+    assert active_project not in _calls(route.dependant)
+
+
 def test_job_cancel_is_allowlisted_bookkeeping():
     app = create_app(Settings(_env_file=None, llm_mode="mock"))
     route = next(r for r in api_routes(app) if r.path == "/api/jobs/{job_id}/cancel" and "POST" in r.methods)
