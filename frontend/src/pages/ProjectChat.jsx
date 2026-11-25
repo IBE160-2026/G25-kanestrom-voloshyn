@@ -12,7 +12,8 @@ import { ALL_MATERIALS, useChat } from './useChat.js'
 // thread, and the composer is off. In a read-only Project the thread still shows, but the scope can't
 // change and nothing can be sent. ProjectHome keys this by Project (see useChat).
 // A failed answer shows the Inline error with "Try again" under the thread; the question is back in the
-// composer. A scope change that fails shows the Inline error alone.
+// composer. A scope change or a "New chat" (Story 4.5) that fails shows the Inline error alone, under
+// the Chat bar. "New chat" is off whenever the composer is or an answer streams.
 /** The chat's scope as the UI shows it: a file that is no longer Ready counts as all materials. */
 function readyScope(scope, readyFiles) {
   if (scope?.material_id && readyFiles.some((file) => file.id === scope.material_id)) return scope
@@ -35,6 +36,8 @@ export default function ProjectChat({ projectId, enabled, readOnly, materials, p
             files={readyFiles}
             disabled={readOnly || busy || chat.chat === null}
             onScope={chat.setScope}
+            newChatDisabled={composerOff || busy}
+            onNewChat={chat.newChat}
           />
           {chat.scopeError && <InlineError>{errorText(t, chat.scopeError)}</InlineError>}
           <ChatThread

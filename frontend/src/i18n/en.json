@@ -109,6 +109,7 @@
     "label": "Study this material"
   },
   "chat": {
+    "newChat": "New chat",
     "answerFrom": "Answer from",
     "allMaterials": "All materials",
     "oneFile": "One file",

@@ -159,6 +159,8 @@ export function fakeApi({
     messagesLeft, // today's Ask AI messages left (Story 4.4)
     chatSends: [], // bodies of POST /api/chats/{id}/messages, refused or not
     scopeChanges: [], // bodies of PATCH /api/chats/{id}
+    earlierChats: [], // chats left by "New chat" (Story 4.5), unchanged
+    chatsMade: 0,
     streams: [], // manual stream controllers, in send order
     aborted: 0, // streams the SPA aborted
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
@@ -236,6 +238,24 @@ export function fakeApi({
         found.current_scope = { all_materials: true }
       }
       return structuredClone(found)
+    }
+    // "New chat" (Story 4.5): the current chat moves to `earlierChats` and a fresh one opens on all
+    // materials; an empty current chat is reused instead. Refused in a read-only Project.
+    const chatsCall = path.match(/^\/api\/projects\/([^/]+)\/chats$/)
+    if (chatsCall && method === 'POST') {
+      const id = chatsCall[1]
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+      const current = state.chats[id]
+      if (current && current.messages.length === 0) {
+        current.current_scope = { all_materials: true }
+        return structuredClone(current)
+      }
+      if (current) state.earlierChats.push(structuredClone(current))
+      state.chatsMade += 1
+      state.chats[id] = chatOf(`chat-${id}-${state.chatsMade}`)
+      return structuredClone(state.chats[id])
     }
     const chatCall = path.match(/^\/api\/chats\/([^/]+)(\/messages)?$/)
     if (chatCall) {
