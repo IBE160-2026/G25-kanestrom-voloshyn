@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 11-05-2026 16:55
-last_updated: 11-25-2026 21:30
+last_updated: 11-25-2026 21:20
 project: AI-StudyBuddy
 project_key: NOKEY
 tracking_system: file-system
@@ -70,7 +70,7 @@ development_status:
   4-1-generate-a-flashcard-set: done
   4-2-study-a-flashcard-set: done
   4-3-summarize-a-file-or-one-of-its-topics: done
-  4-4-ask-questions-about-my-material-and-get-streamed-sourced-ans: review
+  4-4-ask-questions-about-my-material-and-get-streamed-sourced-ans: done
   4-5-keep-several-chats-in-a-project: backlog
   epic-4-retrospective: optional
 
