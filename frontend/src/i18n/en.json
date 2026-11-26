@@ -129,6 +129,39 @@
   "activity": {
     "back": "← Back to chat"
   },
+  "history": {
+    "link": "History",
+    "title": "History",
+    "filter": {
+      "label": "Filter by type",
+      "all": "All",
+      "chat": "Chats",
+      "quiz": "Quizzes",
+      "flashcards": "Flashcards",
+      "summary": "Summaries"
+    },
+    "type": {
+      "chat": "Chat",
+      "quiz": "Quiz",
+      "flashcards": "Flashcards",
+      "summary": "Summary"
+    },
+    "allTopics": "All topics",
+    "allMaterials": "all materials",
+    "correct": "{{c}} of {{t}} correct",
+    "unfinished": "Unfinished · {{n}} of {{total}}",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "messages_one": "{{count}} message · {{scope}}",
+    "messages_other": "{{count}} messages · {{scope}}",
+    "today": "Today, {{time}}",
+    "yesterday": "Yesterday",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "Chats, quizzes, flashcard sets and summaries you make in this project will show up here.",
+    "loading": "Loading history",
+    "loadError": "We couldn't load your history.",
+    "showMore": "Show more"
+  },
   "quiz": {
     "title": "Make a quiz",
     "topics": "Which topics?",

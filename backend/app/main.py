@@ -14,6 +14,7 @@ from app.api import auth as auth_api
 from app.api import chats as chats_api
 from app.api import config as config_api
 from app.api import flashcards as flashcards_api
+from app.api import history as history_api
 from app.api import jobs as jobs_api
 from app.api import materials as materials_api
 from app.api import me as me_api
@@ -82,6 +83,7 @@ def _api_router() -> APIRouter:
     api.include_router(flashcards_api.router)
     api.include_router(summaries_api.router)
     api.include_router(chats_api.router)
+    api.include_router(history_api.router)
     api.include_router(mistakes_api.router)
     api.include_router(review_api.router)
     api.include_router(jobs_api.router)

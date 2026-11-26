@@ -130,6 +130,39 @@
   "activity": {
     "back": "← Tilbake til samtalen"
   },
+  "history": {
+    "link": "Historikk",
+    "title": "Historikk",
+    "filter": {
+      "label": "Filtrer etter type",
+      "all": "Alle",
+      "chat": "Samtaler",
+      "quiz": "Quizer",
+      "flashcards": "Treningskort",
+      "summary": "Sammendrag"
+    },
+    "type": {
+      "chat": "Samtale",
+      "quiz": "Quiz",
+      "flashcards": "Treningskort",
+      "summary": "Sammendrag"
+    },
+    "allTopics": "Alle emner",
+    "allMaterials": "alt materiale",
+    "correct": "{{c}} av {{t}} riktige",
+    "unfinished": "Ikke fullført · {{n}} av {{total}}",
+    "cards_one": "{{count}} kort",
+    "cards_other": "{{count}} kort",
+    "messages_one": "{{count}} melding · {{scope}}",
+    "messages_other": "{{count}} meldinger · {{scope}}",
+    "today": "I dag, {{time}}",
+    "yesterday": "I går",
+    "emptyTitle": "Ingenting her ennå",
+    "emptyBody": "Samtaler, quizer, treningskort og sammendrag du lager i dette prosjektet, dukker opp her.",
+    "loading": "Laster historikk",
+    "loadError": "Vi fikk ikke lastet historikken din.",
+    "showMore": "Vis flere"
+  },
   "quiz": {
     "title": "Lag en quiz",
     "topics": "Hvilke emner?",

@@ -156,6 +156,11 @@ Microcopy. Brand posture lives in DESIGN.md Brand & Style. Warm and encouraging,
 | History, empty | "Nothing here yet" | Ingenting her ennå |
 | History, loading (screen reader) | "Loading history" [ASSUMPTION: from mock] | Laster historikk |
 | History, error | "We couldn't load your history." + "Try again" [ASSUMPTION: follows the network-error pattern] | Vi fikk ikke lastet historikken din. · Prøv igjen |
+| History row, type labels | "Quiz" · "Flashcards" · "Chat" · "Summary" [ASSUMPTION: copy, approved 2026-11-26 by Ihor with Story 5.1] | Quiz · Treningskort · Samtale · Sammendrag |
+| History row, meta lines | Quiz "{c} of {t} correct" · Flashcards "{n} cards" · Chat "{n} messages · {scope}" with "all materials" or the file name [ASSUMPTION: copy, approved 2026-11-26 by Ihor with Story 5.1] | {c} av {t} riktige · {n} kort · {n} meldinger · alt materiale |
+| History row, dates | "Today, {time}" · "Yesterday" · otherwise a short month and day (year added when not this year) [ASSUMPTION: copy, approved 2026-11-26 by Ihor with Story 5.1] | I dag, {time} · I går |
+| History, empty (body line) | "Chats, quizzes, flashcard sets and summaries you make in this project will show up here." [ASSUMPTION: copy, approved 2026-11-26 by Ihor with Story 5.1] | Samtaler, quizer, treningskort og sammendrag du lager i dette prosjektet, dukker opp her. |
+| History, more rows · filter accessible name | "Show more" · "Filter by type" [ASSUMPTION: copy, approved 2026-11-26 by Ihor with Story 5.1] | Vis flere · Filtrer etter type |
 | Inline error, reassurance | "Nothing you've made is lost." [ASSUMPTION: from mock] | Ingenting du har laget, er borte. |
 | Chat, pending answer (until the first words appear) | "Study Buddy is thinking…" | Study Buddy tenker … |
 | Chat, answer complete (screen reader only) | "Answer ready" [ASSUMPTION: copy] | Svaret er klart |
