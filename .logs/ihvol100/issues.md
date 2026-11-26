@@ -46,3 +46,7 @@
 - [ ] 2026-11-25 [story-4-4-ask-ai](988-2026-11-25-21-11-22-story-4-4-ask-ai.md) — Frontend timeout flakes under full-parallel load now hit more files; raise `testTimeout` or cap `maxWorkers` (deferred-work.md).
 - [ ] 2026-11-25 [story-4-5-several-chats](987-2026-11-25-21-36-17-story-4-5-several-chats.md) — Manual check of New chat and reopening the last chat in the running app.
 - [ ] 2026-11-25 [story-4-5-several-chats](987-2026-11-25-21-36-17-story-4-5-several-chats.md) — Epic 4 retrospective (optional in sprint-status) once 4.5 is merged.
+- [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — History kan ikke nås fra UI i et Project uten Ready-fil; plassering må avklares i de endelige UX-dokumentene (deferred-work.md).
+- [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Ta stilling til entallsformene «1 card»/«1 kort» og «1 message»/«1 melding», som ikke er godkjent.
+- [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Cristoffer krysser av Story 5.1-raden i `norwegian-strings-signoff.md`.
+- [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Manuell sjekk av History i appen (lenke, filter, Vis flere, gjenåpning av hver type, arkivert Project).
