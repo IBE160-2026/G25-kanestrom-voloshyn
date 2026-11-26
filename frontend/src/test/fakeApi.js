@@ -96,7 +96,11 @@ export const IMAGE_LIMIT = 25
  * deleted Project) and revokes its links; delete (Story 7.2a) sets `deleted_at` and `purge_at` (30
  * days later), keeps `archived_at`, revokes its links, and cancels its active jobs; restore clears
  * `archived_at`, `deleted_at`, and `purge_at`. All three are idempotent. DELETE /api/me (Story 7.4)
- * sets `accountDeleted` and empties the Projects. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
+ * sets `accountDeleted` and empties the Projects. History (Story 5.1): `history` maps a Project id to its items,
+ * newest first (see `historyItem`); GET .../history filters by `?type=` (anything else is `422`) and pages
+ * by `historyPageSize` with an opaque `cursor`; an unknown Project is `404`. GET /api/chats/{id} opens a
+ * chat (`chatOpens` records it): an earlier one from `storedChats` ([{project_id, chat}]) becomes the
+ * Project's current chat, which the Project home then shows. `appPublicUrl` is GET /api/config's `app_public_url`; with `serverOffsetMs`,
  * answers carry a `Date` header that far ahead of the test's clock. Returns the live
  * state.
  */
@@ -120,6 +124,9 @@ export function fakeApi({
   messagesLeft = MESSAGE_LIMIT,
   chatStream = 'auto',
   chatAnswer = defaultChatAnswer,
+  history = {},
+  historyPageSize = 30,
+  storedChats = [],
 } = {}) {
   const state = {
     me: { ...me },
@@ -163,6 +170,9 @@ export function fakeApi({
     chatsMade: 0,
     streams: [], // manual stream controllers, in send order
     aborted: 0, // streams the SPA aborted
+    history: Object.fromEntries(Object.entries(history).map(([id, list]) => [id, structuredClone(list)])), // Story 5.1
+    storedChats: Object.fromEntries(storedChats.map(({ project_id, chat }) => [chat.id, { projectId: project_id, chat: structuredClone(chat) }])),
+    chatOpens: [], // ids of GET /api/chats/{id}, in order (Story 5.1)
     stateChanges: [], // "archive {id}" / "delete {id}" / "restore {id}" / "purge {id}" answered, in order (7.1, 7.2)
   }
 
@@ -257,7 +267,34 @@ export function fakeApi({
       state.chats[id] = chatOf(`chat-${id}-${state.chatsMade}`)
       return structuredClone(state.chats[id])
     }
+    // History (Story 5.1): one page of a Project's items, filtered by type.
+    const historyCall = path.match(/^\/api\/projects\/([^/]+)\/history(?:\?(.*))?$/)
+    if (historyCall && method === 'GET') {
+      const [, id, qs] = historyCall
+      if (!state.projects.some((p) => p.id === id)) throw notFound()
+      const query = new URLSearchParams(qs ?? '')
+      const type = query.get('type')
+      if (type !== null && !['chat', 'quiz', 'flashcards', 'summary'].includes(type)) throw rule('invalid_request')
+      const items = (state.history[id] ?? []).filter((item) => type === null || item.type === type)
+      const start = Number(query.get('cursor') ?? 0)
+      const end = start + historyPageSize
+      return { items: structuredClone(items.slice(start, end)), next_cursor: end < items.length ? String(end) : null }
+    }
     const chatCall = path.match(/^\/api\/chats\/([^/]+)(\/messages)?$/)
+    if (chatCall && !chatCall[2] && method === 'GET') {
+      // Opening a chat (Story 4.5) makes it the one last opened: an earlier one becomes current.
+      const chatId = chatCall[1]
+      state.chatOpens.push(chatId)
+      const currentOf = Object.keys(state.chats).find((id) => state.chats[id].id === chatId)
+      if (currentOf) return structuredClone(state.chats[currentOf])
+      const stored = state.storedChats[chatId]
+      if (!stored) throw notFound()
+      delete state.storedChats[chatId]
+      const previous = state.chats[stored.projectId]
+      if (previous) state.storedChats[previous.id] = { projectId: stored.projectId, chat: previous }
+      state.chats[stored.projectId] = stored.chat
+      return structuredClone(stored.chat)
+    }
     if (chatCall) {
       const [, chatId, messages] = chatCall
       const projectId = Object.keys(state.chats).find((id) => state.chats[id].id === chatId)
@@ -731,6 +768,18 @@ export const MESSAGE_LIMIT = 50
 /** A stored chat: `{id, current_scope, messages: [{id, role, text, sources}]}`. */
 export function chatOf(id, { scope = { all_materials: true }, messages = [] } = {}) {
   return { id, current_scope: scope, messages }
+}
+
+/** A History item (Story 5.1) as the server sends it, with the fields of its `type`. */
+export function historyItem(type, id, overrides = {}) {
+  const base = { type, id, created_at: '2026-11-20T10:00:00Z', title: null }
+  const fields = {
+    quiz: { question_count: 5, answered_count: 5, correct_count: 4 },
+    flashcards: { card_count: 10 },
+    summary: { title: 'Photosynthesis', file_name: 'notes.md' },
+    chat: { title: 'What is ATP?', message_count: 2, scope_file_name: null },
+  }[type]
+  return { ...base, ...fields, ...overrides }
 }
 
 /** The fake's default answer: two deltas and one Source label. */

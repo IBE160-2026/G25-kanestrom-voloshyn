@@ -119,3 +119,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-4-4-ask-ai-streamed-sourced-answers.md`
   summary: Frontend timeout flakes under full-parallel Vitest load now hit more files (Appearance, DeleteAccount, ForgotPassword, Projects Log out) as the suite grows.
   evidence: 962/962 pass with --maxWorkers=4 and each file passes alone; full-parallel runs fail 1-5 unrelated tests by timeout. Settle by raising testTimeout or capping maxWorkers in vitest config.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-5-1-find-everything-i-made-in-one-history-list.md`
+  summary: History can't be reached from the UI in a Project with no Ready file, because the History link lives in the Chat bar, which shows only once a file is Ready.
+  evidence: ProjectChat renders ChatBar only when `enabled`. A Project whose files were all removed keeps its History items, but only the URL /projects/:id/history reaches them. Fixing it means a placement decision in the final UX docs (DESIGN.md › Chat bar, EXPERIENCE.md › History link), for Cristoffer or Ihor.

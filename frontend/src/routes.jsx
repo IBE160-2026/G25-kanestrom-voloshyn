@@ -7,6 +7,7 @@ import EmailVerified from './pages/EmailVerified.jsx'
 import FlashcardSession from './pages/FlashcardSession.jsx'
 import FlashcardSetup from './pages/FlashcardSetup.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
+import History from './pages/History.jsx'
 import Login from './pages/Login.jsx'
 import PhoneUpload from './pages/PhoneUpload.jsx'
 import ProjectHome from './pages/ProjectHome.jsx'
@@ -47,6 +48,7 @@ export const routes = [
           { path: '/projects/:projectId/summaries/:summaryId', element: <SummaryView /> },
           { path: '/projects/:projectId/review', element: <ReviewStart /> },
           { path: '/projects/:projectId/review/:roundId', element: <ReviewSession /> },
+          { path: '/projects/:projectId/history', element: <History /> },
         ],
       },
     ],
