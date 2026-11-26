@@ -3,8 +3,11 @@
 - `POST /api/projects/{project_id}/flashcard-sets` `{scope, count}`: requires an active Project
   (`ActiveProject`); resolves the scope, refuses one over the context budget (`422 scope_too_large`), and
   queues a `flashcards` job: `202 {job_id}`.
+- `POST /api/projects/{project_id}/flashcard-sets/{set_id}/again` (Story 5.2, FR-25): requires an
+  active Project; queues a `flashcards` job from the set's frozen `generation_params`, unchanged: `202
+  {job_id}`. A removed source file is `409 material_removed`; a foreign or missing set `404 not_found`.
 - `GET /api/projects/{project_id}/flashcard-sets/{set_id}`: `{id, requested_count, card_count, ended_at,
-  cards: [{id, position, question, answer, sources: [{label}]}], queue, done_count, second_try_count}`.
+  source_removed, cards: [{id, position, question, answer, sources: [{label}]}], queue, done_count, second_try_count}`.
   `queue` lists the card ids still to show, in order. A read, so a read-only Project's set still opens;
   it ends the Account's other open sets that have marks, and this one when it was left idle 30 minutes.
 - `POST /api/projects/{project_id}/flashcard-sets/{set_id}/cards/{card_id}/mark` `{mark: "got_it" |
@@ -58,6 +61,8 @@ class FlashcardSet(BaseModel):
     requested_count: int
     card_count: int
     ended_at: datetime | None
+    # A Material behind the frozen Sections was removed: "Do it again" is unavailable (FR-25).
+    source_removed: bool
     cards: list[Card]
     # The card ids still to show, in order: unmarked cards by position, then "Not yet" cards.
     queue: list[UUID]
@@ -86,6 +91,16 @@ async def create_flashcard_set(
         settings.capacity_words_per_item,
     )
     # Started right after the commit, so the runner sees the job row (AD-20).
+    runner = request.app.state.runner
+    after_commit(request, lambda: runner.submit(job))
+    return JobAccepted(job_id=job["id"])
+
+
+@router.post("/flashcard-sets/{set_id}/again", status_code=202, response_model=JobAccepted)
+async def flashcard_set_again(
+    request: Request, set_id: UUID, project: ActiveProject, user: UserAuth, conn: Conn
+) -> JobAccepted:
+    job = await flashcards.again(conn, user.account_id, project["id"], set_id)
     runner = request.app.state.runner
     after_commit(request, lambda: runner.submit(job))
     return JobAccepted(job_id=job["id"])

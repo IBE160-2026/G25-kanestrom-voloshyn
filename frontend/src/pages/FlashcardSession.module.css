@@ -314,8 +314,16 @@
 .endActions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: var(--space-2);
+}
+
+/* Beside a disabled "Do it again": why it is unavailable (Story 5.2). */
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
 }
 
 /* Skeleton (DESIGN.md › Skeleton): a static block while the set loads. */

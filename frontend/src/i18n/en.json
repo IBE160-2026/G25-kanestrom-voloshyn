@@ -160,7 +160,8 @@
     "emptyBody": "Chats, quizzes, flashcard sets and summaries you make in this project will show up here.",
     "loading": "Loading history",
     "loadError": "We couldn't load your history.",
-    "showMore": "Show more"
+    "showMore": "Show more",
+    "again": "Do it again"
   },
   "quiz": {
     "title": "Make a quiz",

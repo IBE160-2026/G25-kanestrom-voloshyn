@@ -107,6 +107,7 @@ def test_a_fresh_set_serves_its_cards_with_source_labels_and_the_full_queue(clie
         "requested_count": 5,
         "card_count": 3,
         "ended_at": None,
+        "source_removed": False,
         "cards": [
             {
                 "id": card_ids[i],

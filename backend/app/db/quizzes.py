@@ -57,11 +57,12 @@ async def insert(
 
 
 async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id: UUID) -> dict[str, Any] | None:
-    """`id`, `requested_count`, and `question_count`; None for a missing or foreign Quiz."""
+    """`id`, `requested_count`, `question_count`, and the frozen `generation_params`; None for a missing
+    or foreign Quiz."""
     async with conn.cursor(row_factory=dict_row) as cur:
         await cur.execute(
             """
-            SELECT q.id, q.requested_count,
+            SELECT q.id, q.requested_count, q.generation_params,
                    (SELECT count(*) FROM quiz_questions qq WHERE qq.quiz_id = q.id)::int AS question_count
             FROM quizzes q
             WHERE q.id = %s AND q.account_id = %s AND q.project_id = %s

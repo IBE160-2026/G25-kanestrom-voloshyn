@@ -43,6 +43,31 @@ async def any_removed(conn: AsyncConnection, material_ids: list[UUID]) -> bool:
     return bool(await removed_materials(conn, material_ids))
 
 
+async def any_section_removed(conn: AsyncConnection, account_id: UUID, section_ids: list[UUID]) -> bool:
+    """True when a Material behind one of the Account's Sections is removed, or a Section or Material is
+    gone (or another Account's). A plain read with no lock: "Do it again" checks it before queuing, and
+    the save step locks (AD-20)."""
+    wanted = set(section_ids)
+    if not wanted:
+        return False
+    async with conn.cursor() as cur:
+        await cur.execute(
+            """
+            SELECT s.id, m.removed_at
+            FROM sections s JOIN study_materials m ON m.id = s.material_id
+            WHERE s.id = ANY(%s) AND m.account_id = %s
+            """,
+            (list(wanted), account_id),
+        )
+        rows = await cur.fetchall()
+    return len(rows) < len(wanted) or any(removed_at is not None for _, removed_at in rows)
+
+
+def frozen_section_ids(generation_params: dict[str, Any] | None) -> list[UUID]:
+    """The Section ids frozen in an artifact's `generation_params` (AD-7)."""
+    return [UUID(str(value)) for value in (generation_params or {}).get("section_ids") or []]
+
+
 async def source_labels(conn: AsyncConnection, account_id: UUID, section_ids: list[UUID]) -> dict[UUID, str]:
     """`"{file_name} · {section label}"` by Section id. A removed file keeps its name and label (AD-23)."""
     if not section_ids:

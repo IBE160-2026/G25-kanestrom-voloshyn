@@ -41,7 +41,15 @@ from app.errors import AppError
 from app.llm import FlashcardDraft, Gateway, LLMOutputError, ProviderError
 from app.llm.schemas import FLASHCARDS_MAX
 from app.services import jobs, projects, topics
-from app.services.quiz import COUNTS, INSUFFICIENT_MATERIAL, LLM_OUTPUT_INVALID, LLM_UNAVAILABLE, _Section
+from app.services.quiz import (
+    COUNTS,
+    INSUFFICIENT_MATERIAL,
+    LLM_OUTPUT_INVALID,
+    LLM_UNAVAILABLE,
+    _Section,
+    again_params,
+    source_removed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +100,19 @@ async def request(
     return await jobs.enqueue(conn, account_id, project_id, KIND, params=params)
 
 
+async def again(conn: AsyncConnection, account_id: UUID, project_id: UUID, set_id: UUID) -> dict[str, Any]:
+    """"Do it again" (FR-25): queue a `flashcards` job from the set's frozen `generation_params`,
+    unchanged. The guard first (AD-22); a foreign or missing set is `404`, a removed source `409
+    material_removed`. The set, its marks, and its `ended_at` are never changed. Returns the job; the
+    caller submits it after the commit."""
+    await projects.require_active(conn, account_id, project_id)
+    found = await repo.get(conn, account_id, project_id, set_id)
+    if found is None:
+        raise FlashcardSetNotFound()
+    params = await again_params(conn, account_id, found["generation_params"])
+    return await jobs.enqueue(conn, account_id, project_id, KIND, params=params)
+
+
 # --- Studying a set (Story 4.2) ---
 
 
@@ -135,6 +156,7 @@ async def _read(conn: AsyncConnection, account_id: UUID, project_id: UUID, set_i
     labels = await section_repo.source_labels(conn, account_id, section_ids)
     return {
         **found,
+        "source_removed": await source_removed(conn, account_id, found["generation_params"]),
         "cards": [
             {
                 "id": row["id"],
@@ -155,7 +177,8 @@ async def _read(conn: AsyncConnection, account_id: UUID, project_id: UUID, set_i
 
 
 async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, set_id: UUID) -> dict[str, Any]:
-    """`{id, requested_count, card_count, ended_at, cards, queue, done_count, second_try_count}` (FR-14).
+    """`{id, requested_count, card_count, ended_at, source_removed, cards, queue, done_count,
+    second_try_count}` (FR-14, FR-25).
     A read: no guard, so a read-only Project's set still opens. Opening it ends the Account's other open
     sets that have marks, and ends this one when it was left idle (`IDLE`); `ended_at` is bookkeeping,
     not content (AD-27)."""
