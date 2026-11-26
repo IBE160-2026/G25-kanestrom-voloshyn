@@ -50,3 +50,5 @@
 - [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Ta stilling til entallsformene «1 card»/«1 kort» og «1 message»/«1 melding», som ikke er godkjent.
 - [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Cristoffer krysser av Story 5.1-raden i `norwegian-strings-signoff.md`.
 - [ ] 2026-11-26 [story-5-1-history](986-2026-11-26-17-45-47-story-5-1-history.md) — Manuell sjekk av History i appen (lenke, filter, Vis flere, gjenåpning av hver type, arkivert Project).
+- [ ] 2026-11-26 [story-5-2-do-it-again](985-2026-11-26-18-33-01-story-5-2-do-it-again.md) — Manuell sjekk av «Gjør det igjen» i appen (quiz og sett, fjernet fil, arkivert Project, fremdrift med `LLM_MOCK_DELAY_MS=1500`).
+- [ ] 2026-11-26 [story-5-2-do-it-again](985-2026-11-26-18-33-01-story-5-2-do-it-again.md) — Epic 5-retrospektiv (valgfri) når 5.2 er merget.

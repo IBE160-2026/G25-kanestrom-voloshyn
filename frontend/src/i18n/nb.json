@@ -161,7 +161,8 @@
     "emptyBody": "Samtaler, quizer, treningskort og sammendrag du lager i dette prosjektet, dukker opp her.",
     "loading": "Laster historikk",
     "loadError": "Vi fikk ikke lastet historikken din.",
-    "showMore": "Vis flere"
+    "showMore": "Vis flere",
+    "again": "Gjør det igjen"
   },
   "quiz": {
     "title": "Lag en quiz",

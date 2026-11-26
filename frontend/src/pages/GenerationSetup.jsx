@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import InlineError from '../components/InlineError.jsx'
 import { COLLAPSE_ABOVE, groupTopics } from '../components/topicGroups.js'
@@ -27,6 +27,8 @@ import { useGenerationJob } from './useGenerationJob.js'
 // - "Make {n} questions" / "Make {n} cards" queues the job; the generation lifecycle (progress, resuming
 //   a running job, cancel, failure with "Try again", and moving on to the result: the Quiz page, or the
 //   flashcard set's page) is the shared useGenerationJob, also used by Summarize (Story 4.3).
+// - "Do it again" (Story 5.2) navigates here with `state.job_id`: the page follows exactly that job,
+//   whatever its status (a finished one moves on to its result or shows its failure).
 // - Archived or deleted: read-only, nothing can be made.
 export { POLL_MS } from './useGenerationJob.js'
 export const DEFAULT_COUNT = 10
@@ -36,6 +38,8 @@ export default function GenerationSetup({ kind }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { projectId } = useParams()
+  // "Do it again" (Story 5.2) arrives with its job id: follow exactly that job.
+  const againJobId = useLocation().state?.job_id ?? null
   const [loaded, setLoaded] = useState(null) // { id, project, materials }
   const [loadError, setLoadError] = useState(null) // { id, error }
   const [allTopics, setAllTopics] = useState(true)
@@ -50,7 +54,7 @@ export default function GenerationSetup({ kind }) {
   useEffect(() => {
     let live = true
     // A job of this kind still running for this Project (the student left and came back) resumes its progress.
-    const running = generation.findActive()
+    const running = generation.findActive(againJobId)
     Promise.all([apiFetch(`/api/projects/${projectId}`), apiFetch(`/api/projects/${projectId}/materials`), running])
       .then(([project, materials, active]) => {
         if (!live) return
@@ -67,7 +71,7 @@ export default function GenerationSetup({ kind }) {
     }
     // `generation`'s helpers only use setters and the request helpers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, navigate, kind.kind])
+  }, [projectId, navigate, kind.kind, againJobId])
 
   const data = loaded?.id === projectId ? loaded : null
   const failedLoad = loadError?.id === projectId ? loadError.error : null

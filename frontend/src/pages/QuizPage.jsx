@@ -5,6 +5,7 @@ import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import InlineError from '../components/InlineError.jsx'
 import QuestionView from '../components/QuestionView.jsx'
 import { errorText } from '../i18n/errors.js'
+import DoItAgain from './DoItAgain.jsx'
 import styles from './QuizPage.module.css'
 
 // Taking a Quiz (Story 3.2, FR-11, AD-9; DESIGN.md › Answer option, Feedback panel, Score summary,
@@ -24,7 +25,10 @@ import styles from './QuizPage.module.css'
 // - Opening part-way starts at the first unanswered question, or at the Score summary when all are
 //   answered. One attempt per Quiz: there is no retake.
 // - Score summary: "{correct} of {total} correct", each missed question with both answers, "Missed
-//   questions stay in your review.", "← Back to chat" (primary) and "New quiz" (opens Quiz setup).
+//   questions stay in your review.", "← Back to chat" (primary), "New quiz" (opens Quiz setup), and
+//   "Do it again" (Story 5.2, DoItAgain.jsx: a new Quiz from this one's frozen setup). An Unfinished Quiz
+//   (read-only, not every question answered) is not offered "Do it again"; a read-only Project shows its
+//   notice above the score and the button disabled.
 // - Archived or deleted: the Quiz is readable, its options disabled; "Next question" moves on without an
 //   answer, and the summary counts unanswered questions as not correct (listed without "Your answer").
 // - The progress bar fills with the answered count; the key hints show "1–4 answer" while the question
@@ -184,6 +188,7 @@ export default function QuizPage() {
     const missed = questions.filter((q) => !q.answer?.is_correct)
     return (
       <section className={styles.quiz}>
+        {readOnly && <InlineError>{errorText(t, { code: 'project_read_only' })}</InlineError>}
         <h2 ref={scoreHeading} tabIndex={-1} className={styles.score}>
           <Trans
             i18nKey="quiz.score"
@@ -216,14 +221,32 @@ export default function QuizPage() {
             <p className={styles.note}>{t('quiz.missedStay')}</p>
           </>
         )}
-        <div className={styles.foot}>
-          <button type="button" className={styles.primary} onClick={backToChat}>
-            {t('activity.back')}
-          </button>
-          <button type="button" className={styles.ghost} onClick={() => navigate(`/projects/${projectId}/quiz`)}>
-            {t('quiz.newQuiz')}
-          </button>
-        </div>
+        <DoItAgain
+          againPath={`/api/projects/${projectId}/quizzes/${quizId}/again`}
+          setupPath={`/projects/${projectId}/quiz`}
+          sourceRemoved={Boolean(data.quiz.source_removed)}
+          readOnly={readOnly}
+          buttonClass={styles.ghost}
+          noteClass={styles.caption}
+        >
+          {(again, note) => (
+            <div className={styles.foot}>
+              <button type="button" className={styles.primary} onClick={backToChat}>
+                {t('activity.back')}
+              </button>
+              <button type="button" className={styles.ghost} onClick={() => navigate(`/projects/${projectId}/quiz`)}>
+                {t('quiz.newQuiz')}
+              </button>
+              {/* One attempt per Quiz: an Unfinished Quiz is never offered "Do it again". */}
+              {answeredCount === total && (
+                <>
+                  {again}
+                  {note}
+                </>
+              )}
+            </div>
+          )}
+        </DoItAgain>
       </section>
     )
   }

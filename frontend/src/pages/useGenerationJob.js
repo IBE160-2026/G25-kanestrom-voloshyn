@@ -51,11 +51,18 @@ export function useGenerationJob(kind, projectId) {
   const progressRegion = useRef(null)
   const shownPhase = useRef(null)
 
-  /** The job of this kind still queued or running for this Project, or null (also when the read fails). */
-  function findActive() {
+  /** The job of this kind still queued or running for this Project, or null (also when the read fails).
+   * With `jobId` (a "Do it again" job, Story 5.2), exactly that job whatever its status, so one that
+   * already ended moves on through `settle`; when it isn't listed, `{ id }` lets the poll settle it. */
+  function findActive(jobId = null) {
+    const fallback = jobId ? { id: jobId } : null
     return apiFetch(`/api/projects/${projectId}/jobs`).then(
-      (list) => (Array.isArray(list) ? list : []).find((item) => item.kind === kind.kind && ACTIVE.has(item.status)) ?? null,
-      () => null,
+      (list) => {
+        const items = Array.isArray(list) ? list : []
+        if (jobId) return items.find((item) => item.id === jobId) ?? fallback
+        return items.find((item) => item.kind === kind.kind && ACTIVE.has(item.status)) ?? null
+      },
+      () => fallback,
     )
   }
 

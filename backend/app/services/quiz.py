@@ -56,6 +56,30 @@ class QuizNotFound(AppError):
         super().__init__(404, "not_found", "No such Quiz")
 
 
+class MaterialRemoved(AppError):
+    """"Do it again" on a result whose source file was removed since (FR-25)."""
+
+    def __init__(self) -> None:
+        super().__init__(409, "material_removed", "A file this came from was removed")
+
+
+async def source_removed(conn: AsyncConnection, account_id: UUID, generation_params: dict[str, Any] | None) -> bool:
+    """True when a Material behind the frozen Sections is removed or gone (a plain read, no lock)."""
+    return await section_repo.any_section_removed(
+        conn, account_id, section_repo.frozen_section_ids(generation_params)
+    )
+
+
+async def again_params(
+    conn: AsyncConnection, account_id: UUID, generation_params: dict[str, Any] | None
+) -> dict[str, Any]:
+    """The params for "Do it again": the artifact's frozen `generation_params`, unchanged and never
+    resolved again (AD-7). A removed source refuses it (`409 material_removed`)."""
+    if await source_removed(conn, account_id, generation_params):
+        raise MaterialRemoved()
+    return dict(generation_params or {})
+
+
 @dataclass(frozen=True)
 class _Section:
     """A loaded Section, in the shape the gateway reads (`text`, `label`)."""
@@ -100,9 +124,21 @@ async def request(
     return await jobs.enqueue(conn, account_id, project_id, KIND, params=params)
 
 
+async def again(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id: UUID) -> dict[str, Any]:
+    """"Do it again" (FR-25): queue a `quiz` job from the Quiz's frozen `generation_params`, unchanged.
+    The guard first (AD-22); a foreign or missing Quiz is `404`, a removed source `409 material_removed`.
+    The Quiz itself is never changed. Returns the job; the caller submits it after the commit."""
+    await projects.require_active(conn, account_id, project_id)
+    found = await repo.get(conn, account_id, project_id, quiz_id)
+    if found is None:
+        raise QuizNotFound()
+    params = await again_params(conn, account_id, found["generation_params"])
+    return await jobs.enqueue(conn, account_id, project_id, KIND, params=params)
+
+
 async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id: UUID) -> dict[str, Any]:
-    """`{id, requested_count, question_count, questions}` (FR-11, AD-9). A read: no guard, so a read-only
-    Project's Quiz still opens. An unanswered Question carries no answer key, explanation, or sources;
+    """`{id, requested_count, question_count, source_removed, questions}` (FR-11, FR-25, AD-9). A read: no
+    guard, so a read-only Project's Quiz still opens. An unanswered Question carries no answer key, explanation, or sources;
     an answered one carries `answer`."""
     await projects.get(conn, account_id, project_id)
     quiz = await repo.get(conn, account_id, project_id, quiz_id)
@@ -114,6 +150,7 @@ async def get(conn: AsyncConnection, account_id: UUID, project_id: UUID, quiz_id
     labels = await section_repo.source_labels(conn, account_id, questions.section_ids(answered))
     return {
         **quiz,
+        "source_removed": await source_removed(conn, account_id, quiz["generation_params"]),
         "questions": [questions.shown(row, answers.get(row["id"]), labels) for row in rows],
     }
 

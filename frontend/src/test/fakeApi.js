@@ -96,7 +96,9 @@ export const IMAGE_LIMIT = 25
  * deleted Project) and revokes its links; delete (Story 7.2a) sets `deleted_at` and `purge_at` (30
  * days later), keeps `archived_at`, revokes its links, and cancels its active jobs; restore clears
  * `archived_at`, `deleted_at`, and `purge_at`. All three are idempotent. DELETE /api/me (Story 7.4)
- * sets `accountDeleted` and empties the Projects. History (Story 5.1): `history` maps a Project id to its items,
+ * sets `accountDeleted` and empties the Projects. "Do it again" (Story 5.2): POST .../quizzes/{id}/again or
+ * .../flashcard-sets/{id}/again adds a running job of the same kind with the stored `requested_count` and
+ * `topic_labels` (recorded in `againRequests`), refusing a read-only Project or a `sourceRemoved` result. History (Story 5.1): `history` maps a Project id to its items,
  * newest first (see `historyItem`); GET .../history filters by `?type=` (anything else is `422`) and pages
  * by `historyPageSize` with an opaque `cursor`; an unknown Project is `404`. GET /api/chats/{id} opens a
  * chat (`chatOpens` records it): an earlier one from `storedChats` ([{project_id, chat}]) becomes the
@@ -149,6 +151,7 @@ export function fakeApi({
     summaryRequests: [], // bodies of POST .../summaries (Story 4.3)
     summaries: Object.fromEntries(summaries.map((x) => [x.id, structuredClone(x)])), // { [summaryId]: summary(...) }
     answers: [], // bodies of POST .../answer, with their question id
+    againRequests: [], // "quizzes/{id}" or "flashcard-sets/{id}" per "Do it again" answered 202 (Story 5.2)
     cancelled: [], // job ids a cancel was sent for
     mistakes: mistakes.map((m) => ({ withdrawn: false, cleared: false, ...m })), // Story 3.3
     rounds: Object.fromEntries(rounds.map((r) => [r.id, structuredClone(r)])), // { [roundId]: reviewRound(...) }
@@ -411,6 +414,32 @@ export function fakeApi({
       const max = typeof state.capacity === 'function' ? state.capacity(scope) : state.capacity
       return { max_questions: max, max_cards: max }
     }
+    // "Do it again" (Story 5.2): like the server, a new job of the same kind from the frozen setup; a
+    // read-only Project is `409 project_read_only`, a removed source `409 material_removed`.
+    const againCall = path.match(/^\/api\/projects\/([^/]+)\/(quizzes|flashcard-sets)\/([^/]+)\/again$/)
+    if (againCall && method === 'POST') {
+      const [, id, what, artifactId] = againCall
+      const owner = state.projects.find((p) => p.id === id)
+      if (!owner) throw notFound()
+      if (owner.archived_at || owner.deleted_at) throw rule('project_read_only')
+      const found = (what === 'quizzes' ? state.quizzes : state.flashcardSets)[artifactId]
+      if (!found || found.project_id !== id) throw notFound()
+      if (found.source_removed) throw rule('material_removed')
+      state.againRequests.push(`${what}/${artifactId}`)
+      const job = {
+        id: `again-${state.againRequests.length}`,
+        project_id: id,
+        kind: what === 'quizzes' ? 'quiz' : 'flashcards',
+        status: 'running',
+        progress_step: 'reading',
+        result_ref: null,
+        error_code: null,
+        count: found.requested_count,
+        topic_labels: [...(found.topic_labels ?? [])],
+      }
+      state.jobs.push(job)
+      return { job_id: job.id }
+    }
     // Taking a Quiz (Story 3.2): like the server, scored here, saved once, the key hidden until answered.
     const answerCall = path.match(/^\/api\/projects\/([^/]+)\/quizzes\/([^/]+)\/questions\/([^/]+)\/answer$/)
     if (answerCall && method === 'POST') {
@@ -443,6 +472,7 @@ export function fakeApi({
           id: found.id,
           requested_count: found.requested_count,
           question_count: found.questions.length,
+          source_removed: Boolean(found.source_removed),
           questions: found.questions.map(shownQuestion),
         }
       }
@@ -930,6 +960,7 @@ function shownSet(set) {
     requested_count: set.requested_count,
     card_count: set.cards.length,
     ended_at: set.ended_at,
+    source_removed: Boolean(set.source_removed),
     cards: set.cards.map((c) => ({ ...c, sources: c.sources.map((label) => ({ label })) })),
     queue,
     done_count: done.size,
@@ -941,9 +972,14 @@ function shownSet(set) {
  * A stored flashcard set of `n` cards in Project `projectId`: card i reads "Question {i}?" / "Answer {i}."
  * with source "notes.pdf · Page {i}" (1-based), id `{id}-c{i}`. `requested` is the frozen count (default
  * `n`); `marks` lists saved marks in order ([cardIndex (0-based), 'got_it' | 'not_yet']); `ended` sets
- * `ended_at`.
+ * `ended_at`. `sourceRemoved` makes GET say `source_removed` and "Do it again" refuse it; `topicLabels` are
+ * the frozen Topic labels a "Do it again" job carries (Story 5.2).
  */
-export function flashcardSet(id, projectId, { n = 3, requested = n, marks = [], ended = false } = {}) {
+export function flashcardSet(
+  id,
+  projectId,
+  { n = 3, requested = n, marks = [], ended = false, sourceRemoved = false, topicLabels = [] } = {},
+) {
   const cards = Array.from({ length: n }, (_, i) => ({
     id: `${id}-c${i + 1}`,
     position: i,
@@ -958,6 +994,8 @@ export function flashcardSet(id, projectId, { n = 3, requested = n, marks = [], 
     cards,
     marks: marks.map(([index, mark]) => ({ card_id: cards[index].id, mark })),
     ended_at: ended ? '2026-11-23T11:00:00Z' : null,
+    source_removed: sourceRemoved,
+    topic_labels: topicLabels,
   }
 }
 
@@ -984,12 +1022,19 @@ function shownQuestion(q) {
  * "Option {i}A".."Option {i}D", explanation "Because {i}.", source "notes.pdf · Page {i}" (1-based).
  * `correct` is each Question's correct option id. `answered` maps a 0-based index to the submitted
  * option id. `requested` is the frozen count (default `n`). Each Question cites `materialId`.
+ * `sourceRemoved` and `topicLabels` are as for `flashcardSet` (Story 5.2).
  */
-export function quiz(id, projectId, { n = 3, requested = n, correct = 'b', answered = {}, materialId = 'notes' } = {}) {
+export function quiz(
+  id,
+  projectId,
+  { n = 3, requested = n, correct = 'b', answered = {}, materialId = 'notes', sourceRemoved = false, topicLabels = [] } = {},
+) {
   return {
     id,
     project_id: projectId,
     requested_count: requested,
+    source_removed: sourceRemoved,
+    topic_labels: topicLabels,
     questions: Array.from({ length: n }, (_, i) => ({
       id: `${id}-q${i + 1}`,
       position: i,

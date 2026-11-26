@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router'
 import { SIGNED_OUT_CODES, apiFetch } from '../api/client.js'
 import InlineError from '../components/InlineError.jsx'
 import { errorText } from '../i18n/errors.js'
+import DoItAgain from './DoItAgain.jsx'
 import styles from './FlashcardSession.module.css'
 
 // Studying a flashcard set (Story 4.2, FR-14, AD-8, AD-22; DESIGN.md › Flashcard, Flashcard end screen,
@@ -22,7 +23,9 @@ import styles from './FlashcardSession.module.css'
 // - Keys work on desktop only (`@media (hover: none)` hides the hints) and never while focus is in a text
 //   input or a modifier is held. Space on a focused button is left to the button.
 // - End screen (the queue is empty or the set has ended): "{n} cards done. {m} needed a second try",
-//   "Make more cards" (primary, opens Flashcards setup) and "← Back to chat". An ended set opens here.
+//   "Make more cards" (primary, opens Flashcards setup), "Do it again" (Story 5.2, DoItAgain.jsx: a new
+//   set from this one's frozen setup), and "← Back to chat". An ended set opens here. A read-only Project
+//   shows its notice under the headline and "Do it again" disabled.
 // - A failed save keeps the card and shows the Inline error with "Try again" (which takes focus). A
 //   refusal that names a rule shows only its message; `project_read_only` turns the page read-only (cards
 //   still flip, the mark buttons are disabled); `flashcard_set_ended` reloads the set, which then opens on
@@ -283,14 +286,32 @@ export default function FlashcardSession() {
         <h2 ref={endHeading} tabIndex={-1} className={styles.headline}>
           {t('flashcards.session.end', { count: set.done_count, m: set.second_try_count })}
         </h2>
-        <div className={styles.endActions}>
-          <button type="button" className={styles.primary} onClick={() => navigate(`/projects/${projectId}/flashcards`)}>
-            {t('flashcards.session.more')}
-          </button>
-          <button type="button" className={styles.ghost} onClick={backToChat}>
-            {t('activity.back')}
-          </button>
-        </div>
+        {readOnly && <InlineError>{errorText(t, { code: 'project_read_only' })}</InlineError>}
+        <DoItAgain
+          againPath={`/api/projects/${projectId}/flashcard-sets/${setId}/again`}
+          setupPath={`/projects/${projectId}/flashcards`}
+          sourceRemoved={Boolean(set.source_removed)}
+          readOnly={readOnly}
+          buttonClass={styles.ghost}
+          noteClass={styles.caption}
+        >
+          {(again, note) => (
+            <div className={styles.endActions}>
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={() => navigate(`/projects/${projectId}/flashcards`)}
+              >
+                {t('flashcards.session.more')}
+              </button>
+              {again}
+              {note}
+              <button type="button" className={styles.ghost} onClick={backToChat}>
+                {t('activity.back')}
+              </button>
+            </div>
+          )}
+        </DoItAgain>
       </section>
     )
   }

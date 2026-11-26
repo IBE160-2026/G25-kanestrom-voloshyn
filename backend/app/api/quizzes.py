@@ -5,7 +5,11 @@
 - `POST /api/projects/{project_id}/quizzes` `{scope, count}`: requires an active Project
   (`ActiveProject`); resolves the scope, refuses one over the context budget (`422 scope_too_large`), and
   queues a `quiz` job: `202 {job_id}`.
-- `GET /api/projects/{project_id}/quizzes/{quiz_id}`: `{id, requested_count, question_count, questions}`.
+- `POST /api/projects/{project_id}/quizzes/{quiz_id}/again` (Story 5.2, FR-25): requires an active
+  Project; queues a `quiz` job from the Quiz's frozen `generation_params`, unchanged: `202 {job_id}`. A
+  removed source file is `409 material_removed`; a foreign or missing Quiz `404 not_found`.
+- `GET /api/projects/{project_id}/quizzes/{quiz_id}`: `{id, requested_count, question_count,
+  source_removed, questions}`.
   Each Question is `{id, position, question, options: [{id, text}], answer}`; `answer` is null until the
   Question is answered, so the answer key, explanation, and sources never reach the browser before
   (AD-9). A read, so a read-only Project's Quiz still opens.
@@ -101,6 +105,8 @@ class Quiz(BaseModel):
     id: UUID
     requested_count: int
     question_count: int
+    # A Material behind the frozen Sections was removed: "Do it again" is unavailable (FR-25).
+    source_removed: bool
     questions: list[Question]
 
 
@@ -139,6 +145,16 @@ async def create_quiz(
         settings.capacity_words_per_item,
     )
     # Started right after the commit, so the runner sees the job row (AD-20).
+    runner = request.app.state.runner
+    after_commit(request, lambda: runner.submit(job))
+    return JobAccepted(job_id=job["id"])
+
+
+@router.post("/quizzes/{quiz_id}/again", status_code=202, response_model=JobAccepted)
+async def quiz_again(
+    request: Request, quiz_id: UUID, project: ActiveProject, user: UserAuth, conn: Conn
+) -> JobAccepted:
+    job = await quiz.again(conn, user.account_id, project["id"], quiz_id)
     runner = request.app.state.runner
     after_commit(request, lambda: runner.submit(job))
     return JobAccepted(job_id=job["id"])

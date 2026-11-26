@@ -84,8 +84,14 @@
   color: var(--color-text);
 }
 
-.ghost:hover {
+.ghost:hover:not(:disabled) {
   background: var(--color-hover);
+}
+
+.primary:disabled,
+.ghost:disabled {
+  cursor: default;
+  opacity: 0.55;
 }
 
 .back:focus-visible,
@@ -165,8 +171,16 @@
 .foot {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-6);
+}
+
+/* Beside a disabled "Do it again": why it is unavailable (Story 5.2). */
+.caption {
+  color: var(--color-text-muted);
+  font-size: var(--type-caption-size);
+  font-weight: var(--type-caption-weight);
 }
 
 /* Skeleton (DESIGN.md › Skeleton): a static block while the Quiz loads. */

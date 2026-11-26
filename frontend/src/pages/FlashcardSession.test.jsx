@@ -164,7 +164,7 @@ describe('Flashcard session', () => {
     expect(await screen.findByRole('heading', { name: '2 cards done. 2 needed a second try' })).toBeInTheDocument()
     expect(screen.queryByTestId('flashcard')).not.toBeInTheDocument()
     const actions = screen.getAllByRole('button').map((b) => b.textContent)
-    expect(actions.slice(-2)).toEqual([S.more, en.activity.back])
+    expect(actions.slice(-3)).toEqual([S.more, en.history.again, en.activity.back])
     await userEvent.click(screen.getAllByRole('button', { name: en.activity.back }).at(-1))
     await waitFor(() => expect(router.state.location.pathname).toBe('/projects/a'))
   })
